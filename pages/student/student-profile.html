@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Leader Profile — Campus Space</title>
+    <title>Student Profile — Campus Space</title>
     <link
       rel="icon"
       type="image/x-icon"
@@ -56,12 +56,12 @@
         <header class="app-header" id="app-header"></header>
         <main class="app-content" id="main">
           <div class="cluster" style="margin-bottom: 16px">
-            <a href="student-leaders.html" class="btn btn-ghost btn-sm">
-              <i class="fa-solid fa-arrow-left"></i> Back to Student Leaders
+            <a href="community.html" class="btn btn-ghost btn-sm">
+              <i class="fa-solid fa-arrow-left"></i> Back
             </a>
           </div>
 
-          <div id="leader-profile-root"></div>
+          <div id="student-profile-root"></div>
         </main>
       </div>
     </div>
@@ -84,11 +84,12 @@
     <script src="../../js/leaders.js"></script>
     <script>
       /* ==========================================================================
-   Leader profile page — matches the profile.html v2 design language.
+   Public student profile — for any registered student.
+   Matches the leader-profile and profile.html design language.
    ========================================================================== */
       document.addEventListener("DOMContentLoaded", function () {
-        if (window._leaderProfileInit) return;
-        window._leaderProfileInit = true;
+        if (window._studentProfileInit) return;
+        window._studentProfileInit = true;
 
         var session = Auth.current();
         if (!session) {
@@ -98,37 +99,100 @@
         initAppShell("student");
 
         var id = new URLSearchParams(location.search).get("id");
-        var list = typeof getLeaderList === "function" ? getLeaderList() : [];
-        var leader = list.find(function (l) {
-          return l.student && String(l.student.id) === String(id);
-        });
-        var root = document.getElementById("leader-profile-root");
+        var root = document.getElementById("student-profile-root");
 
-        if (!leader) {
+        var student =
+          typeof DEMO_STUDENTS !== "undefined"
+            ? DEMO_STUDENTS.find(function (s) {
+                return String(s.id) === String(id);
+              })
+            : null;
+
+        if (!student) {
           root.innerHTML =
             '<div class="empty-state">' +
-            '<div class="empty-icon"><i class="fa-solid fa-user-tie"></i></div>' +
-            "<h3>Leader not found</h3>" +
-            "<p>This leader profile may have been removed.</p>" +
-            '<a class="btn btn-secondary" href="student-leaders.html">Browse all leaders</a>' +
+            '<div class="empty-icon"><i class="fa-solid fa-user-slash"></i></div>' +
+            "<h3>Student not found</h3>" +
+            "<p>We couldn't find that student. The account may have been removed or deactivated.</p>" +
+            '<a class="btn btn-secondary" href="community.html">Back to Community</a>' +
             "</div>";
           return;
         }
 
-        var student = leader.student;
-        var assoc = leader.assoc;
-        var pos = leader.pos;
+        if (student.status !== "active") {
+          root.innerHTML =
+            '<div class="empty-state">' +
+            '<div class="empty-icon"><i class="fa-solid fa-user-lock"></i></div>' +
+            "<h3>This account is not available</h3>" +
+            "<p>This student's profile is not currently visible.</p>" +
+            '<a class="btn btn-secondary" href="community.html">Back to Community</a>' +
+            "</div>";
+          return;
+        }
+
+        var isSelf = session.username === student.username;
         var fullName = [student.firstName, student.otherName, student.lastName]
           .filter(Boolean)
           .join(" ");
         var initials = Util.initials(fullName);
         var avatarUrl = student.avatar || "";
+        var leaderInfo =
+          typeof getLeaderList === "function"
+            ? getLeaderList().find(function (l) {
+                return l.student.id === student.id;
+              })
+            : null;
+        var isLeader = !!leaderInfo;
 
         var avatarInner = avatarUrl
           ? '<img src="' + avatarUrl + '" alt="" class="avatar avatar-96">'
           : '<span class="avatar avatar-96 avatar-fallback">' +
             initials +
             "</span>";
+
+        var primaryAction = isSelf
+          ? '<a href="profile.html" class="btn btn-primary"><i class="fa-solid fa-pen"></i> Edit my profile</a>' +
+            '<a href="settings.html" class="btn btn-secondary"><i class="fa-solid fa-gear"></i> Settings</a>'
+          : '<a href="tel:' +
+            student.phone.replace(/\s+/g, "") +
+            '" class="btn btn-primary"><i class="fa-solid fa-phone"></i> Call</a>' +
+            '<button class="btn btn-secondary" id="copy-contact-btn" type="button"><i class="fa-solid fa-copy"></i> Copy contact</button>';
+
+        var leaderTagHtml = isLeader
+          ? '<span class="badge badge-brand"><i class="fa-solid fa-ranking-star"></i> ' +
+            Util.escape(leaderInfo.assoc.acronym) +
+            " · " +
+            Util.escape(leaderInfo.pos.name) +
+            "</span>"
+          : "";
+
+        var leaderSection = isLeader
+          ? '<div class="card profile-v2-card">' +
+            '<div class="card-head">' +
+            '<h3><i class="fa-solid fa-ranking-star" style="color:var(--brand-primary); margin-right:8px;"></i> Leadership Role</h3>' +
+            "</div>" +
+            '<div class="profile-v2-info-grid">' +
+            '<div class="profile-v2-info">' +
+            '<span class="label">Association</span>' +
+            '<span class="value">' +
+            Util.escape(leaderInfo.assoc.name) +
+            "</span>" +
+            "</div>" +
+            '<div class="profile-v2-info">' +
+            '<span class="label">Public tag</span>' +
+            '<span class="value">' +
+            Util.escape(leaderInfo.assoc.acronym) +
+            "</span>" +
+            "</div>" +
+            '<div class="profile-v2-info profile-v2-info-wide">' +
+            '<span class="label">Position</span>' +
+            '<span class="value">' +
+            Util.escape(leaderInfo.pos.name) +
+            "</span>" +
+            "</div>" +
+            "</div>" +
+            "</div>"
+          : "";
 
         root.innerHTML =
           '<div class="profile-hero-v2">' +
@@ -147,72 +211,37 @@
           "<h1>" +
           Util.escape(fullName) +
           "</h1>" +
-          '<i class="fa-solid fa-circle-check tag-verified" aria-label="Verified leader"></i>' +
+          (isLeader
+            ? '<i class="fa-solid fa-circle-check tag-verified" aria-label="Verified leader"></i>'
+            : "") +
           "</div>" +
           '<div class="profile-hero-handle">@' +
           Util.escape(student.username) +
           "</div>" +
           '<div class="profile-hero-tags">' +
-          '<span class="badge badge-brand"><i class="fa-solid fa-ranking-star"></i> ' +
-          Util.escape(assoc.acronym) +
-          "</span>" +
-          '<span class="badge badge-marine"><i class="fa-solid fa-user-tie"></i> ' +
-          Util.escape(pos.name) +
-          "</span>" +
-          '<span class="badge badge-neutral"><i class="fa-solid fa-building-columns"></i> ' +
+          leaderTagHtml +
+          '<span class="badge badge-marine"><i class="fa-solid fa-building-columns"></i> ' +
           Util.escape(student.department) +
           "</span>" +
           '<span class="badge badge-neutral"><i class="fa-solid fa-graduation-cap"></i> ' +
           Util.escape(student.level) +
           " Level</span>" +
+          '<span class="badge badge-success"><i class="fa-solid fa-shield-halved"></i> Verified</span>' +
           "</div>" +
           '<p class="profile-hero-bio">' +
-          Util.escape(pos.name) +
-          " of the " +
-          Util.escape(assoc.name) +
-          " · " +
+          Util.escape(student.department) +
+          " student at OAUSTECH · Faculty of " +
           Util.escape(student.faculty) +
           "</p>" +
           "</div>" +
           '<div class="profile-hero-actions">' +
-          '<a href="tel:' +
-          student.phone.replace(/\s+/g, "") +
-          '" class="btn btn-primary">' +
-          '<i class="fa-solid fa-phone"></i> Call' +
-          "</a>" +
-          '<button class="btn btn-secondary" id="copy-contact-btn" type="button">' +
-          '<i class="fa-solid fa-copy"></i> Copy contact' +
-          "</button>" +
+          primaryAction +
           "</div>" +
           "</div>" +
           "</div>" +
           '<div class="profile-v2-grid">' +
           '<div class="profile-v2-main">' +
-          '<div class="card profile-v2-card">' +
-          '<div class="card-head">' +
-          '<h3><i class="fa-solid fa-ranking-star" style="color:var(--brand-primary); margin-right:8px;"></i> Leadership Role</h3>' +
-          "</div>" +
-          '<div class="profile-v2-info-grid">' +
-          '<div class="profile-v2-info">' +
-          '<span class="label">Association</span>' +
-          '<span class="value">' +
-          Util.escape(assoc.name) +
-          "</span>" +
-          "</div>" +
-          '<div class="profile-v2-info">' +
-          '<span class="label">Public tag</span>' +
-          '<span class="value">' +
-          Util.escape(assoc.acronym) +
-          "</span>" +
-          "</div>" +
-          '<div class="profile-v2-info profile-v2-info-wide">' +
-          '<span class="label">Position</span>' +
-          '<span class="value">' +
-          Util.escape(pos.name) +
-          "</span>" +
-          "</div>" +
-          "</div>" +
-          "</div>" +
+          leaderSection +
           '<div class="card profile-v2-card">' +
           '<div class="card-head">' +
           '<h3><i class="fa-solid fa-graduation-cap" style="color:var(--brand-primary); margin-right:8px;"></i> Academic Information</h3>' +
@@ -271,16 +300,18 @@
           "</div>" +
           '<div class="card profile-v2-card">' +
           '<div class="card-head">' +
-          '<h3><i class="fa-solid fa-shield-halved" style="color:var(--brand-primary); margin-right:8px;"></i> Verification</h3>' +
+          '<h3><i class="fa-solid fa-user-check" style="color:var(--brand-primary); margin-right:8px;"></i> Account</h3>' +
           "</div>" +
           '<div class="profile-v2-side-list">' +
           '<div class="profile-v2-side-row">' +
-          '<span class="label">Status</span>' +
-          '<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Verified</span>' +
+          '<span class="label">Username</span>' +
+          '<span class="value">@' +
+          Util.escape(student.username) +
+          "</span>" +
           "</div>" +
           '<div class="profile-v2-side-row">' +
-          '<span class="label">Assigned by</span>' +
-          '<span class="value">Admin</span>' +
+          '<span class="label">Status</span>' +
+          '<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Active</span>' +
           "</div>" +
           "</div>" +
           "</div>" +
@@ -293,10 +324,10 @@
             var text =
               fullName +
               " — " +
-              pos.name +
+              student.department +
               ", " +
-              assoc.name +
-              "\nPhone: " +
+              student.level +
+              " Level\nPhone: " +
               student.phone +
               "\nEmail: " +
               student.email;

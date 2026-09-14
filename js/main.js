@@ -798,32 +798,41 @@ function initHeaderSearch() {
           ? Object.fromEntries(getLeaderList().map((l) => [l.student.id, l]))
           : {};
 
-      DEMO_STUDENTS.forEach((s) => {
-        const full =
-          s.firstName +
-          " " +
-          (s.otherName ? s.otherName + " " : "") +
-          s.lastName;
-        if (!has(q, full, s.username, s.matric, s.department, s.faculty))
-          return;
+      /* ---- Students (all registered students) ---- */
+      if (typeof DEMO_STUDENTS !== "undefined") {
+        const leaderMap =
+          typeof getLeaderList === "function"
+            ? Object.fromEntries(getLeaderList().map((l) => [l.student.id, l]))
+            : {};
 
-        const tag = leaderMap[s.id]
-          ? leaderMap[s.id].assoc.acronym + " · " + leaderMap[s.id].pos.name
-          : s.association || "";
+        DEMO_STUDENTS.forEach((s) => {
+          // Skip deactivated / suspended accounts from public search
+          if (s.status && s.status !== "active") return;
 
-        results.push({
-          type: "Student",
-          icon: "fa-user",
-          title: full,
-          subtitle:
-            "@" + s.username + " · " + s.department + " · " + s.level + "L",
-          tag: tag,
-          href:
-            (leaderMap[s.id]
-              ? "leader-profile.html?id="
-              : "leader-profile.html?id=") + s.id,
+          const full = [s.firstName, s.otherName, s.lastName]
+            .filter(Boolean)
+            .join(" ");
+          if (!has(q, full, s.username, s.matric, s.department, s.faculty))
+            return;
+
+          const isLeader = !!leaderMap[s.id];
+          const tag = isLeader
+            ? leaderMap[s.id].assoc.acronym + " · " + leaderMap[s.id].pos.name
+            : s.association || "";
+
+          results.push({
+            type: isLeader ? "Leader" : "Student",
+            icon: isLeader ? "fa-user-tie" : "fa-user",
+            title: full,
+            subtitle:
+              "@" + s.username + " · " + s.department + " · " + s.level + "L",
+            tag: tag,
+            href: isLeader
+              ? "leader-profile.html?id=" + s.id
+              : "student-profile.html?id=" + s.id,
+          });
         });
-      });
+      }
     }
 
     /* ---- Courses ---- */
