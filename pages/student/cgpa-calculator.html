@@ -45,6 +45,7 @@
   </head>
   <body class="has-session">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
       <aside
         class="sidebar"
@@ -58,65 +59,117 @@
             <div class="page-head-text">
               <h1 class="page-title">CGPA Calculator</h1>
               <p class="page-subtitle">
-                Compute your cumulative grade point average across sessions.
+                Compute your cumulative grade point average across semesters.
               </p>
             </div>
           </div>
 
-          <div
-            class="grid"
-            style="
-              grid-template-columns: minmax(0, 1fr) 340px;
-              gap: 24px;
-              align-items: start;
-            "
-          >
-            <div class="card">
-              <div class="card-head">
-                <h3>Semesters</h3>
-                <button class="btn btn-secondary btn-sm" id="cgpa-add">
-                  <i class="fa-solid fa-plus"></i> Add semester
-                </button>
-              </div>
-              <div class="card-body">
-                <form id="cgpa-form" novalidate>
-                  <div id="cgpa-rows"></div>
-                </form>
+          <div class="calc-layout">
+            <div class="calc-main">
+              <div class="card">
+                <div class="card-head">
+                  <div>
+                    <h3>Semesters</h3>
+                    <p class="section-desc" style="margin: 2px 0 0">
+                      Enter each semester's GPA and total credit units.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="card-body">
+                  <div id="cgpa-rows" class="calc-list"></div>
+                  <div
+                    id="cgpa-empty"
+                    class="calc-list-empty"
+                    style="display: none"
+                  >
+                    <i
+                      class="fa-solid fa-chart-line"
+                      style="
+                        font-size: 22px;
+                        display: block;
+                        margin-bottom: 8px;
+                        color: var(--text-tertiary);
+                      "
+                    ></i>
+                    No semesters yet. Click <strong>Add semester</strong> to
+                    begin.
+                  </div>
+                  <button
+                    class="btn btn-primary btn-sm"
+                    id="cgpa-add"
+                    type="button"
+                  >
+                    <i class="fa-solid fa-plus"></i> Add semester
+                  </button>
+                </div>
               </div>
             </div>
 
-            <aside>
-              <div class="gpa-result" id="cgpa-result">
-                <div>
-                  <div class="label">Your CGPA</div>
-                  <div class="value">0.00</div>
+            <aside class="calc-side">
+              <div class="calc-summary" id="cgpa-result">
+                <div class="calc-summary-label">Your CGPA</div>
+                <div class="calc-summary-value" id="cgpa-value">0.00</div>
+                <div class="calc-summary-class" id="cgpa-class">
+                  Add your semesters to calculate
                 </div>
-                <div class="class">—</div>
+                <div class="calc-summary-stats">
+                  <div>
+                    <div class="k">Total units</div>
+                    <div class="v" id="cgpa-total-units">0</div>
+                  </div>
+                  <div>
+                    <div class="k">Weighted points</div>
+                    <div class="v" id="cgpa-total-points">0</div>
+                  </div>
+                </div>
               </div>
-              <div class="card card-pad" style="margin-top: 16px">
-                <h4 style="font-size: var(--fs-sm); margin-bottom: 8px">
-                  Degree classification
-                </h4>
-                <ul
-                  style="
-                    font-size: var(--fs-xs);
-                    color: var(--text-secondary);
-                    display: grid;
-                    gap: 6px;
-                  "
-                >
-                  <li>4.50 – 5.00 · First Class</li>
-                  <li>3.50 – 4.49 · Second Class Upper</li>
-                  <li>2.40 – 3.49 · Second Class Lower</li>
-                  <li>1.50 – 2.39 · Third Class</li>
-                  <li>0.00 – 1.49 · Fail</li>
-                </ul>
+
+              <div class="calc-scale">
+                <h4>Degree classification</h4>
+                <div class="calc-scale-row">
+                  <span
+                    class="grade"
+                    style="
+                      background: var(--success-soft);
+                      color: var(--success);
+                    "
+                    >1st</span
+                  >
+                  <span class="pts">First Class</span>
+                  <span class="range">4.50 – 5.00</span>
+                </div>
+                <div class="calc-scale-row">
+                  <span class="grade">2:1</span>
+                  <span class="pts">Second Class Upper</span>
+                  <span class="range">3.50 – 4.49</span>
+                </div>
+                <div class="calc-scale-row">
+                  <span class="grade">2:2</span>
+                  <span class="pts">Second Class Lower</span>
+                  <span class="range">2.40 – 3.49</span>
+                </div>
+                <div class="calc-scale-row">
+                  <span class="grade">3rd</span>
+                  <span class="pts">Third Class</span>
+                  <span class="range">1.50 – 2.39</span>
+                </div>
+                <div class="calc-scale-row">
+                  <span
+                    class="grade"
+                    style="background: var(--danger-soft); color: var(--danger)"
+                    >F</span
+                  >
+                  <span class="pts">Fail</span>
+                  <span class="range">0.00 – 1.49</span>
+                </div>
               </div>
             </aside>
           </div>
         </main>
       </div>
     </div>
+
     <div id="mobile-nav-mount"></div>
     <div class="mobile-menu-backdrop"></div>
     <aside
@@ -131,16 +184,159 @@
     <script src="../../js/auth.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
-    <script src="../../js/academics.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
-        if (!session) {
-          window.location.href = "../auth/login.html";
-          return;
+      /* ==========================================================================
+   CGPA Calculator
+   ========================================================================== */
+      (function () {
+        "use strict";
+
+        if (window._cgpaInit) return;
+        window._cgpaInit = true;
+
+        function classify(cgpa) {
+          if (cgpa >= 4.5) return "First Class";
+          if (cgpa >= 3.5) return "Second Class Upper";
+          if (cgpa >= 2.4) return "Second Class Lower";
+          if (cgpa >= 1.5) return "Third Class";
+          return "Fail";
         }
-        initAppShell("student");
-      });
+
+        function boot() {
+          if (!Auth.current()) {
+            window.location.href = "../auth/login.html";
+            return;
+          }
+          initAppShell("student");
+
+          const rowsWrap = document.getElementById("cgpa-rows");
+          const emptyMsg = document.getElementById("cgpa-empty");
+          const addBtn = document.getElementById("cgpa-add");
+          const valueEl = document.getElementById("cgpa-value");
+          const classEl = document.getElementById("cgpa-class");
+          const unitsEl = document.getElementById("cgpa-total-units");
+          const pointsEl = document.getElementById("cgpa-total-points");
+
+          if (!rowsWrap || !addBtn) return;
+
+          function addRow(preset) {
+            preset = preset || {};
+            const row = document.createElement("div");
+            row.className = "calc-row";
+            const idx = rowsWrap.querySelectorAll(".calc-row").length + 1;
+
+            row.innerHTML =
+              '<div class="calc-row-head">' +
+              '<span class="calc-row-num">Semester ' +
+              idx +
+              "</span>" +
+              '<button type="button" class="calc-row-del" aria-label="Remove semester">' +
+              '<i class="fa-solid fa-trash"></i>' +
+              "</button>" +
+              "</div>" +
+              '<div class="calc-fields">' +
+              '<div class="calc-field">' +
+              "<label>Semester</label>" +
+              '<input class="input" type="text" placeholder="e.g. 100L First" value="' +
+              (preset.label || "") +
+              '" data-role="label">' +
+              "</div>" +
+              '<div class="calc-field">' +
+              "<label>GPA</label>" +
+              '<input class="input" type="number" min="0" max="5" step="0.01" placeholder="0.00" value="' +
+              (preset.gpa || "") +
+              '" data-role="gpa">' +
+              "</div>" +
+              '<div class="calc-field">' +
+              "<label>Units</label>" +
+              '<input class="input" type="number" min="0" step="1" placeholder="0" value="' +
+              (preset.units || "") +
+              '" data-role="units">' +
+              "</div>" +
+              "</div>";
+
+            row
+              .querySelector(".calc-row-del")
+              .addEventListener("click", function () {
+                row.remove();
+                renumber();
+                compute();
+                toggleEmpty();
+              });
+
+            row.querySelectorAll("input").forEach(function (el) {
+              el.addEventListener("input", compute);
+            });
+
+            rowsWrap.appendChild(row);
+            compute();
+            toggleEmpty();
+          }
+
+          function renumber() {
+            rowsWrap.querySelectorAll(".calc-row").forEach(function (r, i) {
+              const n = r.querySelector(".calc-row-num");
+              if (n) n.textContent = "Semester " + (i + 1);
+            });
+          }
+
+          function toggleEmpty() {
+            const count = rowsWrap.querySelectorAll(".calc-row").length;
+            if (emptyMsg)
+              emptyMsg.style.display = count === 0 ? "block" : "none";
+          }
+
+          function compute() {
+            let totalUnits = 0,
+              weighted = 0;
+            rowsWrap.querySelectorAll(".calc-row").forEach(function (r) {
+              const gpa = parseFloat(
+                r.querySelector('[data-role="gpa"]').value,
+              );
+              const units = parseFloat(
+                r.querySelector('[data-role="units"]').value,
+              );
+              if (!isNaN(gpa) && !isNaN(units) && units > 0) {
+                totalUnits += units;
+                weighted += gpa * units;
+              }
+            });
+
+            if (unitsEl) unitsEl.textContent = totalUnits;
+            if (pointsEl) pointsEl.textContent = weighted.toFixed(1);
+
+            if (valueEl && classEl) {
+              if (totalUnits === 0) {
+                valueEl.textContent = "0.00";
+                classEl.textContent = "Add your semesters to calculate";
+              } else {
+                const cgpa = weighted / totalUnits;
+                valueEl.textContent = cgpa.toFixed(2);
+                classEl.textContent = classify(cgpa);
+              }
+            }
+          }
+
+          (function bindAdd() {
+            const fresh = addBtn.cloneNode(true);
+            addBtn.parentNode.replaceChild(fresh, addBtn);
+            fresh.addEventListener("click", function (e) {
+              e.preventDefault();
+              addRow();
+            });
+          })();
+
+          addRow({ label: "100L First", gpa: 4.2, units: 18 });
+          addRow({ label: "100L Second", gpa: 4.5, units: 20 });
+          addRow({ label: "200L First", gpa: 4.1, units: 22 });
+        }
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", boot);
+        } else {
+          boot();
+        }
+      })();
     </script>
   </body>
 </html>

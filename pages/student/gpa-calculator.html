@@ -45,6 +45,7 @@
   </head>
   <body class="has-session">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
       <aside
         class="sidebar"
@@ -58,66 +59,114 @@
             <div class="page-head-text">
               <h1 class="page-title">GPA Calculator</h1>
               <p class="page-subtitle">
-                Calculate your semester GPA from course units and grades.
+                Calculate your semester GPA from your courses, credit units and
+                grades.
               </p>
             </div>
           </div>
 
-          <div
-            class="grid"
-            style="
-              grid-template-columns: minmax(0, 1fr) 340px;
-              gap: 24px;
-              align-items: start;
-            "
-          >
-            <div class="card">
-              <div class="card-head">
-                <h3>Courses</h3>
-                <button class="btn btn-secondary btn-sm" id="gpa-add">
-                  <i class="fa-solid fa-plus"></i> Add course
-                </button>
-              </div>
-              <div class="card-body">
-                <form id="gpa-form" novalidate>
-                  <div id="gpa-rows"></div>
-                </form>
+          <div class="calc-layout">
+            <!-- Main: course list -->
+            <div class="calc-main">
+              <div class="card">
+                <div class="card-head">
+                  <div>
+                    <h3>Courses</h3>
+                    <p class="section-desc" style="margin: 2px 0 0">
+                      Add each course, its credit units and the grade you
+                      received.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="card-body">
+                  <div id="gpa-rows" class="calc-list"></div>
+                  <div
+                    id="gpa-empty"
+                    class="calc-list-empty"
+                    style="display: none"
+                  >
+                    <i
+                      class="fa-solid fa-book"
+                      style="
+                        font-size: 22px;
+                        display: block;
+                        margin-bottom: 8px;
+                        color: var(--text-tertiary);
+                      "
+                    ></i>
+                    No courses yet. Click <strong>Add course</strong> to begin.
+                  </div>
+                  <button
+                    class="btn btn-primary btn-sm"
+                    id="gpa-add"
+                    type="button"
+                  >
+                    <i class="fa-solid fa-plus"></i> Add course
+                  </button>
+                </div>
               </div>
             </div>
 
-            <aside>
-              <div class="gpa-result" id="gpa-result">
-                <div>
-                  <div class="label">Your GPA</div>
-                  <div class="value">0.00</div>
+            <!-- Sidebar: summary + scale -->
+            <aside class="calc-side">
+              <div class="calc-summary" id="gpa-result">
+                <div class="calc-summary-label">Your GPA</div>
+                <div class="calc-summary-value" id="gpa-value">0.00</div>
+                <div class="calc-summary-class" id="gpa-class">
+                  Add your courses to calculate
                 </div>
-                <div class="class">—</div>
+                <div class="calc-summary-stats">
+                  <div>
+                    <div class="k">Total units</div>
+                    <div class="v" id="gpa-total-units">0</div>
+                  </div>
+                  <div>
+                    <div class="k">Total points</div>
+                    <div class="v" id="gpa-total-points">0</div>
+                  </div>
+                </div>
               </div>
-              <div class="card card-pad" style="margin-top: 16px">
-                <h4 style="font-size: var(--fs-sm); margin-bottom: 8px">
-                  Grade scale
-                </h4>
-                <ul
-                  style="
-                    font-size: var(--fs-xs);
-                    color: var(--text-secondary);
-                    display: grid;
-                    gap: 6px;
-                  "
-                >
-                  <li>A — 5 points · 70–100</li>
-                  <li>B — 4 points · 60–69</li>
-                  <li>C — 3 points · 50–59</li>
-                  <li>D — 2 points · 45–49</li>
-                  <li>E — 1 point · 40–44</li>
-                  <li>F — 0 points · 0–39</li>
-                </ul>
+
+              <div class="calc-scale">
+                <h4>Grade scale (5-point)</h4>
+                <div class="calc-scale-row">
+                  <span class="grade">A</span>
+                  <span class="pts">5 points</span>
+                  <span class="range">70 – 100</span>
+                </div>
+                <div class="calc-scale-row">
+                  <span class="grade">B</span>
+                  <span class="pts">4 points</span>
+                  <span class="range">60 – 69</span>
+                </div>
+                <div class="calc-scale-row">
+                  <span class="grade">C</span>
+                  <span class="pts">3 points</span>
+                  <span class="range">50 – 59</span>
+                </div>
+                <div class="calc-scale-row">
+                  <span class="grade">D</span>
+                  <span class="pts">2 points</span>
+                  <span class="range">45 – 49</span>
+                </div>
+                <div class="calc-scale-row">
+                  <span class="grade">E</span>
+                  <span class="pts">1 point</span>
+                  <span class="range">40 – 44</span>
+                </div>
+                <div class="calc-scale-row">
+                  <span class="grade">F</span>
+                  <span class="pts">0 points</span>
+                  <span class="range">0 – 39</span>
+                </div>
               </div>
             </aside>
           </div>
         </main>
       </div>
     </div>
+
     <div id="mobile-nav-mount"></div>
     <div class="mobile-menu-backdrop"></div>
     <aside
@@ -132,16 +181,175 @@
     <script src="../../js/auth.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
-    <script src="../../js/academics.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
-        if (!session) {
-          window.location.href = "../auth/login.html";
-          return;
+      /* ==========================================================================
+   GPA Calculator
+   ========================================================================== */
+      (function () {
+        "use strict";
+
+        if (window._gpaInit) return;
+        window._gpaInit = true;
+
+        const GRADE_POINTS = { A: 5, B: 4, C: 3, D: 2, E: 1, F: 0 };
+
+        function classify(gpa) {
+          if (gpa >= 4.5) return "First Class";
+          if (gpa >= 3.5) return "Second Class Upper";
+          if (gpa >= 2.4) return "Second Class Lower";
+          if (gpa >= 1.5) return "Third Class";
+          return "Fail";
         }
-        initAppShell("student");
-      });
+
+        function boot() {
+          if (!Auth.current()) {
+            window.location.href = "../auth/login.html";
+            return;
+          }
+          initAppShell("student");
+
+          const rowsWrap = document.getElementById("gpa-rows");
+          const emptyMsg = document.getElementById("gpa-empty");
+          const addBtn = document.getElementById("gpa-add");
+          const valueEl = document.getElementById("gpa-value");
+          const classEl = document.getElementById("gpa-class");
+          const unitsEl = document.getElementById("gpa-total-units");
+          const pointsEl = document.getElementById("gpa-total-points");
+
+          if (!rowsWrap || !addBtn) return;
+
+          function addRow(preset) {
+            preset = preset || {};
+            const row = document.createElement("div");
+            row.className = "calc-row";
+            const idx = rowsWrap.querySelectorAll(".calc-row").length + 1;
+
+            row.innerHTML =
+              '<div class="calc-row-head">' +
+              '<span class="calc-row-num">Course ' +
+              idx +
+              "</span>" +
+              '<button type="button" class="calc-row-del" aria-label="Remove course">' +
+              '<i class="fa-solid fa-trash"></i>' +
+              "</button>" +
+              "</div>" +
+              '<div class="calc-fields">' +
+              '<div class="calc-field">' +
+              "<label>Course code</label>" +
+              '<input class="input" type="text" placeholder="e.g. CSC 401" value="' +
+              (preset.code || "") +
+              '" data-role="code">' +
+              "</div>" +
+              '<div class="calc-field">' +
+              "<label>Units</label>" +
+              '<input class="input" type="number" min="0" max="6" step="1" placeholder="0" value="' +
+              (preset.units || "") +
+              '" data-role="units">' +
+              "</div>" +
+              '<div class="calc-field">' +
+              "<label>Grade</label>" +
+              '<select class="select" data-role="grade">' +
+              '<option value="">—</option>' +
+              ["A", "B", "C", "D", "E", "F"]
+                .map(function (g) {
+                  return (
+                    '<option value="' +
+                    g +
+                    '"' +
+                    (preset.grade === g ? " selected" : "") +
+                    ">" +
+                    g +
+                    "</option>"
+                  );
+                })
+                .join("") +
+              "</select>" +
+              "</div>" +
+              "</div>";
+
+            row
+              .querySelector(".calc-row-del")
+              .addEventListener("click", function () {
+                row.remove();
+                renumber();
+                compute();
+                toggleEmpty();
+              });
+
+            row.querySelectorAll("input, select").forEach(function (el) {
+              el.addEventListener("input", compute);
+              el.addEventListener("change", compute);
+            });
+
+            rowsWrap.appendChild(row);
+            compute();
+            toggleEmpty();
+          }
+
+          function renumber() {
+            rowsWrap.querySelectorAll(".calc-row").forEach(function (r, i) {
+              const n = r.querySelector(".calc-row-num");
+              if (n) n.textContent = "Course " + (i + 1);
+            });
+          }
+
+          function toggleEmpty() {
+            const count = rowsWrap.querySelectorAll(".calc-row").length;
+            if (emptyMsg)
+              emptyMsg.style.display = count === 0 ? "block" : "none";
+          }
+
+          function compute() {
+            let units = 0,
+              points = 0;
+            rowsWrap.querySelectorAll(".calc-row").forEach(function (r) {
+              const u = parseFloat(
+                r.querySelector('[data-role="units"]').value,
+              );
+              const g = r.querySelector('[data-role="grade"]').value;
+              if (!isNaN(u) && g) {
+                units += u;
+                points += u * GRADE_POINTS[g];
+              }
+            });
+
+            if (unitsEl) unitsEl.textContent = units;
+            if (pointsEl) pointsEl.textContent = points;
+
+            if (valueEl && classEl) {
+              if (units === 0) {
+                valueEl.textContent = "0.00";
+                classEl.textContent = "Add your courses to calculate";
+              } else {
+                const gpa = points / units;
+                valueEl.textContent = gpa.toFixed(2);
+                classEl.textContent = classify(gpa);
+              }
+            }
+          }
+
+          // Bind add button — replace with fresh clone to guarantee one listener
+          (function bindAdd() {
+            const fresh = addBtn.cloneNode(true);
+            addBtn.parentNode.replaceChild(fresh, addBtn);
+            fresh.addEventListener("click", function (e) {
+              e.preventDefault();
+              addRow();
+            });
+          })();
+
+          // Seed with demo courses
+          addRow({ code: "CSC 401", units: 3, grade: "A" });
+          addRow({ code: "CSC 403", units: 3, grade: "B" });
+          addRow({ code: "CSC 405", units: 2, grade: "A" });
+        }
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", boot);
+        } else {
+          boot();
+        }
+      })();
     </script>
   </body>
 </html>

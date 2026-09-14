@@ -1899,40 +1899,316 @@ p {
   gap: 4px;
 }
 
-/* GPA calculator */
-.gpa-row {
+/* ==========================================================================
+   GPA / CGPA CALCULATORS
+   ========================================================================== */
+
+.calc-layout {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr auto;
-  gap: var(--sp-3);
-  align-items: center;
-  margin-bottom: var(--sp-3);
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: start;
 }
-.gpa-result {
+.calc-main {
+  min-width: 0;
+}
+.calc-side {
+  display: grid;
+  gap: 16px;
+  position: sticky;
+  top: calc(var(--header-h) + 16px);
+}
+
+/* Course list */
+.calc-list {
   display: flex;
-  align-items: baseline;
-  gap: var(--sp-3);
-  padding: var(--sp-6);
-  background: var(--brand-secondary-soft);
-  border-radius: var(--radius-lg);
-  border: 1px solid rgba(0, 59, 92, 0.12);
+  flex-direction: column;
+  gap: 12px;
 }
-.gpa-result .value {
-  font-family: var(--font-heading);
-  font-size: var(--fs-4xl);
-  font-weight: 800;
-  color: var(--brand-secondary);
-  line-height: 1;
+
+/* One course row = a self-contained card */
+.calc-row {
+  padding: 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  transition: border-color 120ms cubic-bezier(0.22, 0.61, 0.36, 1);
 }
-.gpa-result .label {
-  font-size: var(--fs-sm);
-  color: var(--text-secondary);
-  font-weight: 500;
+.calc-row:hover {
+  border-color: var(--border-default);
 }
-.gpa-result .class {
-  margin-left: auto;
-  font-size: var(--fs-lg);
+
+.calc-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.calc-row-num {
+  font-size: 11px;
   font-weight: 700;
-  color: var(--brand-secondary);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.calc-row-del {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+.calc-row-del:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+/* Three fields side by side with clear gaps */
+.calc-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 16px;
+  row-gap: 12px;
+}
+
+.calc-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.calc-field label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.calc-field .input,
+.calc-field .select {
+  width: 100%;
+  height: 44px;
+  font-size: 15px;
+  padding: 10px 14px;
+}
+
+/* Empty state */
+.calc-list-empty {
+  padding: 32px 20px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 14px;
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-subtle);
+}
+
+/* Live summary card */
+.calc-summary {
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--brand-secondary) 0%, #001f31 100%);
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+.calc-summary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 82% 18%,
+    rgba(179, 58, 58, 0.4),
+    transparent 55%
+  );
+  pointer-events: none;
+}
+.calc-summary > * {
+  position: relative;
+  z-index: 1;
+}
+
+.calc-summary-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+  margin-bottom: 6px;
+}
+.calc-summary-value {
+  font-family: var(--font-heading);
+  font-size: 52px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.calc-summary-class {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+  margin-bottom: 20px;
+}
+.calc-summary-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+.calc-summary-stats .k {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 4px;
+}
+.calc-summary-stats .v {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* Grade scale / classification reference */
+.calc-scale {
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+}
+.calc-scale h4 {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.calc-scale-row {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 12px;
+}
+.calc-scale-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.calc-scale-row .grade {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--brand-primary-soft);
+  color: var(--brand-primary);
+  font-weight: 700;
+  font-size: 10.5px;
+}
+.calc-scale-row .pts {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 12px;
+}
+.calc-scale-row .range {
+  color: var(--text-tertiary);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   Calculator responsive
+   ========================================================================== */
+
+@media (max-width: 1024px) {
+  .calc-layout {
+    grid-template-columns: minmax(0, 1fr) 280px;
+  }
+  .calc-summary-value {
+    font-size: 46px;
+  }
+}
+
+@media (max-width: 860px) {
+  .calc-layout {
+    grid-template-columns: 1fr;
+  }
+  .calc-side {
+    position: static;
+    grid-template-columns: 1fr 1fr;
+  }
+  .calc-summary-value {
+    font-size: 54px;
+  }
+}
+
+@media (max-width: 640px) {
+  .calc-side {
+    grid-template-columns: 1fr;
+  }
+  .calc-fields {
+    grid-template-columns: minmax(0, 1.6fr) 90px 90px;
+    column-gap: 10px;
+    row-gap: 10px;
+  }
+  .calc-row {
+    padding: 14px;
+  }
+  .calc-row-head {
+    margin-bottom: 12px;
+  }
+  .calc-field .input,
+  .calc-field .select {
+    height: 42px;
+    padding: 9px 12px;
+    font-size: 13px;
+  }
+  .calc-summary {
+    padding: 20px;
+  }
+  .calc-summary-value {
+    font-size: 44px;
+  }
+}
+
+@media (max-width: 420px) {
+  .calc-fields {
+    grid-template-columns: 1fr;
+    column-gap: 0;
+    row-gap: 12px;
+  }
+  .calc-field .input,
+  .calc-field .select {
+    height: 44px;
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+  .calc-summary-value {
+    font-size: 40px;
+  }
+  .calc-summary-stats {
+    gap: 10px;
+  }
+  .calc-summary-stats .v {
+    font-size: 16px;
+  }
 }
 
 /* Timetable */
