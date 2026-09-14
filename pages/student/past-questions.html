@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Past Questions — Campus Space</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="../../assets/favicon/favicon.ico"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../../assets/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="../../assets/favicon/favicon-16x16.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="../../assets/favicon/apple-touch-icon.png"
+    />
+    <link rel="manifest" href="../../assets/favicon/site.webmanifest" />
+    <meta name="theme-color" content="#B33A3A" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="../../css/style.css" />
+  </head>
+  <body class="has-session">
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <div class="app-shell">
+      <aside
+        class="sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
+      <div class="app-main">
+        <header class="app-header" id="app-header"></header>
+        <main class="app-content" id="main">
+          <div class="page-head">
+            <div class="page-head-text">
+              <h1 class="page-title">Past Questions</h1>
+              <p class="page-subtitle">
+                Practice with past examination papers by course and session.
+              </p>
+            </div>
+          </div>
+          <div class="card">
+            <div id="pq-list"></div>
+          </div>
+        </main>
+      </div>
+    </div>
+    <div id="mobile-nav-mount"></div>
+    <div class="mobile-menu-backdrop"></div>
+    <aside
+      class="mobile-menu"
+      id="mobile-menu-mount"
+      aria-label="Mobile menu"
+    ></aside>
+
+    <script src="../../data/students.js"></script>
+    <script src="../../data/courses.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/navigation.js"></script>
+    <script src="../../js/notifications.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const session = Auth.current();
+        if (!session) {
+          window.location.href = "../auth/login.html";
+          return;
+        }
+        initAppShell("student");
+
+        // Build PQ list from course materials + resources
+        const pqs = [];
+        DEMO_COURSES.forEach((c) => {
+          c.materials.forEach((m) => {
+            if (
+              m.name.toLowerCase().includes("past question") ||
+              m.name.toLowerCase().includes("past questions")
+            ) {
+              pqs.push({
+                name: m.name,
+                course: c.code,
+                size: m.size,
+                uploaded: m.uploaded,
+                type: "pdf",
+              });
+            }
+          });
+        });
+        DEMO_RESOURCES.filter((r) => r.category === "Past Questions").forEach(
+          (r) => {
+            pqs.push({
+              name: r.name,
+              course: r.course,
+              size: r.size,
+              uploaded: r.uploaded,
+              type: r.type,
+            });
+          },
+        );
+
+        const listEl = document.getElementById("pq-list");
+        if (!pqs.length) {
+          listEl.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon"><i class="fa-solid fa-file-pdf"></i></div>
+        <h3>No past questions yet</h3>
+        <p>Past questions uploaded by Admin will appear here.</p>
+      </div>`;
+          return;
+        }
+        pqs.forEach((p) => {
+          const el = document.createElement("div");
+          el.className = "resource-row";
+          el.innerHTML = `
+      <div class="resource-icon pdf"><i class="fa-solid fa-file-pdf"></i></div>
+      <div class="resource-info">
+        <div class="resource-name">${Util.escape(p.name)}</div>
+        <div class="resource-meta">
+          <span><i class="fa-solid fa-book"></i> ${Util.escape(p.course || "General")}</span>
+          <span>${Util.escape(p.size)}</span>
+          <span><i class="fa-regular fa-clock"></i> ${Util.relativeTime(p.uploaded)}</span>
+        </div>
+      </div>
+      <button class="btn btn-secondary btn-sm" data-dl>
+        <i class="fa-solid fa-download"></i> Download
+      </button>`;
+          el.querySelector("[data-dl]").addEventListener("click", () => {
+            Toast.success(
+              'Downloading "' + p.name + '" (simulated).',
+              "Download started",
+            );
+          });
+          listEl.appendChild(el);
+        });
+      });
+    </script>
+  </body>
+</html>

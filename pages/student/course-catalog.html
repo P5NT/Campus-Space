@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Course Catalog — Campus Space</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="../../assets/favicon/favicon.ico"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../../assets/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="../../assets/favicon/favicon-16x16.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="../../assets/favicon/apple-touch-icon.png"
+    />
+    <link rel="manifest" href="../../assets/favicon/site.webmanifest" />
+    <meta name="theme-color" content="#B33A3A" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="../../css/style.css" />
+  </head>
+  <body class="has-session">
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <div class="app-shell">
+      <aside
+        class="sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
+      <div class="app-main">
+        <header class="app-header" id="app-header"></header>
+        <main class="app-content" id="main">
+          <div class="page-head">
+            <div class="page-head-text">
+              <h1 class="page-title">Course Catalog</h1>
+              <p class="page-subtitle">
+                Browse courses by department, level and semester.
+              </p>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <div class="input-wrap">
+              <i class="fa-solid fa-magnifying-glass input-icon"></i>
+              <input
+                class="input"
+                type="search"
+                id="course-search"
+                placeholder="Search by course code or title…"
+                aria-label="Search courses"
+              />
+            </div>
+            <select
+              class="select"
+              id="filter-level"
+              aria-label="Filter by level"
+            >
+              <option value="">All levels</option>
+              <option value="100">100 Level</option>
+              <option value="200">200 Level</option>
+              <option value="300">300 Level</option>
+              <option value="400">400 Level</option>
+              <option value="500">500 Level</option>
+            </select>
+            <select
+              class="select"
+              id="filter-dept"
+              aria-label="Filter by department"
+            >
+              <option value="">All departments</option>
+            </select>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <h3 id="result-count">Showing all courses</h3>
+            </div>
+            <div id="course-list"></div>
+          </div>
+        </main>
+      </div>
+    </div>
+    <div id="mobile-nav-mount"></div>
+    <div class="mobile-menu-backdrop"></div>
+    <aside
+      class="mobile-menu"
+      id="mobile-menu-mount"
+      aria-label="Mobile menu"
+    ></aside>
+
+    <script src="../../data/students.js"></script>
+    <script src="../../data/faculties.js"></script>
+    <script src="../../data/courses.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/navigation.js"></script>
+    <script src="../../js/notifications.js"></script>
+    <script src="../../js/academics.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const session = Auth.current();
+        if (!session) {
+          window.location.href = "../auth/login.html";
+          return;
+        }
+        initAppShell("student");
+
+        const listEl = document.getElementById("course-list");
+        const countEl = document.getElementById("result-count");
+        const searchEl = document.getElementById("course-search");
+        const levelEl = document.getElementById("filter-level");
+        const deptEl = document.getElementById("filter-dept");
+
+        // Populate department options
+        const allDepts = new Set();
+        DEMO_COURSES.forEach((c) => allDepts.add(c.department));
+        Array.from(allDepts)
+          .sort()
+          .forEach((d) => {
+            const opt = document.createElement("option");
+            opt.value = d;
+            opt.textContent = d;
+            deptEl.appendChild(opt);
+          });
+
+        function apply() {
+          const s = searchEl.value.trim();
+          const lvl = levelEl.value;
+          const dept = deptEl.value;
+          const params = { search: s, level: lvl, department: dept };
+          renderCourseCatalog(listEl, params);
+          const count = listEl.querySelectorAll(".course-item").length;
+          countEl.textContent =
+            count === 0
+              ? "No courses found"
+              : `${count} course${count === 1 ? "" : "s"}`;
+        }
+
+        searchEl.addEventListener("input", apply);
+        levelEl.addEventListener("change", apply);
+        deptEl.addEventListener("change", apply);
+        apply();
+      });
+    </script>
+  </body>
+</html>

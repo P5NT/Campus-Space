@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Complaints — Campus Space</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="../../assets/favicon/favicon.ico"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../../assets/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="../../assets/favicon/favicon-16x16.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="../../assets/favicon/apple-touch-icon.png"
+    />
+    <link rel="manifest" href="../../assets/favicon/site.webmanifest" />
+    <meta name="theme-color" content="#B33A3A" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="../../css/style.css" />
+  </head>
+  <body class="has-session">
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <div class="app-shell">
+      <aside
+        class="sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
+      <div class="app-main">
+        <header class="app-header" id="app-header"></header>
+        <main class="app-content" id="main">
+          <div class="page-head">
+            <div class="page-head-text">
+              <h1 class="page-title">Complaints</h1>
+              <p class="page-subtitle">
+                Submit issues and track their resolution. Handled privately by
+                Admin.
+              </p>
+            </div>
+            <button
+              class="btn btn-primary"
+              data-modal-open="new-complaint-modal"
+            >
+              <i class="fa-solid fa-plus"></i> New complaint
+            </button>
+          </div>
+
+          <div class="filter-bar">
+            <button class="chip is-active" data-status="all">All</button>
+            <button class="chip" data-status="Submitted">Submitted</button>
+            <button class="chip" data-status="Under Review">
+              Under Review
+            </button>
+            <button class="chip" data-status="In Progress">In Progress</button>
+            <button class="chip" data-status="Resolved">Resolved</button>
+          </div>
+
+          <div class="card">
+            <div id="complaints-list"></div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <!-- New complaint modal -->
+    <div
+      class="modal-backdrop"
+      id="new-complaint-modal"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="modal modal-lg">
+        <div class="modal-head">
+          <h3>New complaint</h3>
+          <button class="btn-icon" data-modal-close aria-label="Close">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <form id="new-complaint-form" novalidate>
+          <div class="modal-body">
+            <div class="field">
+              <label class="label" for="nc-cat"
+                >Category <span class="req">*</span></label
+              >
+              <select class="select" id="nc-cat" name="category">
+                <option value="">Select a category</option>
+                <option>Facilities</option>
+                <option>Academic</option>
+                <option>Welfare</option>
+                <option>Hostel</option>
+                <option>Security</option>
+                <option>Finance</option>
+                <option>Other</option>
+              </select>
+              <div class="field-error">
+                <i class="fa-solid fa-circle-exclamation"></i
+                ><span>Please select a category.</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label" for="nc-subject"
+                >Subject <span class="req">*</span></label
+              >
+              <input
+                class="input"
+                type="text"
+                id="nc-subject"
+                name="subject"
+                placeholder="Briefly describe the issue"
+              />
+              <div class="field-error">
+                <i class="fa-solid fa-circle-exclamation"></i
+                ><span>Please provide a subject.</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label" for="nc-desc"
+                >Description <span class="req">*</span></label
+              >
+              <textarea
+                class="textarea"
+                id="nc-desc"
+                name="description"
+                placeholder="Explain the issue in detail. Include location, time and any relevant context."
+              ></textarea>
+              <div class="field-error">
+                <i class="fa-solid fa-circle-exclamation"></i
+                ><span>Please describe the issue.</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label" for="nc-file"
+                >Attachment <span class="label-hint">Optional</span></label
+              >
+              <input class="input" type="file" id="nc-file" name="attachment" />
+            </div>
+          </div>
+          <div class="modal-foot">
+            <button type="button" class="btn btn-secondary" data-modal-close>
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">
+              Submit complaint
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="mobile-nav-mount"></div>
+    <div class="mobile-menu-backdrop"></div>
+    <aside
+      class="mobile-menu"
+      id="mobile-menu-mount"
+      aria-label="Mobile menu"
+    ></aside>
+
+    <script src="../../data/students.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/navigation.js"></script>
+    <script src="../../js/notifications.js"></script>
+    <script src="../../js/complaints.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const session = Auth.current();
+        if (!session) {
+          window.location.href = "../auth/login.html";
+          return;
+        }
+        initAppShell("student");
+
+        const listEl = document.getElementById("complaints-list");
+        let filter = "all";
+
+        const ICONS = {
+          Facilities: "fa-building",
+          Academic: "fa-graduation-cap",
+          Welfare: "fa-heart",
+          Hostel: "fa-house",
+          Security: "fa-shield-halved",
+          Finance: "fa-coins",
+          Other: "fa-circle-info",
+        };
+
+        function render() {
+          listEl.innerHTML = "";
+          let list = Complaints.all();
+          if (filter !== "all") list = list.filter((c) => c.status === filter);
+          if (!list.length) {
+            listEl.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon"><i class="fa-solid fa-file-shield"></i></div>
+          <h3>No complaints ${filter === "all" ? "yet" : "in this status"}</h3>
+          <p>When you submit a complaint, it will appear here and you can track its progress.</p>
+        </div>`;
+            return;
+          }
+          list.forEach((c) => {
+            const row = document.createElement("a");
+            row.href = "complaint-details.html?id=" + c.id;
+            row.className = "complaint-row";
+            row.innerHTML = `
+        <span class="complaint-icon"><i class="fa-solid ${ICONS[c.category] || "fa-circle-info"}"></i></span>
+        <div class="complaint-info">
+          <h4>${Util.escape(c.subject)}</h4>
+          <div class="meta">
+            <span>${Util.escape(c.category)}</span>
+            <span>${Util.escape(c.id)}</span>
+            <span>${Util.relativeTime(c.updated)}</span>
+          </div>
+        </div>
+        ${complaintStatusPill(c.status)}`;
+            listEl.appendChild(row);
+          });
+        }
+
+        document.querySelectorAll("[data-status]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            document
+              .querySelectorAll("[data-status]")
+              .forEach((b) => b.classList.remove("is-active"));
+            btn.classList.add("is-active");
+            filter = btn.getAttribute("data-status");
+            render();
+          });
+        });
+
+        // New complaint form
+        const form = document.getElementById("new-complaint-form");
+        bindForm(
+          form,
+          {
+            category: [Rules.required],
+            subject: [Rules.required, Rules.minLen(4)],
+            description: [Rules.required, Rules.minLen(20)],
+          },
+          (data) => {
+            const c = Complaints.add({
+              category: data.get("category"),
+              subject: data.get("subject"),
+              description: data.get("description"),
+            });
+            Modal.close("new-complaint-modal");
+            form.reset();
+            render();
+            Toast.success(
+              "Your complaint has been submitted. Admin has been notified.",
+              "Complaint submitted",
+            );
+            setTimeout(() => {
+              window.location.href = "complaint-details.html?id=" + c.id;
+            }, 900);
+          },
+        );
+
+        render();
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Help & Support — Campus Space</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="../../assets/favicon/favicon.ico"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../../assets/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="../../assets/favicon/favicon-16x16.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="../../assets/favicon/apple-touch-icon.png"
+    />
+    <link rel="manifest" href="../../assets/favicon/site.webmanifest" />
+    <meta name="theme-color" content="#B33A3A" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="../../css/style.css" />
+  </head>
+  <body class="has-session">
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <div class="app-shell">
+      <aside
+        class="sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
+      <div class="app-main">
+        <header class="app-header" id="app-header"></header>
+        <main class="app-content" id="main">
+          <div class="page-head">
+            <div class="page-head-text">
+              <h1 class="page-title">Help &amp; Support</h1>
+              <p class="page-subtitle">
+                Get answers, or reach the right people.
+              </p>
+            </div>
+          </div>
+
+          <div class="grid grid-3" style="margin-bottom: 32px">
+            <a href="complaints.html" class="card card-interactive card-pad">
+              <span class="qa-icon"
+                ><i class="fa-solid fa-file-shield"></i
+              ></span>
+              <h3 style="font-size: var(--fs-md); margin: 16px 0 6px">
+                Submit a complaint
+              </h3>
+              <p style="font-size: var(--fs-sm); color: var(--text-secondary)">
+                Report an issue about facilities, academics, welfare or
+                administration.
+              </p>
+            </a>
+            <a
+              href="student-leaders.html"
+              class="card card-interactive card-pad"
+            >
+              <span class="qa-icon marine"
+                ><i class="fa-solid fa-user-tie"></i
+              ></span>
+              <h3 style="font-size: var(--fs-md); margin: 16px 0 6px">
+                Contact a leader
+              </h3>
+              <p style="font-size: var(--fs-sm); color: var(--text-secondary)">
+                Reach a verified student leader in your association or faculty.
+              </p>
+            </a>
+            <a
+              href="immediate-response.html"
+              class="card card-interactive card-pad"
+              style="border-color: rgba(192, 57, 43, 0.25)"
+            >
+              <span
+                class="qa-icon"
+                style="background: var(--danger-soft); color: var(--danger)"
+                ><i class="fa-solid fa-circle-exclamation"></i
+              ></span>
+              <h3 style="font-size: var(--fs-md); margin: 16px 0 6px">
+                Emergency help
+              </h3>
+              <p style="font-size: var(--fs-sm); color: var(--text-secondary)">
+                For situations requiring immediate response, open Immediate
+                Response.
+              </p>
+            </a>
+          </div>
+
+          <h2 class="section-title">Frequently asked questions</h2>
+          <p class="section-desc">Common questions about using Campus Space.</p>
+
+          <div class="card" id="faq-list"></div>
+        </main>
+      </div>
+    </div>
+    <div id="mobile-nav-mount"></div>
+    <div class="mobile-menu-backdrop"></div>
+    <aside
+      class="mobile-menu"
+      id="mobile-menu-mount"
+      aria-label="Mobile menu"
+    ></aside>
+
+    <script src="../../data/students.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/navigation.js"></script>
+    <script src="../../js/notifications.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const session = Auth.current();
+        if (!session) {
+          window.location.href = "../auth/login.html";
+          return;
+        }
+        initAppShell("student");
+
+        const faqs = [
+          {
+            q: "How do I reset my password?",
+            a: 'From the login page, tap "Forgot password". You will receive a reset link by email (simulated in this demo). You can also change your password any time from Settings → Security.',
+          },
+          {
+            q: "Why is my matric number hidden on my profile?",
+            a: "By default, matric numbers are private and visible only to you and Admin. You can change this from Settings → Privacy.",
+          },
+          {
+            q: "How do I contact my course representative?",
+            a: "Open Academics → Course Representatives. Each representative is listed with the courses they cover and a contact button.",
+          },
+          {
+            q: "What is the difference between Deactivated and Suspended?",
+            a: "Deactivated means you chose to hide your account. It remains visible to Admin. Suspended means an Admin has restricted your account, typically after a moderation issue.",
+          },
+          {
+            q: "Where do I get event tickets?",
+            a: 'Campus Space is where you discover events. Tickets themselves are handled on our partner platform, PassSpot. Every event card has a "Get tickets" link.',
+          },
+          {
+            q: "How do I sell something on the marketplace?",
+            a: 'Marketplace activity happens on our partner platform, Campus Plug. Open Marketplace from the sidebar and tap "Open Campus Plug".',
+          },
+          {
+            q: "Why did my session end?",
+            a: "For your security, Campus Space signs you out after 30 minutes of inactivity. Any activity — a click, scroll or keystroke — resets this timer.",
+          },
+          {
+            q: "How do I report a post?",
+            a: 'On any community post, tap the three-dot menu and choose "Report post". Select a reason. Admin will review it.',
+          },
+        ];
+
+        const wrap = document.getElementById("faq-list");
+        faqs.forEach((f, i) => {
+          const el = document.createElement("div");
+          el.style.borderBottom =
+            i === faqs.length - 1 ? "none" : "1px solid var(--border-subtle)";
+          el.innerHTML = `
+      <button class="cluster-between" style="width:100%; padding:20px; text-align:left; cursor:pointer;" aria-expanded="false">
+        <span style="font-weight:600; font-size:var(--fs-sm); padding-right:16px;">${Util.escape(f.q)}</span>
+        <i class="fa-solid fa-chevron-down" style="color:var(--text-tertiary); transition:transform .2s;"></i>
+      </button>
+      <div class="answer" style="display:none; padding:0 20px 20px; font-size:var(--fs-sm); color:var(--text-secondary); line-height:1.6;">
+        ${Util.escape(f.a)}
+      </div>`;
+          const btn = el.querySelector("button");
+          const ans = el.querySelector(".answer");
+          const chev = el.querySelector("i");
+          btn.addEventListener("click", () => {
+            const open = ans.style.display === "block";
+            ans.style.display = open ? "none" : "block";
+            chev.style.transform = open ? "rotate(0)" : "rotate(180deg)";
+            btn.setAttribute("aria-expanded", String(!open));
+          });
+          wrap.appendChild(el);
+        });
+      });
+    </script>
+  </body>
+</html>

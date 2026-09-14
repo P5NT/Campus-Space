@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Search — Campus Space</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="../../assets/favicon/favicon.ico"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../../assets/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="../../assets/favicon/favicon-16x16.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="../../assets/favicon/apple-touch-icon.png"
+    />
+    <link rel="manifest" href="../../assets/favicon/site.webmanifest" />
+    <meta name="theme-color" content="#B33A3A" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="../../css/style.css" />
+  </head>
+  <body class="has-session">
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <div class="app-shell">
+      <aside
+        class="sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
+      <div class="app-main">
+        <header class="app-header" id="app-header"></header>
+        <main class="app-content" id="main">
+          <div class="search-hero">
+            <form id="search-form" role="search">
+              <div class="search-big">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input
+                  class="input"
+                  type="search"
+                  id="search-input"
+                  placeholder="Search Campus Space…"
+                  aria-label="Search"
+                  autocomplete="off"
+                  autofocus
+                />
+              </div>
+            </form>
+            <div class="cluster" style="margin-top: 12px">
+              <span
+                class="text-xs text-muted font-semibold"
+                style="text-transform: uppercase; letter-spacing: 0.05em"
+                >Recent:</span
+              >
+              <div class="search-history" id="history-wrap"></div>
+            </div>
+          </div>
+
+          <div id="results-wrap"></div>
+        </main>
+      </div>
+    </div>
+    <div id="mobile-nav-mount"></div>
+    <div class="mobile-menu-backdrop"></div>
+    <aside
+      class="mobile-menu"
+      id="mobile-menu-mount"
+      aria-label="Mobile menu"
+    ></aside>
+
+    <script src="../../data/students.js"></script>
+    <script src="../../data/faculties.js"></script>
+    <script src="../../data/courses.js"></script>
+    <script src="../../data/opportunities.js"></script>
+    <script src="../../data/events.js"></script>
+    <script src="../../data/news.js"></script>
+    <script src="../../data/associations.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/navigation.js"></script>
+    <script src="../../js/notifications.js"></script>
+    <script src="../../js/community.js"></script>
+    <script src="../../js/leaders.js"></script>
+    <script src="../../js/search.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const session = Auth.current();
+        if (!session) {
+          window.location.href = "../auth/login.html";
+          return;
+        }
+        initAppShell("student");
+
+        const input = document.getElementById("search-input");
+        const wrap = document.getElementById("results-wrap");
+        const historyWrap = document.getElementById("history-wrap");
+        const HISTORY_KEY = "search_history";
+
+        function renderHistory() {
+          const history = Store.get(HISTORY_KEY, [
+            "CSC 401",
+            "scholarship",
+            "timetable",
+          ]);
+          historyWrap.innerHTML = "";
+          history.slice(0, 5).forEach((h) => {
+            const chip = document.createElement("button");
+            chip.className = "chip";
+            chip.textContent = h;
+            chip.addEventListener("click", () => {
+              input.value = h;
+              run();
+            });
+            historyWrap.appendChild(chip);
+          });
+        }
+
+        function pushHistory(q) {
+          let history = Store.get(HISTORY_KEY, []);
+          history = history.filter((x) => x !== q);
+          history.unshift(q);
+          history = history.slice(0, 8);
+          Store.set(HISTORY_KEY, history);
+          renderHistory();
+        }
+
+        function run() {
+          const q = input.value.trim();
+          if (!q) {
+            wrap.innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="fa-solid fa-magnifying-glass"></i></div><h3>Search Campus Space</h3><p>Find courses, resources, opportunities, students, posts and more.</p></div>`;
+            return;
+          }
+          const results = globalSearch(q);
+          wrap.innerHTML = "";
+          if (!results.length) {
+            wrap.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+          <h3>No results for "${Util.escape(q)}"</h3>
+          <p>Try a different term — course codes, names, and keywords work well.</p>
+        </div>`;
+            return;
+          }
+          results.forEach((group) => {
+            const section = document.createElement("div");
+            section.className = "result-group";
+            section.innerHTML = `
+        <div class="result-group-head">
+          <h3><i class="fa-solid ${group.icon}" style="color:var(--brand-primary);"></i> ${Util.escape(group.title)}</h3>
+          <span class="count">${group.items.length}</span>
+        </div>`;
+            group.items.forEach((item) => {
+              const el = document.createElement("a");
+              el.href = item.href;
+              el.className = "search-result";
+              el.innerHTML = `
+          <span class="search-result-icon"><i class="fa-solid ${group.icon}"></i></span>
+          <div class="search-result-body">
+            <h4>${Util.escape(item.title)}</h4>
+            <p>${Util.escape(item.excerpt)}</p>
+            <span class="meta">${Util.escape(item.meta)}</span>
+          </div>
+          <i class="fa-solid fa-chevron-right" style="color:var(--text-tertiary); align-self:center;"></i>`;
+              section.appendChild(el);
+            });
+            wrap.appendChild(section);
+          });
+        }
+
+        input.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            pushHistory(input.value.trim());
+            run();
+          }
+        });
+        input.addEventListener("input", () => {
+          run();
+        });
+
+        document
+          .getElementById("search-form")
+          .addEventListener("submit", (e) => {
+            e.preventDefault();
+            pushHistory(input.value.trim());
+            run();
+          });
+
+        // Prefill from URL
+        const q = new URLSearchParams(location.search).get("q");
+        if (q) {
+          input.value = q;
+          run();
+        } else {
+          run();
+        }
+
+        renderHistory();
+      });
+    </script>
+  </body>
+</html>

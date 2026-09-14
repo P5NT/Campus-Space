@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Academics — Admin — Campus Space</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="../../assets/favicon/favicon.ico"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../../assets/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="../../assets/favicon/favicon-16x16.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="../../assets/favicon/apple-touch-icon.png"
+    />
+    <link rel="manifest" href="../../assets/favicon/site.webmanifest" />
+    <meta name="theme-color" content="#B33A3A" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="../../css/style.css" />
+  </head>
+  <body class="has-session admin-body">
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <div class="app-shell">
+      <aside class="sidebar admin-sidebar" id="app-sidebar"></aside>
+      <div class="app-main">
+        <header class="app-header" id="app-header"></header>
+        <main class="app-content" id="main">
+          <div class="page-head">
+            <div class="page-head-text">
+              <h1 class="page-title">Academic Management</h1>
+              <p class="page-subtitle">
+                Manage faculties, departments and academic resources from one
+                place.
+              </p>
+            </div>
+          </div>
+
+          <div class="grid grid-3">
+            <a href="faculties.html" class="card card-interactive card-pad">
+              <span class="qa-icon"
+                ><i class="fa-solid fa-building-columns"></i
+              ></span>
+              <h3 style="font-size: var(--fs-md); margin: 16px 0 6px">
+                Faculties
+              </h3>
+              <p style="font-size: var(--fs-sm); color: var(--text-secondary)">
+                Add, edit and deactivate faculties.
+              </p>
+            </a>
+            <a href="departments.html" class="card card-interactive card-pad">
+              <span class="qa-icon marine"
+                ><i class="fa-solid fa-diagram-project"></i
+              ></span>
+              <h3 style="font-size: var(--fs-md); margin: 16px 0 6px">
+                Departments
+              </h3>
+              <p style="font-size: var(--fs-sm); color: var(--text-secondary)">
+                Manage departments per faculty.
+              </p>
+            </a>
+            <a
+              href="academic-resources.html"
+              class="card card-interactive card-pad"
+            >
+              <span class="qa-icon"
+                ><i class="fa-solid fa-file-lines"></i
+              ></span>
+              <h3 style="font-size: var(--fs-md); margin: 16px 0 6px">
+                Academic Resources
+              </h3>
+              <p style="font-size: var(--fs-sm); color: var(--text-secondary)">
+                Upload timetables, materials and past questions.
+              </p>
+            </a>
+            <a
+              href="academic-calendar.html"
+              class="card card-interactive card-pad"
+            >
+              <span class="qa-icon marine"
+                ><i class="fa-solid fa-calendar-days"></i
+              ></span>
+              <h3 style="font-size: var(--fs-md); margin: 16px 0 6px">
+                Academic Calendar
+              </h3>
+              <p style="font-size: var(--fs-sm); color: var(--text-secondary)">
+                Manage session dates.
+              </p>
+            </a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <div class="mobile-menu-backdrop"></div>
+    <aside
+      class="mobile-menu"
+      id="mobile-menu-mount"
+      aria-label="Mobile menu"
+    ></aside>
+
+    <script src="../../data/students.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/navigation.js"></script>
+    <script src="../../js/notifications.js"></script>
+    <script src="../../js/admin.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const session = Auth.current();
+        if (
+          !session ||
+          (session.role !== "admin" && session.role !== "super_admin")
+        ) {
+          window.location.href = "../auth/login.html";
+          return;
+        }
+        initAppShell("admin");
+      });
+    </script>
+  </body>
+</html>

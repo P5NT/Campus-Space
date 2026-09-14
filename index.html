@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Campus Space — the OAUSTECH student digital ecosystem. Academics, community, opportunities, events, marketplace, complaints and emergency response in one place."
+    />
+    <title>Campus Space — OAUSTECH Student Digital Ecosystem</title>
+
+    <!-- Favicon (same brand icon as page logo) -->
+    <link rel="icon" type="image/x-icon" href="assets/favicon/favicon.ico" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="assets/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="assets/favicon/favicon-16x16.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="assets/favicon/apple-touch-icon.png"
+    />
+    <link rel="manifest" href="assets/favicon/site.webmanifest" />
+    <meta name="theme-color" content="#B33A3A" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+
+    <!-- Single stylesheet -->
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <!-- Skip link for keyboard users -->
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <!-- =====================================================================
+     Landing navigation
+     ===================================================================== -->
+    <header class="landing-nav">
+      <div class="container">
+        <div class="landing-nav-inner">
+          <a
+            href="index.html"
+            class="landing-nav-brand"
+            aria-label="Campus Space home"
+          >
+            <img
+              src="assets/icons/brand-icon.svg"
+              alt=""
+              width="34"
+              height="34"
+            />
+            <span>Campus Space</span>
+          </a>
+          <nav aria-label="Primary">
+            <ul class="landing-nav-links">
+              <li><a href="#features">Features</a></li>
+              <li><a href="#ecosystem">Ecosystem</a></li>
+              <li><a href="#safety">Safety</a></li>
+            </ul>
+          </nav>
+          <div class="cluster">
+            <button
+              class="btn-icon"
+              data-theme-toggle
+              aria-label="Toggle theme"
+            >
+              <i class="fa-solid fa-moon"></i>
+            </button>
+            <a href="pages/auth/login.html" class="btn btn-ghost">Sign in</a>
+            <a href="pages/auth/register.html" class="btn btn-primary"
+              >Create account</a
+            >
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main id="main">
+      <!-- ===================================================================
+       Hero
+       =================================================================== -->
+      <section class="hero">
+        <div class="container">
+          <div class="hero-inner">
+            <div class="hero-copy">
+              <span class="hero-eyebrow">
+                <i class="fa-solid fa-graduation-cap"></i>
+                Built for OAUSTECH students
+              </span>
+              <h1>
+                One space for <span class="accent">everything campus</span>.
+              </h1>
+              <p class="hero-lede">
+                Campus Space brings your academics, community, opportunities,
+                events, marketplace access and emergency response into one
+                polished digital ecosystem — designed for the way OAUSTECH
+                students actually work.
+              </p>
+              <div class="hero-cta">
+                <a
+                  href="pages/auth/register.html"
+                  class="btn btn-primary btn-lg"
+                >
+                  <i class="fa-solid fa-user-plus"></i>
+                  Create your account
+                </a>
+                <a
+                  href="pages/auth/login.html"
+                  class="btn btn-secondary btn-lg"
+                >
+                  <i class="fa-solid fa-right-to-bracket"></i>
+                  Sign in
+                </a>
+              </div>
+              <div class="hero-trust">
+                <span
+                  ><i class="fa-solid fa-circle-check"></i> Verified students
+                  only</span
+                >
+                <span
+                  ><i class="fa-solid fa-circle-check"></i> Managed by
+                  Admin</span
+                >
+                <span
+                  ><i class="fa-solid fa-circle-check"></i> Private by
+                  default</span
+                >
+              </div>
+            </div>
+
+            <!-- Product preview mock (decorative, aria-hidden) -->
+            <div class="hero-visual" aria-hidden="true">
+              <div class="hero-visual-card">
+                <div class="hero-visual-bar">
+                  <span class="dot r"></span>
+                  <span class="dot y"></span>
+                  <span class="dot g"></span>
+                </div>
+                <div class="hero-visual-body">
+                  <div class="hero-mini-stat">
+                    <div>
+                      <div class="k">Courses</div>
+                      <div class="v">6</div>
+                    </div>
+                    <div>
+                      <div class="k">GPA</div>
+                      <div class="v">4.32</div>
+                    </div>
+                    <div>
+                      <div class="k">Alerts</div>
+                      <div class="v">3</div>
+                    </div>
+                  </div>
+                  <div class="hero-mini-row">
+                    <div class="qi brand">
+                      <i class="fa-solid fa-bullhorn"></i>
+                    </div>
+                    <div>
+                      <div class="l1">Course registration extended</div>
+                      <div class="l2">Official announcement · 2h ago</div>
+                    </div>
+                  </div>
+                  <div class="hero-mini-row">
+                    <div class="qi marine">
+                      <i class="fa-solid fa-file-pdf"></i>
+                    </div>
+                    <div>
+                      <div class="l1">Exam timetable published</div>
+                      <div class="l2">Academic resource · 1d ago</div>
+                    </div>
+                  </div>
+                  <div class="hero-mini-row">
+                    <div class="qi success">
+                      <i class="fa-solid fa-ticket"></i>
+                    </div>
+                    <div>
+                      <div class="l1">OAUSTECH Tech Summit 2026</div>
+                      <div class="l2">Event · Get tickets on PassSpot</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+       Features
+       =================================================================== -->
+      <section class="landing-section" id="features">
+        <div class="container">
+          <div class="section-head">
+            <span class="eyebrow"
+              ><i class="fa-solid fa-layer-group"></i> What you get</span
+            >
+            <h2>Everything you need to move through university.</h2>
+            <p>
+              Campus Space is not a school website. It's a workspace built
+              around the daily realities of being a student.
+            </p>
+          </div>
+
+          <div class="feature-grid">
+            <div class="feature-card">
+              <div class="feature-icon">
+                <i class="fa-solid fa-book-open-reader"></i>
+              </div>
+              <h3>Academics, organised</h3>
+              <p>
+                Courses, materials, past questions, timetables, faculty and
+                department information — all in one academic hub.
+              </p>
+            </div>
+            <div class="feature-card marine">
+              <div class="feature-icon">
+                <i class="fa-solid fa-comments"></i>
+              </div>
+              <h3>Real student community</h3>
+              <p>
+                Post, reply and stay connected with verified OAUSTECH students.
+                Student leaders are recognised and clearly identified.
+              </p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon">
+                <i class="fa-solid fa-briefcase"></i>
+              </div>
+              <h3>Opportunities that matter</h3>
+              <p>
+                Scholarships, internships, SIWES placements, jobs and
+                competitions — curated and easy to scan.
+              </p>
+            </div>
+            <div class="feature-card marine">
+              <div class="feature-icon"><i class="fa-solid fa-ticket"></i></div>
+              <h3>Events on campus</h3>
+              <p>
+                Discover what's happening at OAUSTECH and get tickets through
+                PassSpot, our event partner.
+              </p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon">
+                <i class="fa-solid fa-calculator"></i>
+              </div>
+              <h3>GPA &amp; CGPA tools</h3>
+              <p>
+                Track your academic standing with proper GPA and CGPA
+                calculators built for OAUSTECH course structures.
+              </p>
+            </div>
+            <div class="feature-card marine">
+              <div class="feature-icon">
+                <i class="fa-solid fa-shield-halved"></i>
+              </div>
+              <h3>Safety you can reach</h3>
+              <p>
+                Immediate Response puts verified emergency contacts one tap away
+                — always visible, never buried in menus.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+       Ecosystem (external platforms)
+       =================================================================== -->
+      <section class="landing-section alt" id="ecosystem">
+        <div class="container">
+          <div class="section-head">
+            <span class="eyebrow"
+              ><i class="fa-solid fa-arrow-up-right-from-square"></i> Connected
+              platforms</span
+            >
+            <h2>One space. Two trusted partners.</h2>
+            <p>
+              Campus Space connects you directly to dedicated platforms where
+              they do their job best.
+            </p>
+          </div>
+
+          <div class="grid grid-2">
+            <div class="panel">
+              <span class="badge badge-brand" style="margin-bottom: 16px"
+                ><i class="fa-solid fa-ticket"></i> Events</span
+              >
+              <h3 style="margin-bottom: 8px">PassSpot</h3>
+              <p style="margin-bottom: 20px">
+                Event ticketing, digital tickets and QR check-in are handled on
+                PassSpot. Campus Space is where you discover events — PassSpot
+                is where you get your ticket.
+              </p>
+              <a
+                href="https://passspot.netlify.app/"
+                class="btn btn-marine"
+                target="_blank"
+                rel="noopener"
+              >
+                Visit PassSpot
+                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+              </a>
+            </div>
+            <div class="panel">
+              <span class="badge badge-marine" style="margin-bottom: 16px"
+                ><i class="fa-solid fa-store"></i> Marketplace</span
+              >
+              <h3 style="margin-bottom: 8px">Campus Plug</h3>
+              <p style="margin-bottom: 20px">
+                Buying, selling and listings happen on Campus Plug. Campus Space
+                is your entry point — the marketplace itself lives on Campus
+                Plug.
+              </p>
+              <a
+                href="https://campusplugiscoming.netlify.app/"
+                class="btn btn-secondary"
+                target="_blank"
+                rel="noopener"
+              >
+                Visit Campus Plug
+                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+       Safety / Immediate Response
+       =================================================================== -->
+      <section class="landing-section" id="safety">
+        <div class="container">
+          <div class="section-head">
+            <span class="eyebrow"
+              ><i class="fa-solid fa-circle-exclamation"></i> Safety first</span
+            >
+            <h2>Emergency help should never be three screens away.</h2>
+            <p>
+              Immediate Response is a permanent, high-visibility part of the
+              Campus Space interface — on desktop and on mobile. One tap calls.
+            </p>
+          </div>
+
+          <div class="grid grid-3">
+            <div class="panel">
+              <div
+                class="feature-icon"
+                style="background: var(--danger-soft); color: var(--danger)"
+              >
+                <i class="fa-solid fa-shield-halved"></i>
+              </div>
+              <h3 style="font-size: var(--fs-md); margin-bottom: 8px">
+                Security
+              </h3>
+              <p style="font-size: var(--fs-sm)">
+                Reach verified campus security liaisons directly. No forms, no
+                waiting.
+              </p>
+            </div>
+            <div class="panel">
+              <div
+                class="feature-icon"
+                style="background: var(--success-soft); color: var(--success)"
+              >
+                <i class="fa-solid fa-truck-medical"></i>
+              </div>
+              <h3 style="font-size: var(--fs-md); margin-bottom: 8px">
+                Medical
+              </h3>
+              <p style="font-size: var(--fs-sm)">
+                Reach the student medical coordinator instantly when it matters.
+              </p>
+            </div>
+            <div class="panel">
+              <div
+                class="feature-icon"
+                style="background: var(--warning-soft); color: var(--warning)"
+              >
+                <i class="fa-solid fa-fire-extinguisher"></i>
+              </div>
+              <h3 style="font-size: var(--fs-md); margin-bottom: 8px">
+                Fire &amp; other emergencies
+              </h3>
+              <p style="font-size: var(--fs-sm)">
+                Campus-managed emergency categories that reach the right people.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+       CTA banner
+       =================================================================== -->
+      <section class="landing-section">
+        <div class="container">
+          <div class="cta-banner">
+            <h2>Ready to make Campus Space yours?</h2>
+            <p>
+              Create your account in under two minutes. Your data stays private
+              and under your control.
+            </p>
+            <div class="cluster" style="justify-content: center">
+              <a href="pages/auth/register.html" class="btn btn-primary btn-lg">
+                <i class="fa-solid fa-user-plus"></i> Create account
+              </a>
+              <a href="pages/auth/login.html" class="btn btn-secondary btn-lg">
+                <i class="fa-solid fa-right-to-bracket"></i> Sign in
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- =====================================================================
+     Footer
+     ===================================================================== -->
+    <footer class="site-footer">
+      <div class="container">
+        <div class="footer-grid">
+          <div class="footer-col">
+            <div class="footer-brand">
+              <img
+                src="assets/icons/brand-icon.svg"
+                alt=""
+                width="34"
+                height="34"
+              />
+              <span>Campus Space</span>
+            </div>
+            <p
+              style="
+                font-size: var(--fs-sm);
+                color: var(--text-secondary);
+                max-width: 340px;
+              "
+            >
+              The OAUSTECH student digital ecosystem. Academics, community,
+              opportunity and safety — in one place.
+            </p>
+          </div>
+          <div class="footer-col">
+            <h4>Platform</h4>
+            <ul>
+              <li><a href="pages/auth/login.html">Sign in</a></li>
+              <li><a href="pages/auth/register.html">Create account</a></li>
+              <li>
+                <a href="pages/student/help-support.html">Help &amp; Support</a>
+              </li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h4>Partners</h4>
+            <ul>
+              <li>
+                <a
+                  href="https://passspot.netlify.app/"
+                  target="_blank"
+                  rel="noopener"
+                  >PassSpot — Events</a
+                >
+              </li>
+              <li>
+                <a
+                  href="https://campusplugiscoming.netlify.app/"
+                  target="_blank"
+                  rel="noopener"
+                  >Campus Plug — Marketplace</a
+                >
+              </li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h4>Legal</h4>
+            <ul>
+              <li>
+                <a href="pages/student/terms.html">Terms &amp; Conditions</a>
+              </li>
+              <li><a href="pages/student/privacy.html">Privacy Policy</a></li>
+              <li>
+                <a href="pages/student/community-guidelines.html"
+                  >Community Guidelines</a
+                >
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <span
+            >© 2026 Campus Space · Olusegun Agagu University of Science and
+            Technology</span
+          >
+          <span>Built for OAUSTECH students</span>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Emergency Contacts — Admin — Campus Space</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="../../assets/favicon/favicon.ico"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../../assets/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="../../assets/favicon/favicon-16x16.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="../../assets/favicon/apple-touch-icon.png"
+    />
+    <link rel="manifest" href="../../assets/favicon/site.webmanifest" />
+    <meta name="theme-color" content="#B33A3A" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="../../css/style.css" />
+  </head>
+  <body class="has-session admin-body">
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <div class="app-shell">
+      <aside class="sidebar admin-sidebar" id="app-sidebar"></aside>
+      <div class="app-main">
+        <header class="app-header" id="app-header"></header>
+        <main class="app-content" id="main">
+          <div class="page-head">
+            <div class="page-head-text">
+              <h1 class="page-title">Emergency Contacts</h1>
+              <p class="page-subtitle">
+                Tag existing students as emergency contacts. Their identity data
+                is pulled from their student record.
+              </p>
+            </div>
+            <button class="btn btn-primary" data-modal-open="tag-contact-modal">
+              <i class="fa-solid fa-shield-heart"></i> Tag a student
+            </button>
+          </div>
+
+          <div
+            class="card"
+            style="
+              border-left: 4px solid var(--brand-primary);
+              margin-bottom: 20px;
+            "
+          >
+            <div class="card-body">
+              <div class="cluster">
+                <i
+                  class="fa-solid fa-circle-info"
+                  style="color: var(--brand-primary); font-size: 18px"
+                ></i>
+                <p
+                  style="
+                    font-size: var(--fs-sm);
+                    color: var(--text-secondary);
+                    margin: 0;
+                  "
+                >
+                  The internal emergency tag is <strong>never</strong> publicly
+                  displayed as a normal community identity tag. Publicly,
+                  emergency contacts still appear as regular students.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-3" id="emergency-grid"></div>
+        </main>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="tag-contact-modal">
+      <div class="modal">
+        <div class="modal-head">
+          <h3>Tag student as emergency contact</h3>
+          <button class="btn-icon" data-modal-close aria-label="Close">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <form id="tag-contact-form" novalidate>
+          <div class="modal-body">
+            <div class="field">
+              <label class="label">Student <span class="req">*</span></label>
+              <select class="select" name="studentId" id="ec-student">
+                <option value="">Select registered student</option>
+              </select>
+              <div class="field-error">
+                <i class="fa-solid fa-circle-exclamation"></i
+                ><span>Please select a student.</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label"
+                >Emergency category <span class="req">*</span></label
+              >
+              <select class="select" name="categoryId" id="ec-category">
+                <option value="">Select category</option>
+              </select>
+              <div class="field-error">
+                <i class="fa-solid fa-circle-exclamation"></i
+                ><span>Please select a category.</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label">Note</label>
+              <input
+                class="input"
+                name="note"
+                placeholder="e.g. Campus Security Liaison"
+              />
+            </div>
+          </div>
+          <div class="modal-foot">
+            <button type="button" class="btn btn-secondary" data-modal-close>
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">
+              Tag as emergency contact
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="mobile-menu-backdrop"></div>
+    <aside
+      class="mobile-menu"
+      id="mobile-menu-mount"
+      aria-label="Mobile menu"
+    ></aside>
+
+    <script src="../../data/students.js"></script>
+    <script src="../../data/emergency-contacts.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/navigation.js"></script>
+    <script src="../../js/notifications.js"></script>
+    <script src="../../js/admin.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const session = Auth.current();
+        if (
+          !session ||
+          (session.role !== "admin" && session.role !== "super_admin")
+        ) {
+          window.location.href = "../auth/login.html";
+          return;
+        }
+        initAppShell("admin");
+
+        const studentSel = document.getElementById("ec-student");
+        DEMO_STUDENTS.forEach((s) => {
+          studentSel.insertAdjacentHTML(
+            "beforeend",
+            `<option value="${s.id}">${Util.escape(s.firstName + " " + s.lastName)} — @${Util.escape(s.username)}</option>`,
+          );
+        });
+        const catSel = document.getElementById("ec-category");
+        EMERGENCY_CATEGORIES.forEach((c) => {
+          catSel.insertAdjacentHTML(
+            "beforeend",
+            `<option value="${c.id}">${Util.escape(c.label)}</option>`,
+          );
+        });
+
+        const grid = document.getElementById("emergency-grid");
+        function render() {
+          grid.innerHTML = "";
+          const contacts = Admin.emergencyContacts();
+          if (!contacts.length) {
+            grid.innerHTML =
+              '<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon"><i class="fa-solid fa-shield-heart"></i></div><h3>No emergency contacts</h3><p>Tag a registered student to make them an emergency contact.</p></div>';
+            return;
+          }
+          contacts.forEach((c) => {
+            const card = document.createElement("div");
+            card.className = "card card-pad";
+            card.innerHTML = `
+        <div class="cluster" style="margin-bottom:12px;">
+          <span class="avatar avatar-48 avatar-fallback">${Util.initials(c.student.firstName + " " + c.student.lastName)}</span>
+          <div>
+            <div class="font-semibold">${Util.escape(c.student.firstName + " " + c.student.lastName)}</div>
+            <div class="text-xs text-muted">@${Util.escape(c.student.username)}</div>
+          </div>
+        </div>
+        <div class="stack" style="gap:6px; margin-bottom:16px;">
+          <div class="text-xs text-muted"><i class="fa-solid fa-tag"></i> ${Util.escape(c.category ? c.category.label : "")}</div>
+          <div class="text-xs text-muted"><i class="fa-solid fa-phone"></i> ${Util.escape(c.student.phone)}</div>
+          ${c.note ? `<div class="text-xs text-muted"><i class="fa-solid fa-note-sticky"></i> ${Util.escape(c.note)}</div>` : ""}
+        </div>
+        <button class="btn btn-ghost btn-sm" data-remove style="color:var(--danger);"><i class="fa-solid fa-xmark"></i> Remove</button>`;
+            card
+              .querySelector("[data-remove]")
+              .addEventListener("click", async () => {
+                if (
+                  await Confirmation.confirm({
+                    title: "Remove this emergency contact?",
+                    message:
+                      "They will no longer appear in Immediate Response.",
+                    confirmLabel: "Remove",
+                    variant: "danger",
+                  })
+                ) {
+                  const idx = DEMO_EMERGENCY_CONTACTS.findIndex(
+                    (x) => x.id === c.id,
+                  );
+                  DEMO_EMERGENCY_CONTACTS.splice(idx, 1);
+                  render();
+                  Toast.success("Emergency contact removed.", "Removed");
+                }
+              });
+            grid.appendChild(card);
+          });
+        }
+        render();
+
+        bindForm(
+          document.getElementById("tag-contact-form"),
+          {
+            studentId: [Rules.required],
+            categoryId: [Rules.required],
+          },
+          (data) => {
+            DEMO_EMERGENCY_CONTACTS.push({
+              id: "ec-" + Date.now(),
+              studentId: data.get("studentId"),
+              categoryId: data.get("categoryId"),
+              note: data.get("note") || "",
+            });
+            render();
+            Modal.close("tag-contact-modal");
+            document.getElementById("tag-contact-form").reset();
+            Toast.success("Student tagged as emergency contact.", "Saved");
+          },
+        );
+      });
+    </script>
+  </body>
+</html>

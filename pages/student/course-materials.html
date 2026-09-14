@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Course Materials — Campus Space</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="../../assets/favicon/favicon.ico"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../../assets/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="../../assets/favicon/favicon-16x16.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="../../assets/favicon/apple-touch-icon.png"
+    />
+    <link rel="manifest" href="../../assets/favicon/site.webmanifest" />
+    <meta name="theme-color" content="#B33A3A" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="../../css/style.css" />
+  </head>
+  <body class="has-session">
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <div class="app-shell">
+      <aside
+        class="sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
+      <div class="app-main">
+        <header class="app-header" id="app-header"></header>
+        <main class="app-content" id="main">
+          <div class="page-head">
+            <div class="page-head-text">
+              <h1 class="page-title">Course Materials</h1>
+              <p class="page-subtitle">
+                Download notes, slides and courseware uploaded by Admin.
+              </p>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <div class="input-wrap">
+              <i class="fa-solid fa-magnifying-glass input-icon"></i>
+              <input
+                class="input"
+                type="search"
+                id="mat-search"
+                placeholder="Search materials…"
+                aria-label="Search materials"
+              />
+            </div>
+            <select class="select" id="mat-cat" aria-label="Filter by category">
+              <option value="">All categories</option>
+              <option value="Course Materials">Course Materials</option>
+              <option value="Past Questions">Past Questions</option>
+              <option value="Lecture Timetable">Lecture Timetable</option>
+              <option value="Exam Timetable">Exam Timetable</option>
+              <option value="Academic Calendar">Academic Calendar</option>
+              <option value="Academic Resource">Other</option>
+            </select>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h3 id="mat-count">Loading…</h3></div>
+            <div id="materials-list"></div>
+          </div>
+        </main>
+      </div>
+    </div>
+    <div id="mobile-nav-mount"></div>
+    <div class="mobile-menu-backdrop"></div>
+    <aside
+      class="mobile-menu"
+      id="mobile-menu-mount"
+      aria-label="Mobile menu"
+    ></aside>
+
+    <script src="../../data/students.js"></script>
+    <script src="../../data/courses.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/navigation.js"></script>
+    <script src="../../js/notifications.js"></script>
+    <script src="../../js/academics.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const session = Auth.current();
+        if (!session) {
+          window.location.href = "../auth/login.html";
+          return;
+        }
+        initAppShell("student");
+
+        const listEl = document.getElementById("materials-list");
+        const countEl = document.getElementById("mat-count");
+        const searchEl = document.getElementById("mat-search");
+        const catEl = document.getElementById("mat-cat");
+
+        function apply() {
+          const s = searchEl.value.trim().toLowerCase();
+          const cat = catEl.value;
+          let list = DEMO_RESOURCES.slice();
+          if (cat) list = list.filter((r) => r.category === cat);
+          if (s)
+            list = list.filter(
+              (r) =>
+                r.name.toLowerCase().includes(s) ||
+                r.course.toLowerCase().includes(s),
+            );
+          renderResources(listEl, list);
+          countEl.textContent =
+            list.length === 0
+              ? "No materials"
+              : `${list.length} item${list.length === 1 ? "" : "s"}`;
+        }
+        searchEl.addEventListener("input", apply);
+        catEl.addEventListener("change", apply);
+        apply();
+      });
+    </script>
+  </body>
+</html>

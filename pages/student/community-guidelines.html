@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Community Guidelines — Campus Space</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="../../assets/favicon/favicon.ico"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../../assets/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="../../assets/favicon/favicon-16x16.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="../../assets/favicon/apple-touch-icon.png"
+    />
+    <link rel="manifest" href="../../assets/favicon/site.webmanifest" />
+    <meta name="theme-color" content="#B33A3A" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="../../css/style.css" />
+  </head>
+  <body class="has-session">
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <div class="app-shell">
+      <aside
+        class="sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
+      <div class="app-main">
+        <header class="app-header" id="app-header"></header>
+        <main class="app-content" id="main">
+          <div
+            class="container-narrow"
+            style="padding-left: 0; padding-right: 0"
+          >
+            <h1 class="page-title">Community Guidelines</h1>
+            <p class="page-subtitle" style="margin-bottom: 32px">
+              How we keep Campus Space respectful and useful for everyone.
+            </p>
+
+            <div class="card card-pad-lg">
+              <div
+                style="
+                  font-size: var(--fs-base);
+                  line-height: 1.75;
+                  color: var(--text-secondary);
+                "
+              >
+                <h2
+                  style="
+                    font-size: var(--fs-lg);
+                    margin-bottom: 12px;
+                    color: var(--text-primary);
+                  "
+                >
+                  Be respectful
+                </h2>
+                <p style="margin-bottom: 24px">
+                  Treat every member with courtesy. Disagreement is fine.
+                  Personal attacks are not. Harassment, bullying, hate speech
+                  and threats are not tolerated and will lead to suspension.
+                </p>
+
+                <h2
+                  style="
+                    font-size: var(--fs-lg);
+                    margin-bottom: 12px;
+                    color: var(--text-primary);
+                  "
+                >
+                  Stay on topic
+                </h2>
+                <p style="margin-bottom: 24px">
+                  Post content that is useful or relevant to the campus
+                  community. Spam, unrelated advertising and repeated off-topic
+                  posts are removed.
+                </p>
+
+                <h2
+                  style="
+                    font-size: var(--fs-lg);
+                    margin-bottom: 12px;
+                    color: var(--text-primary);
+                  "
+                >
+                  Be honest
+                </h2>
+                <p style="margin-bottom: 24px">
+                  Do not mislead others. False information — especially about
+                  exams, deadlines, fees or safety — harms everyone.
+                </p>
+
+                <h2
+                  style="
+                    font-size: var(--fs-lg);
+                    margin-bottom: 12px;
+                    color: var(--text-primary);
+                  "
+                >
+                  Respect privacy
+                </h2>
+                <p style="margin-bottom: 24px">
+                  Do not share personal information about others without their
+                  consent. Do not screenshot private conversations or
+                  complaints.
+                </p>
+
+                <h2
+                  style="
+                    font-size: var(--fs-lg);
+                    margin-bottom: 12px;
+                    color: var(--text-primary);
+                  "
+                >
+                  Report problems
+                </h2>
+                <p style="margin-bottom: 24px">
+                  If you see content that breaks these guidelines, use the
+                  report option on that post. Reports are reviewed by Admin.
+                  Your identity is kept private.
+                </p>
+
+                <h2
+                  style="
+                    font-size: var(--fs-lg);
+                    margin-bottom: 12px;
+                    color: var(--text-primary);
+                  "
+                >
+                  Consequences
+                </h2>
+                <p style="margin-bottom: 0">
+                  Depending on the severity of a breach, Admin may hide content,
+                  delete content, warn the author, or suspend the account.
+                  Repeated breaches may result in permanent restriction.
+                </p>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+    <div id="mobile-nav-mount"></div>
+    <div class="mobile-menu-backdrop"></div>
+    <aside
+      class="mobile-menu"
+      id="mobile-menu-mount"
+      aria-label="Mobile menu"
+    ></aside>
+    <script src="../../data/students.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/navigation.js"></script>
+    <script src="../../js/notifications.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const session = Auth.current();
+        if (!session) {
+          window.location.href = "../auth/login.html";
+          return;
+        }
+        initAppShell("student");
+      });
+    </script>
+  </body>
+</html>

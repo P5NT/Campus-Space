@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Moderation &amp; Reports — Campus Space</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="../../assets/favicon/favicon.ico"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../../assets/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="../../assets/favicon/favicon-16x16.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="../../assets/favicon/apple-touch-icon.png"
+    />
+    <link rel="manifest" href="../../assets/favicon/site.webmanifest" />
+    <meta name="theme-color" content="#B33A3A" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="../../css/style.css" />
+  </head>
+  <body class="has-session admin-body">
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <div class="app-shell">
+      <aside class="sidebar admin-sidebar" id="app-sidebar"></aside>
+      <div class="app-main">
+        <header class="app-header" id="app-header"></header>
+        <main class="app-content" id="main">
+          <div class="page-head">
+            <div class="page-head-text">
+              <h1 class="page-title">Moderation &amp; Reports</h1>
+              <p class="page-subtitle">
+                Review reports, hide or delete content, and suspend accounts
+                where necessary.
+              </p>
+            </div>
+          </div>
+
+          <div class="card">
+            <div id="reports-list"></div>
+          </div>
+        </main>
+      </div>
+    </div>
+    <div class="mobile-menu-backdrop"></div>
+    <aside
+      class="mobile-menu"
+      id="mobile-menu-mount"
+      aria-label="Mobile menu"
+    ></aside>
+
+    <script src="../../data/students.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/navigation.js"></script>
+    <script src="../../js/notifications.js"></script>
+    <script src="../../js/community.js"></script>
+    <script src="../../js/admin.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const session = Auth.current();
+        if (
+          !session ||
+          (session.role !== "admin" && session.role !== "super_admin")
+        ) {
+          window.location.href = "../auth/login.html";
+          return;
+        }
+        initAppShell("admin");
+
+        const listEl = document.getElementById("reports-list");
+        const reported = Community.all().filter((p) => p.reported);
+        if (!reported.length) {
+          listEl.innerHTML = `
+      <div class="empty-state" style="padding:48px 24px;">
+        <div class="empty-icon"><i class="fa-solid fa-shield-halved"></i></div>
+        <h3>No reports to review</h3>
+        <p>When a student reports a post, it will appear here for moderation.</p>
+      </div>`;
+          return;
+        }
+        reported.forEach((p) => {
+          const row = document.createElement("div");
+          row.className = "resource-row";
+          row.innerHTML = `
+      <span class="avatar avatar-40 avatar-fallback">${p.initials}</span>
+      <div class="resource-info">
+        <div class="resource-name">${Util.escape(p.author)} · @${Util.escape(p.handle)}</div>
+        <div class="resource-meta">
+          <span>Reason: ${Util.escape(p.reportReason || "—")}</span>
+          <span class="badge badge-danger">Reported</span>
+        </div>
+        <p style="font-size:var(--fs-sm); color:var(--text-secondary); margin-top:6px;">${Util.escape(p.text.slice(0, 180))}…</p>
+      </div>
+      <div class="cluster">
+        <button class="btn btn-secondary btn-sm" data-hide><i class="fa-solid fa-eye-slash"></i> Hide</button>
+        <button class="btn btn-danger btn-sm" data-delete><i class="fa-solid fa-trash"></i> Delete</button>
+        <button class="btn btn-ghost btn-sm" data-suspend style="color:var(--danger);"><i class="fa-solid fa-user-slash"></i> Suspend author</button>
+      </div>`;
+          row
+            .querySelector("[data-hide]")
+            .addEventListener("click", async () => {
+              if (
+                await Confirmation.confirm({
+                  title: "Hide this post?",
+                  message:
+                    "The post will be removed from student feeds but retained for Admin.",
+                  confirmLabel: "Hide",
+                })
+              ) {
+                p.hidden = true;
+                Community.save(Community.all());
+                Toast.success("Post hidden from students.", "Hidden");
+              }
+            });
+          row
+            .querySelector("[data-delete]")
+            .addEventListener("click", async () => {
+              if (
+                await Confirmation.confirm({
+                  title: "Delete this post permanently?",
+                  message: "This action cannot be undone.",
+                  confirmLabel: "Delete",
+                  variant: "danger",
+                })
+              ) {
+                const posts = Community.all().filter((x) => x.id !== p.id);
+                Community.save(posts);
+                row.remove();
+                Toast.success("Post deleted.", "Removed");
+              }
+            });
+          row
+            .querySelector("[data-suspend]")
+            .addEventListener("click", async () => {
+              if (
+                await Confirmation.confirm({
+                  title: "Suspend this author?",
+                  message:
+                    "They will lose access to Campus Space until reactivated by Admin.",
+                  confirmLabel: "Suspend",
+                  variant: "danger",
+                })
+              ) {
+                Toast.warning("Author suspended.", "Suspended");
+              }
+            });
+          listEl.appendChild(row);
+        });
+      });
+    </script>
+  </body>
+</html>

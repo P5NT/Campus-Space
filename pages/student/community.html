@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Community — Campus Space</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="../../assets/favicon/favicon.ico"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../../assets/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="../../assets/favicon/favicon-16x16.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="../../assets/favicon/apple-touch-icon.png"
+    />
+    <link rel="manifest" href="../../assets/favicon/site.webmanifest" />
+    <meta name="theme-color" content="#B33A3A" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="../../css/style.css" />
+  </head>
+  <body class="has-session">
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <div class="app-shell">
+      <aside
+        class="sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
+      <div class="app-main">
+        <header class="app-header" id="app-header"></header>
+        <main class="app-content" id="main">
+          <div class="page-head">
+            <div class="page-head-text">
+              <h1 class="page-title">Community</h1>
+              <p class="page-subtitle">
+                Connect with verified OAUSTECH students and leaders.
+              </p>
+            </div>
+          </div>
+
+          <div class="community-layout">
+            <div>
+              <!-- Composer -->
+              <form class="composer" id="composer" aria-label="Create a post">
+                <span
+                  class="avatar avatar-40 avatar-fallback"
+                  id="composer-avatar"
+                  >--</span
+                >
+                <div class="composer-field">
+                  <textarea
+                    class="textarea"
+                    name="text"
+                    placeholder="Share something with the campus community…"
+                    aria-label="Post text"
+                  ></textarea>
+                  <div class="composer-foot">
+                    <div class="composer-tools">
+                      <button
+                        type="button"
+                        class="btn-icon"
+                        aria-label="Add image"
+                        title="Add image"
+                      >
+                        <i class="fa-regular fa-image"></i>
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-icon"
+                        aria-label="Attach file"
+                        title="Attach file"
+                      >
+                        <i class="fa-solid fa-paperclip"></i>
+                      </button>
+                    </div>
+                    <button class="btn btn-primary btn-sm" type="submit">
+                      <i class="fa-solid fa-paper-plane"></i> Post
+                    </button>
+                  </div>
+                </div>
+              </form>
+
+              <!-- Filter bar -->
+              <div class="filter-bar" role="tablist" aria-label="Feed filter">
+                <button class="chip is-active" data-filter="all" role="tab">
+                  All
+                </button>
+                <button class="chip" data-filter="leaders" role="tab">
+                  Leaders
+                </button>
+                <button class="chip" data-filter="admin" role="tab">
+                  Admin
+                </button>
+                <button class="chip" data-filter="students" role="tab">
+                  Students
+                </button>
+              </div>
+
+              <!-- Feed -->
+              <div id="community-feed"></div>
+            </div>
+
+            <aside class="dash-col-side">
+              <div class="card">
+                <div class="card-head"><h3>Community guidelines</h3></div>
+                <div class="card-body" style="padding: 20px">
+                  <ul
+                    style="
+                      font-size: var(--fs-sm);
+                      color: var(--text-secondary);
+                      display: grid;
+                      gap: 10px;
+                      padding-left: 18px;
+                    "
+                  >
+                    <li>Be respectful to all members.</li>
+                    <li>No spam or self-promotion.</li>
+                    <li>No harassment or hate speech.</li>
+                    <li>Report content that breaks the rules.</li>
+                  </ul>
+                  <a
+                    href="community-guidelines.html"
+                    class="btn btn-ghost btn-sm"
+                    style="margin-top: 12px"
+                    >Read full guidelines</a
+                  >
+                </div>
+              </div>
+              <div class="card">
+                <div class="card-head"><h3>Top contributors</h3></div>
+                <div class="card-body" style="padding: 12px 20px">
+                  <div
+                    class="resource-row"
+                    style="
+                      padding: 10px 0;
+                      border-bottom: 1px solid var(--border-subtle);
+                    "
+                  >
+                    <span class="avatar avatar-32 avatar-fallback">CO</span>
+                    <div class="resource-info">
+                      <div class="resource-name">Chiamaka Okafor</div>
+                      <div class="resource-meta">
+                        <span>NESA · 34 posts</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    class="resource-row"
+                    style="
+                      padding: 10px 0;
+                      border-bottom: 1px solid var(--border-subtle);
+                    "
+                  >
+                    <span class="avatar avatar-32 avatar-fallback">TB</span>
+                    <div class="resource-info">
+                      <div class="resource-name">Temilade Balogun</div>
+                      <div class="resource-meta">
+                        <span>NASMS · 28 posts</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="resource-row" style="padding: 10px 0">
+                    <span class="avatar avatar-32 avatar-fallback">IS</span>
+                    <div class="resource-info">
+                      <div class="resource-name">Ibrahim Suleiman</div>
+                      <div class="resource-meta"><span>22 posts</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <div id="mobile-nav-mount"></div>
+    <div class="mobile-menu-backdrop"></div>
+    <aside
+      class="mobile-menu"
+      id="mobile-menu-mount"
+      aria-label="Mobile menu"
+    ></aside>
+
+    <script src="../../data/students.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/navigation.js"></script>
+    <script src="../../js/notifications.js"></script>
+    <script src="../../js/community.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const session = Auth.current();
+        if (!session) {
+          window.location.href = "../auth/login.html";
+          return;
+        }
+        initAppShell("student");
+
+        document.getElementById("composer-avatar").textContent = Util.initials(
+          session.name || session.username,
+        );
+
+        const feed = document.getElementById("community-feed");
+        let filter = "all";
+
+        function renderFeed() {
+          feed.innerHTML = "";
+          let posts = Community.all();
+          if (filter === "leaders") posts = posts.filter((p) => p.isLeader);
+          else if (filter === "admin") posts = posts.filter((p) => p.isAdmin);
+          else if (filter === "students")
+            posts = posts.filter((p) => !p.isLeader && !p.isAdmin);
+          if (!posts.length) {
+            feed.innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="fa-regular fa-comments"></i></div><h3>No posts in this filter</h3><p>Try a different filter or be the first to post.</p></div>`;
+            return;
+          }
+          posts.forEach((p) => feed.appendChild(renderPost(p)));
+        }
+
+        document.querySelectorAll("[data-filter]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            document
+              .querySelectorAll("[data-filter]")
+              .forEach((b) => b.classList.remove("is-active"));
+            btn.classList.add("is-active");
+            filter = btn.getAttribute("data-filter");
+            renderFeed();
+          });
+        });
+
+        const composer = document.getElementById("composer");
+        composer.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const text = composer.querySelector("textarea").value.trim();
+          if (!text) {
+            Toast.warning("Write something before posting.", "Empty post");
+            return;
+          }
+          Community.add(text, session);
+          composer.reset();
+          renderFeed();
+          Toast.success("Post published (simulated).", "Posted");
+        });
+
+        renderFeed();
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Exam Timetable — Campus Space</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="../../assets/favicon/favicon.ico"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../../assets/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="../../assets/favicon/favicon-16x16.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="../../assets/favicon/apple-touch-icon.png"
+    />
+    <link rel="manifest" href="../../assets/favicon/site.webmanifest" />
+    <meta name="theme-color" content="#B33A3A" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="../../css/style.css" />
+  </head>
+  <body class="has-session">
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <div class="app-shell">
+      <aside
+        class="sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
+      <div class="app-main">
+        <header class="app-header" id="app-header"></header>
+        <main class="app-content" id="main">
+          <div class="page-head">
+            <div class="page-head-text">
+              <h1 class="page-title">Exam Timetable</h1>
+              <p class="page-subtitle">
+                First semester 2026/2027 examination schedule.
+              </p>
+            </div>
+            <button class="btn btn-secondary" id="dl-exam">
+              <i class="fa-solid fa-download"></i> Download
+            </button>
+          </div>
+
+          <div
+            class="card"
+            style="margin-bottom: 24px; border-left: 4px solid var(--danger)"
+          >
+            <div class="card-body">
+              <div class="cluster">
+                <i
+                  class="fa-solid fa-circle-info"
+                  style="color: var(--danger); font-size: 20px"
+                ></i>
+                <div>
+                  <div class="font-semibold">
+                    Examinations begin 20 April 2026
+                  </div>
+                  <p
+                    style="
+                      font-size: var(--fs-sm);
+                      color: var(--text-secondary);
+                      margin-top: 2px;
+                    "
+                  >
+                    Please arrive 30 minutes before each exam. Bring your
+                    student ID.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <div class="table-scroll">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Course</th>
+                    <th>Venue</th>
+                  </tr>
+                </thead>
+                <tbody id="exam-rows"></tbody>
+              </table>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+    <div id="mobile-nav-mount"></div>
+    <div class="mobile-menu-backdrop"></div>
+    <aside
+      class="mobile-menu"
+      id="mobile-menu-mount"
+      aria-label="Mobile menu"
+    ></aside>
+
+    <script src="../../data/students.js"></script>
+    <script src="../../data/courses.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/navigation.js"></script>
+    <script src="../../js/notifications.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const session = Auth.current();
+        if (!session) {
+          window.location.href = "../auth/login.html";
+          return;
+        }
+        initAppShell("student");
+
+        const rows = [
+          {
+            date: "20 Apr 2026",
+            time: "9:00 AM – 12:00 PM",
+            course: "CSC 401 — Software Engineering",
+            venue: "Main Hall A",
+          },
+          {
+            date: "21 Apr 2026",
+            time: "9:00 AM – 12:00 PM",
+            course: "CSC 403 — Compiler Construction",
+            venue: "Main Hall B",
+          },
+          {
+            date: "23 Apr 2026",
+            time: "1:00 PM – 4:00 PM",
+            course: "CYB 301 — Network Security",
+            venue: "ICT Centre Lab 1",
+          },
+          {
+            date: "25 Apr 2026",
+            time: "9:00 AM – 12:00 PM",
+            course: "EEE 305 — Signals and Systems",
+            venue: "Engineering Hall",
+          },
+          {
+            date: "28 Apr 2026",
+            time: "1:00 PM – 4:00 PM",
+            course: "BCH 201 — General Biochemistry I",
+            venue: "Science Hall C",
+          },
+          {
+            date: "30 Apr 2026",
+            time: "9:00 AM – 12:00 PM",
+            course: "ACC 401 — Advanced Financial Accounting",
+            venue: "Management Hall",
+          },
+        ];
+        const tb = document.getElementById("exam-rows");
+        rows.forEach((r) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+      <td data-label="Date"><strong>${Util.escape(r.date)}</strong></td>
+      <td data-label="Time">${Util.escape(r.time)}</td>
+      <td data-label="Course">${Util.escape(r.course)}</td>
+      <td data-label="Venue">${Util.escape(r.venue)}</td>`;
+          tb.appendChild(tr);
+        });
+
+        document.getElementById("dl-exam").addEventListener("click", () => {
+          Toast.success(
+            "Downloading exam timetable PDF (simulated).",
+            "Download started",
+          );
+        });
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Student Leaders — Campus Space</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="../../assets/favicon/favicon.ico"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../../assets/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="../../assets/favicon/favicon-16x16.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="../../assets/favicon/apple-touch-icon.png"
+    />
+    <link rel="manifest" href="../../assets/favicon/site.webmanifest" />
+    <meta name="theme-color" content="#B33A3A" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="../../css/style.css" />
+  </head>
+  <body class="has-session">
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <div class="app-shell">
+      <aside
+        class="sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
+      <div class="app-main">
+        <header class="app-header" id="app-header"></header>
+        <main class="app-content" id="main">
+          <div class="page-head">
+            <div class="page-head-text">
+              <h1 class="page-title">Student Leaders</h1>
+              <p class="page-subtitle">
+                Contact verified student leaders across OAUSTECH associations.
+              </p>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <div class="input-wrap">
+              <i class="fa-solid fa-magnifying-glass input-icon"></i>
+              <input
+                class="input"
+                type="search"
+                id="leader-search"
+                placeholder="Search by name or position…"
+                aria-label="Search leaders"
+              />
+            </div>
+            <select
+              class="select"
+              id="leader-assoc"
+              aria-label="Filter by association"
+            >
+              <option value="">All associations</option>
+            </select>
+          </div>
+
+          <div class="grid grid-3" id="leaders-grid"></div>
+        </main>
+      </div>
+    </div>
+    <div id="mobile-nav-mount"></div>
+    <div class="mobile-menu-backdrop"></div>
+    <aside
+      class="mobile-menu"
+      id="mobile-menu-mount"
+      aria-label="Mobile menu"
+    ></aside>
+
+    <script src="../../data/students.js"></script>
+    <script src="../../data/associations.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/navigation.js"></script>
+    <script src="../../js/notifications.js"></script>
+    <script src="../../js/leaders.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const session = Auth.current();
+        if (!session) {
+          window.location.href = "../auth/login.html";
+          return;
+        }
+        initAppShell("student");
+
+        const grid = document.getElementById("leaders-grid");
+        const search = document.getElementById("leader-search");
+        const assocFilter = document.getElementById("leader-assoc");
+
+        DEMO_ASSOCIATIONS.forEach((a) => {
+          const opt = document.createElement("option");
+          opt.value = a.id;
+          opt.textContent = a.acronym + " — " + a.name;
+          assocFilter.appendChild(opt);
+        });
+
+        function apply() {
+          let list = getLeaderList();
+          const q = search.value.trim().toLowerCase();
+          const aid = assocFilter.value;
+          if (q)
+            list = list.filter(
+              (l) =>
+                (l.student.firstName + " " + l.student.lastName)
+                  .toLowerCase()
+                  .includes(q) ||
+                l.pos.name.toLowerCase().includes(q) ||
+                l.assoc.name.toLowerCase().includes(q),
+            );
+          if (aid) list = list.filter((l) => l.assoc.id === aid);
+          grid.innerHTML = "";
+          if (!list.length) {
+            grid.innerHTML =
+              '<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon"><i class="fa-solid fa-user-tie"></i></div><h3>No leaders found</h3><p>Try a different search or filter.</p></div>';
+            return;
+          }
+          list.forEach((l) => grid.appendChild(renderLeaderCard(l)));
+        }
+        search.addEventListener("input", apply);
+        assocFilter.addEventListener("change", apply);
+        apply();
+      });
+    </script>
+  </body>
+</html>

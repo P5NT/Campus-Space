@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Complaint — Campus Space</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="../../assets/favicon/favicon.ico"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../../assets/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="../../assets/favicon/favicon-16x16.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="../../assets/favicon/apple-touch-icon.png"
+    />
+    <link rel="manifest" href="../../assets/favicon/site.webmanifest" />
+    <meta name="theme-color" content="#B33A3A" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="../../css/style.css" />
+  </head>
+  <body class="has-session">
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <div class="app-shell">
+      <aside
+        class="sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
+      <div class="app-main">
+        <header class="app-header" id="app-header"></header>
+        <main class="app-content" id="main">
+          <div class="cluster" style="margin-bottom: 16px">
+            <a href="complaints.html" class="btn btn-ghost btn-sm">
+              <i class="fa-solid fa-arrow-left"></i> Back to complaints
+            </a>
+          </div>
+          <div id="complaint-detail"></div>
+        </main>
+      </div>
+    </div>
+    <div id="mobile-nav-mount"></div>
+    <div class="mobile-menu-backdrop"></div>
+    <aside
+      class="mobile-menu"
+      id="mobile-menu-mount"
+      aria-label="Mobile menu"
+    ></aside>
+
+    <script src="../../data/students.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/navigation.js"></script>
+    <script src="../../js/notifications.js"></script>
+    <script src="../../js/complaints.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const session = Auth.current();
+        if (!session) {
+          window.location.href = "../auth/login.html";
+          return;
+        }
+        initAppShell("student");
+
+        const id = new URLSearchParams(location.search).get("id");
+        const c =
+          Complaints.all().find((x) => x.id === id) || Complaints.all()[0];
+        const wrap = document.getElementById("complaint-detail");
+
+        wrap.innerHTML = `
+    <div class="card card-pad-lg" style="margin-bottom:20px;">
+      <div class="cluster-between" style="margin-bottom:16px;">
+        <div class="cluster">
+          <span class="badge badge-neutral">${Util.escape(c.category)}</span>
+          <span class="badge badge-neutral">${Util.escape(c.id)}</span>
+        </div>
+        ${complaintStatusPill(c.status)}
+      </div>
+      <h1 class="page-title" style="font-size:var(--fs-xl); margin-bottom:8px;">${Util.escape(c.subject)}</h1>
+      <p style="font-size:var(--fs-sm); color:var(--text-tertiary);">Submitted ${Util.formatDate(c.date, { day: "numeric", month: "long", year: "numeric" })} · Last updated ${Util.relativeTime(c.updated)}</p>
+      <div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border-subtle);">
+        <div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Description</div>
+        <p style="line-height:1.7; color:var(--text-secondary);">${Util.escape(c.description)}</p>
+      </div>
+    </div>
+
+    <div class="grid" style="grid-template-columns:minmax(0,1fr) 320px; gap:24px; align-items:start;">
+      <div class="card">
+        <div class="card-head"><h3>Conversation</h3></div>
+        <div class="card-body">
+          <div class="complaint-thread" id="thread"></div>
+        </div>
+      </div>
+      <aside class="card card-pad">
+        <h3 style="font-size:var(--fs-md); margin-bottom:12px;">Status timeline</h3>
+        <div class="timeline">
+          ${c.history
+            .map(
+              (h) => `
+            <div class="timeline-item">
+              <div class="timeline-date">${Util.relativeTime(h.at)}</div>
+              <div class="timeline-title">${Util.escape(h.action)}</div>
+              <div class="timeline-desc">${Util.escape(h.actor)}</div>
+            </div>
+          `,
+            )
+            .join("")}
+        </div>
+      </aside>
+    </div>
+  `;
+
+        const thread = document.getElementById("thread");
+        if (!c.responses.length) {
+          thread.innerHTML = `<div style="text-align:center; color:var(--text-tertiary); padding:20px 0;">No messages yet. Admin will respond shortly.</div>`;
+        } else {
+          c.responses.forEach((r) => {
+            const el = document.createElement("div");
+            el.className =
+              "thread-msg" + (r.from === "admin" ? " from-admin" : "");
+            el.innerHTML = `
+        <span class="avatar avatar-32 avatar-fallback" style="background:${r.from === "admin" ? "var(--brand-primary)" : "var(--brand-secondary)"};">${Util.initials(r.name)}</span>
+        <div class="thread-msg-bubble">
+          <div class="text-xs text-muted" style="margin-bottom:4px;"><strong>${Util.escape(r.name)}</strong> · ${Util.relativeTime(r.at)}</div>
+          ${Util.escape(r.text)}
+        </div>`;
+            thread.appendChild(el);
+          });
+        }
+      });
+    </script>
+  </body>
+</html>

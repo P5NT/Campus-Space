@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Academic Resources — Campus Space</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="../../assets/favicon/favicon.ico"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../../assets/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="../../assets/favicon/favicon-16x16.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="../../assets/favicon/apple-touch-icon.png"
+    />
+    <link rel="manifest" href="../../assets/favicon/site.webmanifest" />
+    <meta name="theme-color" content="#B33A3A" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="../../css/style.css" />
+  </head>
+  <body class="has-session admin-body">
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <div class="app-shell">
+      <aside class="sidebar admin-sidebar" id="app-sidebar"></aside>
+      <div class="app-main">
+        <header class="app-header" id="app-header"></header>
+        <main class="app-content" id="main">
+          <div class="page-head">
+            <div class="page-head-text">
+              <h1 class="page-title">Academic Resources</h1>
+              <p class="page-subtitle">
+                Upload and manage timetables, past questions, materials and
+                calendars.
+              </p>
+            </div>
+            <button
+              class="btn btn-primary"
+              data-modal-open="upload-resource-modal"
+            >
+              <i class="fa-solid fa-upload"></i> Upload resource
+            </button>
+          </div>
+
+          <div class="toolbar">
+            <div class="input-wrap">
+              <i class="fa-solid fa-magnifying-glass input-icon"></i>
+              <input
+                class="input"
+                type="search"
+                id="res-search"
+                placeholder="Search resources…"
+              />
+            </div>
+            <select class="select" id="res-cat">
+              <option value="">All categories</option>
+              <option>Lecture Timetable</option>
+              <option>Exam Timetable</option>
+              <option>Past Questions</option>
+              <option>Course Materials</option>
+              <option>Academic Calendar</option>
+              <option>Academic Resource</option>
+            </select>
+          </div>
+
+          <div class="card">
+            <div id="admin-resources-list"></div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="upload-resource-modal">
+      <div class="modal modal-lg">
+        <div class="modal-head">
+          <h3>Upload academic resource</h3>
+          <button class="btn-icon" data-modal-close aria-label="Close">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <form id="upload-resource-form" novalidate>
+          <div class="modal-body">
+            <div class="field">
+              <label class="label">File name <span class="req">*</span></label>
+              <input
+                class="input"
+                name="name"
+                placeholder="e.g. 200L – 500L 2026/2027 First Semester Timetable"
+              />
+              <div class="field-error">
+                <i class="fa-solid fa-circle-exclamation"></i
+                ><span>Please enter a file name.</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label"
+                >File upload <span class="req">*</span></label
+              >
+              <input class="input" type="file" name="file" id="res-file" />
+              <div class="field-error">
+                <i class="fa-solid fa-circle-exclamation"></i
+                ><span>Please choose a file.</span>
+              </div>
+            </div>
+            <div class="grid grid-2" style="gap: 16px">
+              <div class="field">
+                <label class="label">Category <span class="req">*</span></label>
+                <select class="select" name="category">
+                  <option value="">Select category</option>
+                  <option>Lecture Timetable</option>
+                  <option>Exam Timetable</option>
+                  <option>Past Questions</option>
+                  <option>Course Materials</option>
+                  <option>Academic Calendar</option>
+                  <option>Academic Resource</option>
+                </select>
+                <div class="field-error">
+                  <i class="fa-solid fa-circle-exclamation"></i
+                  ><span>Please select a category.</span>
+                </div>
+              </div>
+              <div class="field">
+                <label class="label">Session</label>
+                <input class="input" name="session" placeholder="2026/2027" />
+              </div>
+              <div class="field">
+                <label class="label">Faculty</label>
+                <input
+                  class="input"
+                  name="faculty"
+                  placeholder="Leave blank if all"
+                />
+              </div>
+              <div class="field">
+                <label class="label">Department</label>
+                <input
+                  class="input"
+                  name="department"
+                  placeholder="Leave blank if all"
+                />
+              </div>
+              <div class="field">
+                <label class="label">Level</label>
+                <input
+                  class="input"
+                  name="level"
+                  placeholder="Leave blank if all"
+                />
+              </div>
+              <div class="field">
+                <label class="label">Course</label>
+                <input class="input" name="course" placeholder="e.g. CSC 401" />
+              </div>
+            </div>
+          </div>
+          <div class="modal-foot">
+            <button type="button" class="btn btn-secondary" data-modal-close>
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">Upload</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="mobile-menu-backdrop"></div>
+    <aside
+      class="mobile-menu"
+      id="mobile-menu-mount"
+      aria-label="Mobile menu"
+    ></aside>
+
+    <script src="../../data/students.js"></script>
+    <script src="../../data/courses.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/navigation.js"></script>
+    <script src="../../js/notifications.js"></script>
+    <script src="../../js/admin.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const session = Auth.current();
+        if (
+          !session ||
+          (session.role !== "admin" && session.role !== "super_admin")
+        ) {
+          window.location.href = "../auth/login.html";
+          return;
+        }
+        initAppShell("admin");
+
+        let resources = DEMO_RESOURCES.slice();
+        const listEl = document.getElementById("admin-resources-list");
+        const search = document.getElementById("res-search");
+        const cat = document.getElementById("res-cat");
+
+        function render() {
+          listEl.innerHTML = "";
+          const q = search.value.trim().toLowerCase();
+          const c = cat.value;
+          let list = resources.slice();
+          if (q) list = list.filter((r) => r.name.toLowerCase().includes(q));
+          if (c) list = list.filter((r) => r.category === c);
+          if (!list.length) {
+            listEl.innerHTML =
+              '<div class="empty-state" style="padding:40px;"><div class="empty-icon"><i class="fa-solid fa-file-lines"></i></div><h3>No resources match</h3></div>';
+            return;
+          }
+          list.forEach((r) => {
+            const el = document.createElement("div");
+            el.className = "resource-row";
+            el.innerHTML = `
+        <div class="resource-icon ${r.type}"><i class="fa-solid fa-file-pdf"></i></div>
+        <div class="resource-info">
+          <div class="resource-name">${Util.escape(r.name)}</div>
+          <div class="resource-meta">
+            <span><i class="fa-solid fa-tag"></i> ${Util.escape(r.category)}</span>
+            <span><i class="fa-regular fa-clock"></i> ${Util.relativeTime(r.uploaded)}</span>
+            <span><i class="fa-solid fa-user"></i> ${Util.escape(r.uploadedBy)}</span>
+          </div>
+        </div>
+        <button class="btn btn-ghost btn-sm" data-edit><i class="fa-solid fa-pen"></i></button>
+        <button class="btn btn-ghost btn-sm" data-del style="color:var(--danger);"><i class="fa-solid fa-trash"></i></button>`;
+            el.querySelector("[data-edit]").addEventListener("click", () => {
+              Toast.info(
+                'Editing "' + r.name + '" (simulated).',
+                "Edit resource",
+              );
+            });
+            el.querySelector("[data-del]").addEventListener(
+              "click",
+              async () => {
+                if (
+                  await Confirmation.confirm({
+                    title: "Delete this resource?",
+                    message:
+                      '"' +
+                      r.name +
+                      '" will be removed from Campus Space. Students will no longer be able to download it.',
+                    confirmLabel: "Delete",
+                    variant: "danger",
+                  })
+                ) {
+                  resources = resources.filter((x) => x.id !== r.id);
+                  render();
+                  Toast.success("Resource deleted.", "Removed");
+                }
+              },
+            );
+            listEl.appendChild(el);
+          });
+        }
+        search.addEventListener("input", render);
+        cat.addEventListener("change", render);
+        render();
+
+        bindForm(
+          document.getElementById("upload-resource-form"),
+          {
+            name: [Rules.required],
+            file: [Rules.required],
+            category: [Rules.required],
+          },
+          (data) => {
+            resources.unshift({
+              id: "res-" + Date.now(),
+              name: data.get("name"),
+              category: data.get("category"),
+              faculty: data.get("faculty") || "All",
+              department: data.get("department") || "All",
+              level: data.get("level") || "All",
+              course: data.get("course") || "",
+              semester: "First",
+              session: data.get("session") || "2026/2027",
+              type: "pdf",
+              size: "1.0 MB",
+              uploaded: new Date().toISOString().slice(0, 10),
+              uploadedBy: session.name || session.username,
+            });
+            render();
+            Modal.close("upload-resource-modal");
+            document.getElementById("upload-resource-form").reset();
+            Toast.success(
+              "Resource uploaded. Students will be notified.",
+              "Uploaded",
+            );
+          },
+        );
+      });
+    </script>
+  </body>
+</html>

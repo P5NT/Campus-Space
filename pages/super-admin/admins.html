@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admins — Campus Space</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="../../assets/favicon/favicon.ico"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../../assets/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="../../assets/favicon/favicon-16x16.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="../../assets/favicon/apple-touch-icon.png"
+    />
+    <link rel="manifest" href="../../assets/favicon/site.webmanifest" />
+    <meta name="theme-color" content="#B33A3A" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="../../css/style.css" />
+  </head>
+  <body class="has-session admin-body">
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <div class="app-shell">
+      <aside class="sidebar admin-sidebar" id="app-sidebar"></aside>
+      <div class="app-main">
+        <header class="app-header" id="app-header"></header>
+        <main class="app-content" id="main">
+          <div class="page-head">
+            <div class="page-head-text">
+              <h1 class="page-title">Admins</h1>
+              <p class="page-subtitle">
+                Manage Admin accounts. Super Admin only.
+              </p>
+            </div>
+            <button class="btn btn-primary" data-modal-open="add-admin-modal">
+              <i class="fa-solid fa-user-shield"></i> Add Admin
+            </button>
+          </div>
+
+          <div class="grid grid-3">
+            <div class="stat">
+              <div class="stat-label">Total Admins</div>
+              <div class="stat-value" id="ad-total">—</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Active</div>
+              <div
+                class="stat-value"
+                id="ad-active"
+                style="color: var(--success)"
+              >
+                —
+              </div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Super Admins</div>
+              <div
+                class="stat-value"
+                id="ad-super"
+                style="color: var(--brand-primary)"
+              >
+                —
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top: 24px">
+            <div id="admins-list"></div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="add-admin-modal">
+      <div class="modal">
+        <div class="modal-head">
+          <h3>Add Admin account</h3>
+          <button class="btn-icon" data-modal-close aria-label="Close">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <form id="add-admin-form" novalidate>
+          <div class="modal-body">
+            <div class="field">
+              <label class="label">First name <span class="req">*</span></label>
+              <input class="input" name="firstName" />
+              <div class="field-error">
+                <i class="fa-solid fa-circle-exclamation"></i
+                ><span>Required</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label">Last name <span class="req">*</span></label>
+              <input class="input" name="lastName" />
+              <div class="field-error">
+                <i class="fa-solid fa-circle-exclamation"></i
+                ><span>Required</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label">Username <span class="req">*</span></label>
+              <input
+                class="input"
+                name="username"
+                placeholder="admin.username"
+              />
+              <div class="field-error">
+                <i class="fa-solid fa-circle-exclamation"></i
+                ><span>Letters, numbers, underscore only</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label">Email <span class="req">*</span></label>
+              <input class="input" type="email" name="email" />
+              <div class="field-error">
+                <i class="fa-solid fa-circle-exclamation"></i
+                ><span>Enter a valid email</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label">Role <span class="req">*</span></label>
+              <select class="select" name="role">
+                <option value="admin">Admin</option>
+                <option value="super_admin">Super Admin</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-foot">
+            <button type="button" class="btn btn-secondary" data-modal-close>
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">Add Admin</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="mobile-menu-backdrop"></div>
+    <aside
+      class="mobile-menu"
+      id="mobile-menu-mount"
+      aria-label="Mobile menu"
+    ></aside>
+
+    <script src="../../data/students.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/navigation.js"></script>
+    <script src="../../js/notifications.js"></script>
+    <script src="../../js/admin.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const session = Auth.current();
+        if (!session || session.role !== "super_admin") {
+          window.location.href = "../auth/login.html";
+          return;
+        }
+        initAppShell("admin");
+
+        let admins = DEMO_ADMINS.slice();
+        function render() {
+          document.getElementById("ad-total").textContent = admins.length;
+          document.getElementById("ad-active").textContent = admins.filter(
+            (a) => a.status === "active",
+          ).length;
+          document.getElementById("ad-super").textContent = admins.filter(
+            (a) => a.role === "super_admin",
+          ).length;
+
+          const list = document.getElementById("admins-list");
+          list.innerHTML = "";
+          admins.forEach((a) => {
+            const el = document.createElement("div");
+            el.className = "resource-row";
+            el.innerHTML = `
+        <span class="avatar avatar-40 avatar-fallback">${Util.initials(a.firstName + " " + a.lastName)}</span>
+        <div class="resource-info">
+          <div class="resource-name">${Util.escape(a.firstName + " " + a.lastName)}</div>
+          <div class="resource-meta">
+            <span>@${Util.escape(a.username)}</span>
+            <span class="role-chip ${a.role === "super_admin" ? "role-super" : "role-admin"}">
+              <i class="fa-solid ${a.role === "super_admin" ? "fa-crown" : "fa-shield-halved"}"></i>
+              ${a.role === "super_admin" ? "Super Admin" : "Admin"}
+            </span>
+            <span class="badge ${a.status === "active" ? "badge-success" : "badge-warning"}">${a.status}</span>
+          </div>
+        </div>
+        <button class="btn btn-ghost btn-sm" data-toggle style="color:${a.status === "active" ? "var(--danger)" : "var(--success)"};">
+          ${a.status === "active" ? '<i class="fa-solid fa-ban"></i> Deactivate' : '<i class="fa-solid fa-circle-check"></i> Reactivate'}
+        </button>`;
+            el.querySelector("[data-toggle]").addEventListener(
+              "click",
+              async () => {
+                const deactivating = a.status === "active";
+                if (
+                  await Confirmation.confirm({
+                    title: deactivating
+                      ? "Deactivate this Admin?"
+                      : "Reactivate this Admin?",
+                    message: deactivating
+                      ? a.firstName +
+                        " will no longer be able to access the Admin workspace."
+                      : a.firstName + " will regain Admin access.",
+                    confirmLabel: deactivating ? "Deactivate" : "Reactivate",
+                    variant: deactivating ? "danger" : "primary",
+                  })
+                ) {
+                  a.status = deactivating ? "deactivated" : "active";
+                  render();
+                  Toast.success("Admin account updated.", "Saved");
+                }
+              },
+            );
+            list.appendChild(el);
+          });
+        }
+        render();
+
+        bindForm(
+          document.getElementById("add-admin-form"),
+          {
+            firstName: [Rules.required, Rules.name],
+            lastName: [Rules.required, Rules.name],
+            username: [Rules.required, Rules.username],
+            email: [Rules.required, Rules.email],
+            role: [Rules.required],
+          },
+          (data) => {
+            admins.push({
+              id: "ADM" + Date.now(),
+              firstName: data.get("firstName"),
+              lastName: data.get("lastName"),
+              username: data.get("username"),
+              email: data.get("email"),
+              role: data.get("role"),
+              status: "active",
+              lastActive: new Date().toISOString().slice(0, 10),
+            });
+            render();
+            Modal.close("add-admin-modal");
+            document.getElementById("add-admin-form").reset();
+            Toast.success("Admin account created.", "Saved");
+          },
+        );
+      });
+    </script>
+  </body>
+</html>

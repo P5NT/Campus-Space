@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Post — Campus Space</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="../../assets/favicon/favicon.ico"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../../assets/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="../../assets/favicon/favicon-16x16.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="../../assets/favicon/apple-touch-icon.png"
+    />
+    <link rel="manifest" href="../../assets/favicon/site.webmanifest" />
+    <meta name="theme-color" content="#B33A3A" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="../../css/style.css" />
+  </head>
+  <body class="has-session">
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <div class="app-shell">
+      <aside
+        class="sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
+      <div class="app-main">
+        <header class="app-header" id="app-header"></header>
+        <main class="app-content" id="main">
+          <div class="cluster" style="margin-bottom: 16px">
+            <a href="community.html" class="btn btn-ghost btn-sm">
+              <i class="fa-solid fa-arrow-left"></i> Back to community
+            </a>
+          </div>
+          <div id="post-detail"></div>
+        </main>
+      </div>
+    </div>
+    <div id="mobile-nav-mount"></div>
+    <div class="mobile-menu-backdrop"></div>
+    <aside
+      class="mobile-menu"
+      id="mobile-menu-mount"
+      aria-label="Mobile menu"
+    ></aside>
+
+    <script src="../../data/students.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/navigation.js"></script>
+    <script src="../../js/notifications.js"></script>
+    <script src="../../js/community.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const session = Auth.current();
+        if (!session) {
+          window.location.href = "../auth/login.html";
+          return;
+        }
+        initAppShell("student");
+
+        const id = new URLSearchParams(location.search).get("id");
+        const post =
+          Community.all().find((p) => p.id === id) || Community.all()[0];
+        const wrap = document.getElementById("post-detail");
+
+        const tagHtml =
+          post.tag === "ADMIN"
+            ? '<span class="tag-admin"><i class="fa-solid fa-shield-halved"></i> Admin</span>'
+            : post.tag
+              ? `<span class="tag-leader">${Util.escape(post.tag)}</span>`
+              : "";
+
+        wrap.innerHTML = `
+    <article class="card" style="margin-bottom:20px;">
+      <div class="card-body">
+        <div class="post-head">
+          <span class="avatar avatar-48 avatar-fallback">${post.initials}</span>
+          <div class="post-author">
+            <div class="post-author-name">${Util.escape(post.author)} ${tagHtml}</div>
+            <div class="post-author-handle">@${Util.escape(post.handle)} · ${Util.relativeTime(post.time)}</div>
+          </div>
+        </div>
+        <div class="post-body" style="font-size:var(--fs-md);">${Util.escape(post.text)}</div>
+        <div class="post-actions" style="border-top:none; padding-top:12px;">
+          <button class="post-action" id="detail-like">
+            <i class="fa-regular fa-heart"></i> <span>${post.likes}</span>
+          </button>
+          <button class="post-action"><i class="fa-regular fa-comment"></i> <span>${post.replies}</span></button>
+          <button class="post-action" id="detail-share"><i class="fa-solid fa-share-nodes"></i> Share</button>
+        </div>
+      </div>
+    </article>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>Comments (${post.replies})</h3>
+      </div>
+      <div class="card-body" id="comments-wrap"></div>
+      <div class="card-foot">
+        <form id="comment-form" class="cluster" style="gap:12px; align-items:flex-end;">
+          <div class="field" style="flex:1; margin:0;">
+            <input class="input" type="text" name="comment" placeholder="Write a comment…" aria-label="Comment">
+          </div>
+          <button class="btn btn-primary" type="submit"><i class="fa-solid fa-paper-plane"></i> Reply</button>
+        </form>
+      </div>
+    </div>
+  `;
+
+        // Comments
+        const comments = [
+          {
+            name: "Ibrahim Suleiman",
+            handle: "ibrahim",
+            tag: "",
+            time: Date.now() - 1800000,
+            text: "Thanks for the reminder. I will check the materials section.",
+          },
+          {
+            name: "Grace Oladipo",
+            handle: "grace",
+            tag: "",
+            time: Date.now() - 3600000,
+            text: "Very helpful. Any chance we can also get a revision session?",
+          },
+          {
+            name: "Chiamaka Okafor",
+            handle: "chiamaka",
+            tag: "NESA",
+            time: Date.now() - 5400000,
+            text: "I will organise a session on Saturday morning. I will post the details.",
+          },
+        ];
+        const commentsWrap = document.getElementById("comments-wrap");
+        function renderComments() {
+          commentsWrap.innerHTML = "";
+          if (!comments.length) {
+            commentsWrap.innerHTML =
+              '<div style="text-align:center; color:var(--text-tertiary); padding:24px 0;">No comments yet. Be the first to reply.</div>';
+            return;
+          }
+          comments.forEach((c) => {
+            const el = document.createElement("div");
+            el.className = "comment";
+            const ctag =
+              c.tag === "ADMIN"
+                ? '<span class="tag-admin">ADMIN</span>'
+                : c.tag
+                  ? `<span class="tag-leader">${Util.escape(c.tag)}</span>`
+                  : "";
+            el.innerHTML = `
+        <span class="avatar avatar-32 avatar-fallback">${Util.initials(c.name)}</span>
+        <div class="comment-body">
+          <div class="comment-meta">
+            <span class="name">${Util.escape(c.name)}</span>
+            <span class="handle">@${Util.escape(c.handle)}</span>
+            ${ctag}
+            <span class="handle" style="margin-left:auto;">${Util.relativeTime(c.time)}</span>
+          </div>
+          <div class="comment-text">${Util.escape(c.text)}</div>
+        </div>`;
+            commentsWrap.appendChild(el);
+          });
+        }
+        renderComments();
+
+        document
+          .getElementById("comment-form")
+          .addEventListener("submit", (e) => {
+            e.preventDefault();
+            const input = e.target.querySelector('[name="comment"]');
+            const text = input.value.trim();
+            if (!text) return;
+            comments.push({
+              name: session.name || session.username,
+              handle: session.username,
+              tag: "",
+              time: Date.now(),
+              text,
+            });
+            input.value = "";
+            renderComments();
+            Toast.success("Comment posted (simulated).", "Posted");
+          });
+
+        document
+          .getElementById("detail-like")
+          .addEventListener("click", (e) => {
+            const icon = e.currentTarget.querySelector("i");
+            const span = e.currentTarget.querySelector("span");
+            const liked = icon.classList.contains("fa-solid");
+            icon.className = liked
+              ? "fa-regular fa-heart"
+              : "fa-solid fa-heart";
+            span.textContent = liked
+              ? parseInt(span.textContent, 10) - 1
+              : parseInt(span.textContent, 10) + 1;
+            e.currentTarget.classList.toggle("is-liked");
+          });
+
+        document
+          .getElementById("detail-share")
+          .addEventListener("click", () => {
+            Toast.success("Post link copied (simulated).", "Copied");
+          });
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Opportunities — Campus Space</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="../../assets/favicon/favicon.ico"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../../assets/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="../../assets/favicon/favicon-16x16.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="../../assets/favicon/apple-touch-icon.png"
+    />
+    <link rel="manifest" href="../../assets/favicon/site.webmanifest" />
+    <meta name="theme-color" content="#B33A3A" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="../../css/style.css" />
+  </head>
+  <body class="has-session">
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <div class="app-shell">
+      <aside
+        class="sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
+      <div class="app-main">
+        <header class="app-header" id="app-header"></header>
+        <main class="app-content" id="main">
+          <div class="page-head">
+            <div class="page-head-text">
+              <h1 class="page-title">Opportunities</h1>
+              <p class="page-subtitle">
+                Scholarships, internships, SIWES, jobs, competitions and more.
+              </p>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <div class="input-wrap">
+              <i class="fa-solid fa-magnifying-glass input-icon"></i>
+              <input
+                class="input"
+                type="search"
+                id="opp-search"
+                placeholder="Search opportunities…"
+                aria-label="Search"
+              />
+            </div>
+          </div>
+
+          <div class="filter-bar" id="opp-filters">
+            <button class="chip is-active" data-cat="all">All</button>
+            <button class="chip" data-cat="Scholarships">Scholarships</button>
+            <button class="chip" data-cat="Internships">Internships</button>
+            <button class="chip" data-cat="SIWES">SIWES</button>
+            <button class="chip" data-cat="Jobs">Jobs</button>
+            <button class="chip" data-cat="Competitions">Competitions</button>
+            <button class="chip" data-cat="Fellowships">Fellowships</button>
+            <button class="chip" data-cat="Grants">Grants</button>
+            <button class="chip" data-cat="Training">Training</button>
+          </div>
+
+          <div class="grid grid-3" id="opp-grid"></div>
+        </main>
+      </div>
+    </div>
+    <div id="mobile-nav-mount"></div>
+    <div class="mobile-menu-backdrop"></div>
+    <aside
+      class="mobile-menu"
+      id="mobile-menu-mount"
+      aria-label="Mobile menu"
+    ></aside>
+
+    <script src="../../data/students.js"></script>
+    <script src="../../data/opportunities.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/navigation.js"></script>
+    <script src="../../js/notifications.js"></script>
+    <script src="../../js/opportunities.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const session = Auth.current();
+        if (!session) {
+          window.location.href = "../auth/login.html";
+          return;
+        }
+        initAppShell("student");
+
+        const grid = document.getElementById("opp-grid");
+        const search = document.getElementById("opp-search");
+        let cat = "all";
+
+        function apply() {
+          let list = DEMO_OPPORTUNITIES.slice();
+          if (cat !== "all") list = list.filter((o) => o.category === cat);
+          const q = search.value.trim().toLowerCase();
+          if (q)
+            list = list.filter(
+              (o) =>
+                o.title.toLowerCase().includes(q) ||
+                o.organization.toLowerCase().includes(q) ||
+                o.summary.toLowerCase().includes(q),
+            );
+          renderOpportunities(grid, list);
+        }
+        document.querySelectorAll("[data-cat]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            document
+              .querySelectorAll("[data-cat]")
+              .forEach((b) => b.classList.remove("is-active"));
+            btn.classList.add("is-active");
+            cat = btn.getAttribute("data-cat");
+            apply();
+          });
+        });
+        search.addEventListener("input", apply);
+        apply();
+      });
+    </script>
+  </body>
+</html>

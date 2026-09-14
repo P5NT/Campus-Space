@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Complaints — Admin — Campus Space</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="../../assets/favicon/favicon.ico"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../../assets/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="../../assets/favicon/favicon-16x16.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="../../assets/favicon/apple-touch-icon.png"
+    />
+    <link rel="manifest" href="../../assets/favicon/site.webmanifest" />
+    <meta name="theme-color" content="#B33A3A" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="../../css/style.css" />
+  </head>
+  <body class="has-session admin-body">
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <div class="app-shell">
+      <aside class="sidebar admin-sidebar" id="app-sidebar"></aside>
+      <div class="app-main">
+        <header class="app-header" id="app-header"></header>
+        <main class="app-content" id="main">
+          <div class="page-head">
+            <div class="page-head-text">
+              <h1 class="page-title">Complaints</h1>
+              <p class="page-subtitle">
+                Review student complaints and update their status.
+              </p>
+            </div>
+          </div>
+
+          <div class="filter-bar">
+            <button class="chip is-active" data-status="all">All</button>
+            <button class="chip" data-status="Submitted">Submitted</button>
+            <button class="chip" data-status="Under Review">
+              Under Review
+            </button>
+            <button class="chip" data-status="In Progress">In Progress</button>
+            <button class="chip" data-status="Resolved">Resolved</button>
+          </div>
+
+          <div class="card">
+            <div id="admin-complaints-list"></div>
+          </div>
+        </main>
+      </div>
+    </div>
+    <div class="mobile-menu-backdrop"></div>
+    <aside
+      class="mobile-menu"
+      id="mobile-menu-mount"
+      aria-label="Mobile menu"
+    ></aside>
+
+    <script src="../../data/students.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/navigation.js"></script>
+    <script src="../../js/notifications.js"></script>
+    <script src="../../js/complaints.js"></script>
+    <script src="../../js/admin.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const session = Auth.current();
+        if (
+          !session ||
+          (session.role !== "admin" && session.role !== "super_admin")
+        ) {
+          window.location.href = "../auth/login.html";
+          return;
+        }
+        initAppShell("admin");
+
+        const listEl = document.getElementById("admin-complaints-list");
+        let filter = "all";
+
+        function render() {
+          listEl.innerHTML = "";
+          let list = Complaints.all();
+          if (filter !== "all") list = list.filter((c) => c.status === filter);
+          if (!list.length) {
+            listEl.innerHTML =
+              '<div class="empty-state" style="padding:40px;"><div class="empty-icon"><i class="fa-solid fa-file-shield"></i></div><h3>No complaints in this filter</h3></div>';
+            return;
+          }
+          list.forEach((c) => {
+            const row = document.createElement("div");
+            row.className = "complaint-row";
+            row.innerHTML = `
+        <span class="complaint-icon"><i class="fa-solid fa-file-shield"></i></span>
+        <div class="complaint-info">
+          <h4>${Util.escape(c.subject)}</h4>
+          <div class="meta">
+            <span>${Util.escape(c.id)}</span>
+            <span>${Util.escape(c.category)}</span>
+            <span>${Util.relativeTime(c.updated)}</span>
+          </div>
+        </div>
+        ${complaintStatusPill(c.status)}
+        <button class="btn btn-secondary btn-sm" data-open>Open</button>`;
+            row
+              .querySelector("[data-open]")
+              .addEventListener("click", () => openComplaint(c.id));
+            listEl.appendChild(row);
+          });
+        }
+
+        function openComplaint(id) {
+          const c = Complaints.all().find((x) => x.id === id);
+          if (!c) return;
+          let modal = document.getElementById("admin-complaint-modal");
+          if (!modal) {
+            modal = document.createElement("div");
+            modal.className = "modal-backdrop";
+            modal.id = "admin-complaint-modal";
+            modal.innerHTML = `
+        <div class="modal modal-lg">
+          <div class="modal-head">
+            <h3 id="cm-title"></h3>
+            <button class="btn-icon" data-modal-close aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div class="modal-body" id="cm-body"></div>
+          <div class="modal-foot">
+            <button class="btn btn-secondary" data-modal-close>Close</button>
+          </div>
+        </div>`;
+            document.body.appendChild(modal);
+          }
+          modal.querySelector("#cm-title").textContent =
+            c.id + " — " + c.category;
+          const body = modal.querySelector("#cm-body");
+          body.innerHTML = `
+      <div style="margin-bottom:20px;">
+        <div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Subject</div>
+        <div style="font-weight:600; margin-bottom:12px;">${Util.escape(c.subject)}</div>
+        <div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Description</div>
+        <p style="color:var(--text-secondary); margin-bottom:12px;">${Util.escape(c.description)}</p>
+      </div>
+
+      <div class="field">
+        <label class="label">Update status</label>
+        <select class="select" id="cm-status">
+          ${["Submitted", "Under Review", "In Progress", "Resolved"].map((s) => `<option${c.status === s ? " selected" : ""}>${s}</option>`).join("")}
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="label">Respond to student</label>
+        <textarea class="textarea" id="cm-response" placeholder="Write a response…"></textarea>
+      </div>
+
+      <button class="btn btn-primary" id="cm-submit">Update complaint</button>
+    `;
+          body.querySelector("#cm-submit").addEventListener("click", () => {
+            const newStatus = body.querySelector("#cm-status").value;
+            const response = body.querySelector("#cm-response").value.trim();
+            if (newStatus !== c.status)
+              Complaints.updateStatus(
+                c.id,
+                newStatus,
+                (session.name || session.username) + " (Admin)",
+              );
+            if (response)
+              Complaints.respond(
+                c.id,
+                response,
+                session.name || session.username,
+              );
+            Modal.close("admin-complaint-modal");
+            render();
+            Toast.success(
+              "Complaint updated. Student will be notified.",
+              "Saved",
+            );
+          });
+          Modal.open("admin-complaint-modal");
+        }
+
+        document.querySelectorAll("[data-status]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            document
+              .querySelectorAll("[data-status]")
+              .forEach((b) => b.classList.remove("is-active"));
+            btn.classList.add("is-active");
+            filter = btn.getAttribute("data-status");
+            render();
+          });
+        });
+        render();
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Academic Calendar — Admin — Campus Space</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="../../assets/favicon/favicon.ico"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../../assets/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="../../assets/favicon/favicon-16x16.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="../../assets/favicon/apple-touch-icon.png"
+    />
+    <link rel="manifest" href="../../assets/favicon/site.webmanifest" />
+    <meta name="theme-color" content="#B33A3A" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="../../css/style.css" />
+  </head>
+  <body class="has-session admin-body">
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <div class="app-shell">
+      <aside class="sidebar admin-sidebar" id="app-sidebar"></aside>
+      <div class="app-main">
+        <header class="app-header" id="app-header"></header>
+        <main class="app-content" id="main">
+          <div class="page-head">
+            <div class="page-head-text">
+              <h1 class="page-title">Academic Calendar</h1>
+              <p class="page-subtitle">Manage key session dates.</p>
+            </div>
+            <button class="btn btn-primary" data-modal-open="add-event-modal">
+              <i class="fa-solid fa-plus"></i> Add date
+            </button>
+          </div>
+          <div class="card card-pad-lg">
+            <div class="timeline" id="calendar-timeline"></div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="add-event-modal">
+      <div class="modal">
+        <div class="modal-head">
+          <h3>Add calendar event</h3>
+          <button class="btn-icon" data-modal-close aria-label="Close">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <form id="add-event-form" novalidate>
+          <div class="modal-body">
+            <div class="field">
+              <label class="label">Date <span class="req">*</span></label>
+              <input class="input" type="date" name="date" />
+              <div class="field-error">
+                <i class="fa-solid fa-circle-exclamation"></i
+                ><span>Please choose a date.</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label">Title <span class="req">*</span></label>
+              <input class="input" name="title" />
+              <div class="field-error">
+                <i class="fa-solid fa-circle-exclamation"></i
+                ><span>Please enter a title.</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label">Description</label>
+              <textarea class="textarea" name="description"></textarea>
+            </div>
+          </div>
+          <div class="modal-foot">
+            <button type="button" class="btn btn-secondary" data-modal-close>
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">Add event</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="mobile-menu-backdrop"></div>
+    <aside
+      class="mobile-menu"
+      id="mobile-menu-mount"
+      aria-label="Mobile menu"
+    ></aside>
+
+    <script src="../../data/students.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/navigation.js"></script>
+    <script src="../../js/notifications.js"></script>
+    <script src="../../js/admin.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const session = Auth.current();
+        if (
+          !session ||
+          (session.role !== "admin" && session.role !== "super_admin")
+        ) {
+          window.location.href = "../auth/login.html";
+          return;
+        }
+        initAppShell("admin");
+
+        let events = [
+          {
+            date: "2026-01-02",
+            title: "Resumption & Registration Begins",
+            description: "Returning students report to campus.",
+          },
+          {
+            date: "2026-01-20",
+            title: "Lectures Commence",
+            description: "First semester lectures begin.",
+          },
+          {
+            date: "2026-01-26",
+            title: "Course Registration Deadline",
+            description: "No registration accepted beyond this date.",
+          },
+          {
+            date: "2026-04-20",
+            title: "First Semester Examinations Begin",
+            description: "Exam timetable published in advance.",
+          },
+          {
+            date: "2026-05-08",
+            title: "First Semester Ends",
+            description: "End of first semester.",
+          },
+        ];
+
+        const tl = document.getElementById("calendar-timeline");
+        function render() {
+          tl.innerHTML = "";
+          events.forEach((e) => {
+            const el = document.createElement("div");
+            el.className = "timeline-item";
+            el.innerHTML = `
+        <div class="timeline-date">${Util.formatDate(e.date, { day: "numeric", month: "long", year: "numeric" })}</div>
+        <div class="cluster-between">
+          <div>
+            <div class="timeline-title">${Util.escape(e.title)}</div>
+            <div class="timeline-desc">${Util.escape(e.description || "")}</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" data-del style="color:var(--danger);" aria-label="Delete event"><i class="fa-solid fa-trash"></i></button>
+        </div>`;
+            el.querySelector("[data-del]").addEventListener(
+              "click",
+              async () => {
+                if (
+                  await Confirmation.confirm({
+                    title: "Delete this calendar event?",
+                    message: '"' + e.title + '" will be removed.',
+                    confirmLabel: "Delete",
+                    variant: "danger",
+                  })
+                ) {
+                  events = events.filter((x) => x !== e);
+                  render();
+                  Toast.success("Event deleted.", "Removed");
+                }
+              },
+            );
+            tl.appendChild(el);
+          });
+        }
+        render();
+
+        bindForm(
+          document.getElementById("add-event-form"),
+          {
+            date: [Rules.required],
+            title: [Rules.required],
+          },
+          (data) => {
+            events.push({
+              date: data.get("date"),
+              title: data.get("title"),
+              description: data.get("description"),
+            });
+            events.sort((a, b) => new Date(a.date) - new Date(b.date));
+            render();
+            Modal.close("add-event-modal");
+            document.getElementById("add-event-form").reset();
+            Toast.success("Calendar event added.", "Saved");
+          },
+        );
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Student Details — Campus Space</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="../../assets/favicon/favicon.ico"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../../assets/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="../../assets/favicon/favicon-16x16.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="../../assets/favicon/apple-touch-icon.png"
+    />
+    <link rel="manifest" href="../../assets/favicon/site.webmanifest" />
+    <meta name="theme-color" content="#B33A3A" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="../../css/style.css" />
+  </head>
+  <body class="has-session admin-body">
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <div class="app-shell">
+      <aside class="sidebar admin-sidebar" id="app-sidebar"></aside>
+      <div class="app-main">
+        <header class="app-header" id="app-header"></header>
+        <main class="app-content" id="main">
+          <div class="cluster" style="margin-bottom: 16px">
+            <a href="registered-students.html" class="btn btn-ghost btn-sm">
+              <i class="fa-solid fa-arrow-left"></i> Back to Registered Students
+            </a>
+          </div>
+          <div id="student-detail"></div>
+        </main>
+      </div>
+    </div>
+    <div class="mobile-menu-backdrop"></div>
+    <aside
+      class="mobile-menu"
+      id="mobile-menu-mount"
+      aria-label="Mobile menu"
+    ></aside>
+
+    <script src="../../data/students.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/navigation.js"></script>
+    <script src="../../js/notifications.js"></script>
+    <script src="../../js/admin.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const session = Auth.current();
+        if (
+          !session ||
+          (session.role !== "admin" && session.role !== "super_admin")
+        ) {
+          window.location.href = "../auth/login.html";
+          return;
+        }
+        initAppShell("admin");
+
+        const id = new URLSearchParams(location.search).get("id");
+        const s = Admin.studentById(id) || DEMO_STUDENTS[0];
+        const wrap = document.getElementById("student-detail");
+
+        wrap.innerHTML = `
+    <div class="card card-pad-lg" style="margin-bottom:20px;">
+      <div class="cluster" style="gap:20px; align-items:flex-start; flex-wrap:wrap;">
+        <span class="avatar avatar-96 avatar-fallback">${Util.initials(s.firstName + " " + s.lastName)}</span>
+        <div style="flex:1; min-width:240px;">
+          <h1 class="page-title" style="font-size:var(--fs-xl); margin-bottom:4px;">${Util.escape(s.firstName + " " + (s.otherName ? s.otherName + " " : "") + s.lastName)}</h1>
+          <div class="text-muted" style="margin-bottom:12px;">@${Util.escape(s.username)} · ${Util.escape(s.matric)}</div>
+          <div class="cluster">
+            <span class="badge badge-marine">${Util.escape(s.faculty)}</span>
+            <span class="badge badge-neutral">${Util.escape(s.department)}</span>
+            <span class="badge badge-neutral">${Util.escape(s.level)} Level</span>
+            <span class="badge ${s.status === "active" ? "badge-success" : s.status === "suspended" ? "badge-danger" : "badge-warning"}">
+              <i class="fa-solid fa-circle-check"></i> ${s.status}
+            </span>
+          </div>
+        </div>
+        <div class="cluster" style="flex-direction:column; align-items:stretch; min-width:200px;">
+          <button class="btn btn-secondary" data-activate><i class="fa-solid fa-circle-check"></i> Reactivate</button>
+          <button class="btn btn-secondary" data-suspend><i class="fa-solid fa-ban"></i> Suspend</button>
+          <button class="btn btn-danger" data-deactivate><i class="fa-solid fa-user-slash"></i> Deactivate</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-2" style="gap:20px;">
+      <div class="card card-pad">
+        <h3 style="font-size:var(--fs-md); margin-bottom:16px;">Account Information</h3>
+        <div class="stack">
+          <div>
+            <div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Email</div>
+            <div class="font-semibold" style="word-break:break-all;">${Util.escape(s.email)}</div>
+          </div>
+          <div>
+            <div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Phone</div>
+            <div class="font-semibold">${Util.escape(s.phone)}</div>
+          </div>
+          <div>
+            <div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Joined</div>
+            <div class="font-semibold">${Util.formatDate(s.joined, { day: "numeric", month: "long", year: "numeric" })}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card card-pad">
+        <h3 style="font-size:var(--fs-md); margin-bottom:16px;">Leadership &amp; Roles</h3>
+        <div class="stack">
+          <div>
+            <div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Association</div>
+            <div class="font-semibold">${s.association ? Util.escape(s.associationFull) + " (" + Util.escape(s.association) + ")" : "—"}</div>
+          </div>
+          <div>
+            <div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Position</div>
+            <div class="font-semibold">${s.position ? Util.escape(s.position) : "—"}</div>
+          </div>
+          <div>
+            <div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Emergency Contact</div>
+            <div class="font-semibold">${s.isEmergencyContact ? "Yes — " + Util.escape(s.emergencyCategory) : "No"}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+        wrap
+          .querySelector("[data-activate]")
+          .addEventListener("click", async () => {
+            if (
+              await Confirmation.confirm({
+                title: "Reactivate this account?",
+                message: "The student will regain full access to Campus Space.",
+                confirmLabel: "Reactivate",
+              })
+            ) {
+              Toast.success("Account reactivated.", "Done");
+            }
+          });
+        wrap
+          .querySelector("[data-suspend]")
+          .addEventListener("click", async () => {
+            if (
+              await Confirmation.confirm({
+                title: "Suspend this account?",
+                message:
+                  "The student will lose access to Campus Space, including posting and commenting.",
+                confirmLabel: "Suspend",
+                variant: "danger",
+              })
+            ) {
+              Toast.warning("Account suspended.", "Suspended");
+            }
+          });
+        wrap
+          .querySelector("[data-deactivate]")
+          .addEventListener("click", async () => {
+            if (
+              await Confirmation.confirm({
+                title: "Deactivate this account?",
+                message:
+                  "This will mark the account as Deactivated. The student can request reactivation later.",
+                confirmLabel: "Deactivate",
+                variant: "danger",
+              })
+            ) {
+              Toast.warning("Account deactivated.", "Deactivated");
+            }
+          });
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Campus News — Campus Space</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="../../assets/favicon/favicon.ico"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../../assets/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="../../assets/favicon/favicon-16x16.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="../../assets/favicon/apple-touch-icon.png"
+    />
+    <link rel="manifest" href="../../assets/favicon/site.webmanifest" />
+    <meta name="theme-color" content="#B33A3A" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="../../css/style.css" />
+  </head>
+  <body class="has-session">
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <div class="app-shell">
+      <aside
+        class="sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
+      <div class="app-main">
+        <header class="app-header" id="app-header"></header>
+        <main class="app-content" id="main">
+          <div class="page-head">
+            <div class="page-head-text">
+              <h1 class="page-title">Campus News</h1>
+              <p class="page-subtitle">
+                Editorial coverage of what's happening at OAUSTECH.
+              </p>
+            </div>
+          </div>
+
+          <div class="filter-bar">
+            <button class="chip is-active" data-cat="all">All</button>
+            <button class="chip" data-cat="Campus">Campus</button>
+            <button class="chip" data-cat="Academics">Academics</button>
+          </div>
+
+          <div class="grid grid-3" id="news-grid"></div>
+        </main>
+      </div>
+    </div>
+    <div id="mobile-nav-mount"></div>
+    <div class="mobile-menu-backdrop"></div>
+    <aside
+      class="mobile-menu"
+      id="mobile-menu-mount"
+      aria-label="Mobile menu"
+    ></aside>
+
+    <script src="../../data/students.js"></script>
+    <script src="../../data/news.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/navigation.js"></script>
+    <script src="../../js/notifications.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const session = Auth.current();
+        if (!session) {
+          window.location.href = "../auth/login.html";
+          return;
+        }
+        initAppShell("student");
+
+        const grid = document.getElementById("news-grid");
+        let filter = "all";
+
+        function render() {
+          grid.innerHTML = "";
+          let list = DEMO_NEWS.slice();
+          if (filter !== "all")
+            list = list.filter((n) => n.category === filter);
+          if (!list.length) {
+            grid.innerHTML =
+              '<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon"><i class="fa-regular fa-newspaper"></i></div><h3>No news in this category</h3></div>';
+            return;
+          }
+          list.forEach((n) => {
+            const card = document.createElement("a");
+            card.href = "news-details.html?id=" + n.id;
+            card.className = "news-card";
+            card.innerHTML = `
+        <img src="${n.image}" alt="" class="card-media" onerror="this.style.display='none'">
+        <div class="news-card-body">
+          <span class="badge badge-brand">${Util.escape(n.category)}</span>
+          <h3>${Util.escape(n.title)}</h3>
+          <p>${Util.escape(n.excerpt)}</p>
+          <div class="news-card-meta">
+            <span><i class="fa-solid fa-user"></i> ${Util.escape(n.author)}</span>
+            <span><i class="fa-regular fa-clock"></i> ${Util.relativeTime(n.date)}</span>
+          </div>
+        </div>`;
+            grid.appendChild(card);
+          });
+        }
+        document.querySelectorAll("[data-cat]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            document
+              .querySelectorAll("[data-cat]")
+              .forEach((b) => b.classList.remove("is-active"));
+            btn.classList.add("is-active");
+            filter = btn.getAttribute("data-cat");
+            render();
+          });
+        });
+        render();
+      });
+    </script>
+  </body>
+</html>

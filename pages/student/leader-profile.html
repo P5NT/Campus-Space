@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Leader Profile — Campus Space</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="../../assets/favicon/favicon.ico"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../../assets/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="../../assets/favicon/favicon-16x16.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="../../assets/favicon/apple-touch-icon.png"
+    />
+    <link rel="manifest" href="../../assets/favicon/site.webmanifest" />
+    <meta name="theme-color" content="#B33A3A" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="../../css/style.css" />
+  </head>
+  <body class="has-session">
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <div class="app-shell">
+      <aside
+        class="sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
+      <div class="app-main">
+        <header class="app-header" id="app-header"></header>
+        <main class="app-content" id="main">
+          <div class="cluster" style="margin-bottom: 16px">
+            <a href="student-leaders.html" class="btn btn-ghost btn-sm">
+              <i class="fa-solid fa-arrow-left"></i> Back to leaders
+            </a>
+          </div>
+          <div id="leader-detail"></div>
+        </main>
+      </div>
+    </div>
+    <div id="mobile-nav-mount"></div>
+    <div class="mobile-menu-backdrop"></div>
+    <aside
+      class="mobile-menu"
+      id="mobile-menu-mount"
+      aria-label="Mobile menu"
+    ></aside>
+
+    <script src="../../data/students.js"></script>
+    <script src="../../data/associations.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/navigation.js"></script>
+    <script src="../../js/notifications.js"></script>
+    <script src="../../js/leaders.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const session = Auth.current();
+        if (!session) {
+          window.location.href = "../auth/login.html";
+          return;
+        }
+        initAppShell("student");
+
+        const id = new URLSearchParams(location.search).get("id");
+        const leader =
+          getLeaderList().find((l) => l.student.id === id) ||
+          getLeaderList()[0];
+        const wrap = document.getElementById("leader-detail");
+        const { student, assoc, pos } = leader;
+
+        wrap.innerHTML = `
+    <div class="profile-hero">
+      <div class="profile-cover"></div>
+      <div class="profile-hero-body">
+        <div class="profile-avatar-wrap">
+          ${
+            student.avatar
+              ? `<img src="${student.avatar}" alt="" class="avatar avatar-96" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'avatar avatar-96 avatar-fallback',textContent:'${Util.initials(student.firstName + " " + student.lastName)}'}))">`
+              : `<span class="avatar avatar-96 avatar-fallback">${Util.initials(student.firstName + " " + student.lastName)}</span>`
+          }
+        </div>
+        <div class="profile-info">
+          <h1>${Util.escape(student.firstName + " " + student.lastName)} <i class="fa-solid fa-circle-check tag-verified"></i></h1>
+          <div class="handle">@${Util.escape(student.username)}</div>
+          <div class="profile-tags">
+            <span class="badge badge-brand">${Util.escape(assoc.acronym)}</span>
+            <span class="badge badge-marine">${Util.escape(pos.name)}</span>
+          </div>
+        </div>
+        <div class="profile-actions">
+          <a href="tel:${student.phone.replace(/\s+/g, "")}" class="btn btn-primary">
+            <i class="fa-solid fa-phone"></i> Call
+          </a>
+          <button class="btn btn-secondary" id="copy-contact">
+            <i class="fa-solid fa-copy"></i> Copy contact
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-2" style="gap:20px;">
+      <div class="card card-pad">
+        <h3 style="font-size:var(--fs-md); margin-bottom:16px;">Leadership details</h3>
+        <div class="stack">
+          <div>
+            <div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Association</div>
+            <div class="font-semibold">${Util.escape(assoc.name)}</div>
+            <div class="text-xs text-muted" style="margin-top:2px;">Public tag: ${Util.escape(assoc.acronym)}</div>
+          </div>
+          <div>
+            <div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Position</div>
+            <div class="font-semibold">${Util.escape(pos.name)}</div>
+          </div>
+          <div>
+            <div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Faculty</div>
+            <div class="font-semibold">${Util.escape(student.faculty)}</div>
+          </div>
+          <div>
+            <div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Department</div>
+            <div class="font-semibold">${Util.escape(student.department)}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card card-pad">
+        <h3 style="font-size:var(--fs-md); margin-bottom:16px;">Contact</h3>
+        <div class="stack">
+          <a href="tel:${student.phone.replace(/\s+/g, "")}" class="ir-call-btn security" style="padding:16px;">
+            <span class="ir-call-icon" style="width:40px; height:40px; font-size:15px;"><i class="fa-solid fa-phone"></i></span>
+            <div class="ir-call-info">
+              <h3 style="font-size:var(--fs-sm);">Phone</h3>
+              <span class="number" style="font-size:var(--fs-sm);">${Util.escape(student.phone)}</span>
+            </div>
+            <i class="fa-solid fa-chevron-right ir-call-chevron"></i>
+          </a>
+          <a href="mailto:${student.email}" class="ir-call-btn security" style="padding:16px;">
+            <span class="ir-call-icon marine" style="width:40px; height:40px; font-size:15px; background:var(--brand-secondary-soft); color:var(--brand-secondary);"><i class="fa-solid fa-envelope"></i></span>
+            <div class="ir-call-info">
+              <h3 style="font-size:var(--fs-sm);">Email</h3>
+              <span class="number" style="font-size:var(--fs-xs);">${Util.escape(student.email)}</span>
+            </div>
+            <i class="fa-solid fa-chevron-right ir-call-chevron"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  `;
+
+        document
+          .getElementById("copy-contact")
+          .addEventListener("click", () => {
+            Toast.success("Contact details copied (simulated).", "Copied");
+          });
+      });
+    </script>
+  </body>
+</html>
