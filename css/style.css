@@ -5219,3 +5219,643 @@ p {
     padding: 8px;
   }
 }
+
+/* ==========================================================================
+   36. PROFILE PAGE — v2
+   Sleeker profile with cover banner, overlapping avatar, info grids.
+   ========================================================================== */
+
+.profile-hero-v2 {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  margin-bottom: var(--sp-6);
+}
+
+/* Cover banner */
+.profile-cover-v2 {
+  height: 168px;
+  background:
+    radial-gradient(
+      circle at 78% 22%,
+      rgba(179, 58, 58, 0.35),
+      transparent 55%
+    ),
+    radial-gradient(
+      circle at 12% 88%,
+      rgba(255, 255, 255, 0.08),
+      transparent 45%
+    ),
+    linear-gradient(135deg, #003b5c 0%, #001f31 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Dark overlay — keeps the buttons and grain visible on top of any cover image */
+.profile-cover-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.15) 0%,
+    rgba(0, 0, 0, 0) 40%,
+    rgba(0, 0, 0, 0.35) 100%
+  );
+  pointer-events: none;
+}
+
+/* Remove button placement (parallel to the Change button) */
+.profile-cover-edit,
+.profile-cover-remove {
+  position: absolute;
+  top: 16px;
+  z-index: 3;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  font-weight: 600;
+  transform: none; /* ← kill any inherited :active transform */
+}
+.profile-cover-edit:hover,
+.profile-cover-remove:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+.profile-cover-remove {
+  right: 132px; /* ← sits 132px from the right edge */
+}
+.profile-cover-remove:hover {
+  background: rgba(192, 57, 43, 0.55);
+  border-color: rgba(192, 57, 43, 0.7);
+}
+.profile-cover-edit {
+  right: 16px;
+}
+
+.profile-cover-edit:active,
+.profile-cover-remove:active {
+  transform: none;
+}
+
+/* Avatar + info row */
+.profile-hero-body-v2 {
+  padding: 0 var(--sp-8) var(--sp-6);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--sp-6);
+  align-items: flex-start;
+  margin-top: -56px;
+  position: relative;
+}
+
+/* Avatar slot */
+.profile-avatar-v2 {
+  position: relative;
+  flex-shrink: 0;
+}
+.profile-avatar-slot {
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  border: 5px solid var(--bg-surface);
+  background: var(--bg-surface);
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(16, 24, 40, 0.14);
+  position: relative;
+}
+.profile-avatar-slot .avatar,
+.profile-avatar-slot img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  font-size: 40px;
+  font-weight: 700;
+}
+.profile-avatar-slot .avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--brand-secondary);
+  color: #fff;
+  font-family: var(--font-heading);
+}
+
+/* Small camera button on avatar */
+.profile-avatar-edit {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--brand-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  border: 3px solid var(--bg-surface);
+  cursor: pointer;
+  transition:
+    transform var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease);
+  box-shadow: 0 4px 12px rgba(179, 58, 58, 0.35);
+}
+.profile-avatar-edit:hover {
+  background: var(--brand-primary-hover);
+  transform: scale(1.08);
+}
+.profile-avatar-edit:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--brand-primary-ring);
+}
+
+/* Name row */
+.profile-hero-info {
+  padding-top: 60px;
+  min-width: 0;
+}
+.profile-hero-name-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.profile-hero-name-row h1 {
+  font-size: var(--fs-2xl);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin: 0;
+}
+.profile-hero-handle {
+  font-size: var(--fs-sm);
+  color: var(--text-tertiary);
+  margin-bottom: var(--sp-4);
+}
+.profile-hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: var(--sp-4);
+}
+.profile-hero-bio {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-width: 560px;
+}
+
+/* Action buttons */
+.profile-hero-actions {
+  padding-top: 70px;
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Main grid */
+.profile-v2-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: var(--sp-6);
+  align-items: start;
+}
+.profile-v2-main,
+.profile-v2-side {
+  display: grid;
+  gap: var(--sp-5);
+}
+
+.profile-v2-card .card-head {
+  padding: var(--sp-4) var(--sp-6);
+  background: transparent;
+}
+.profile-v2-card .card-head h3 {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  letter-spacing: 0.005em;
+  display: flex;
+  align-items: center;
+}
+
+/* Info grid inside cards */
+.profile-v2-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border-top: 1px solid var(--border-subtle);
+}
+.profile-v2-info {
+  padding: var(--sp-5) var(--sp-6);
+  border-bottom: 1px solid var(--border-subtle);
+  border-right: 1px solid var(--border-subtle);
+}
+.profile-v2-info:nth-child(2n) {
+  border-right: 0;
+}
+.profile-v2-info:nth-last-child(-n + 2) {
+  border-bottom: 0;
+}
+.profile-v2-info-wide {
+  grid-column: 1 / -1;
+  border-right: 0 !important;
+}
+.profile-v2-info .label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 6px;
+}
+.profile-v2-info .value {
+  font-size: var(--fs-sm);
+  color: var(--text-primary);
+  font-weight: 500;
+  word-break: break-word;
+  display: flex;
+  align-items: center;
+}
+
+/* Sidebar rows */
+.profile-v2-side-list {
+  border-top: 1px solid var(--border-subtle);
+}
+.profile-v2-side-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-6);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.profile-v2-side-row:last-child {
+  border-bottom: 0;
+}
+.profile-v2-side-row .label {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  font-weight: 600;
+}
+.profile-v2-side-row .value {
+  font-size: var(--fs-sm);
+  color: var(--text-primary);
+  font-weight: 600;
+  text-align: right;
+  word-break: break-word;
+}
+
+/* Avatar preview card */
+.profile-v2-avatar-card {
+  padding-bottom: 0;
+}
+.profile-v2-avatar-preview {
+  padding: var(--sp-5) var(--sp-6);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+}
+.avatar-preview-frame {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid var(--border-subtle);
+  flex-shrink: 0;
+  background: var(--bg-subtle);
+}
+.avatar-preview-frame .avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.profile-v2-avatar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+.profile-v2-avatar-hint {
+  padding: 0 var(--sp-6) var(--sp-5);
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  line-height: 1.55;
+}
+
+/* ---------- Responsive ---------- */
+
+/* 1080px */
+@media (max-width: 1080px) {
+  .profile-v2-grid {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+}
+
+/* 960px */
+@media (max-width: 960px) {
+  .profile-hero-body-v2 {
+    grid-template-columns: auto 1fr;
+    padding: 0 var(--sp-6) var(--sp-5);
+    margin-top: -48px;
+  }
+  .profile-hero-actions {
+    grid-column: 1 / -1;
+    padding-top: var(--sp-3);
+    justify-content: stretch;
+  }
+  .profile-hero-actions .btn {
+    flex: 1;
+  }
+  .profile-avatar-slot {
+    width: 108px;
+    height: 108px;
+  }
+  .profile-avatar-slot .avatar,
+  .profile-avatar-slot img {
+    font-size: 34px;
+  }
+  .profile-hero-info {
+    padding-top: 48px;
+  }
+}
+
+/* 768px */
+@media (max-width: 768px) {
+  .profile-v2-grid {
+    grid-template-columns: 1fr;
+  }
+  .profile-cover-v2 {
+    height: 132px;
+  }
+  .profile-v2-info-grid {
+    grid-template-columns: 1fr;
+  }
+  .profile-v2-info {
+    border-right: 0 !important;
+  }
+  .profile-v2-info:nth-last-child(-n + 2) {
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .profile-v2-info:last-child {
+    border-bottom: 0;
+  }
+}
+
+/* 640px */
+@media (max-width: 640px) {
+  .profile-hero-body-v2 {
+    padding: 0 var(--sp-4) var(--sp-5);
+    gap: var(--sp-4);
+    margin-top: -40px;
+  }
+  .profile-avatar-slot {
+    width: 92px;
+    height: 92px;
+    border-width: 4px;
+  }
+  .profile-avatar-slot .avatar,
+  .profile-avatar-slot img {
+    font-size: 28px;
+  }
+  .profile-avatar-edit {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+  .profile-hero-info {
+    padding-top: 40px;
+  }
+  .profile-hero-name-row h1 {
+    font-size: var(--fs-xl);
+  }
+  .profile-cover-edit span {
+    display: none;
+  }
+  .profile-cover-edit {
+    padding: 8px 10px;
+  }
+  .profile-v2-card .card-head {
+    padding: var(--sp-4) var(--sp-5);
+  }
+  .profile-v2-info {
+    padding: var(--sp-4) var(--sp-5);
+  }
+  .profile-v2-side-row {
+    padding: var(--sp-3) var(--sp-5);
+  }
+  .profile-v2-avatar-preview {
+    padding: var(--sp-4) var(--sp-5);
+  }
+  .profile-v2-avatar-hint {
+    padding: 0 var(--sp-5) var(--sp-4);
+  }
+}
+
+/* 420px */
+@media (max-width: 420px) {
+  .profile-hero-actions {
+    flex-direction: column;
+  }
+  .profile-hero-actions .btn {
+    width: 100%;
+  }
+  .profile-hero-name-row h1 {
+    font-size: var(--fs-lg);
+  }
+}
+
+/* ==========================================================================
+   PROFILE — Mobile centred layout
+   At <=640px, stack everything vertically: avatar centred at top,
+   name + tags centred below, bio centred, action buttons full width.
+   ========================================================================== */
+@media (max-width: 640px) {
+  /* Full-width cover with less height so the avatar stays prominent */
+  .profile-cover-v2 {
+    height: 128px;
+    border-radius: 0;
+  }
+  .profile-cover-edit,
+  .profile-cover-remove {
+    top: 12px;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  .profile-cover-edit {
+    right: 12px;
+  }
+  .profile-cover-remove {
+    right: 116px;
+    transform: none;
+  }
+
+  /* Hero becomes a vertical stack */
+  .profile-hero-v2 {
+    border-radius: var(--radius-lg);
+  }
+  .profile-hero-body-v2 {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: var(--sp-4);
+    padding: 0 var(--sp-4) var(--sp-6);
+    margin-top: -60px;
+  }
+
+  /* Avatar centred, larger ring */
+  .profile-avatar-v2 {
+    display: flex;
+    justify-content: center;
+  }
+  .profile-avatar-slot {
+    width: 112px;
+    height: 112px;
+    border-width: 5px;
+  }
+  .profile-avatar-slot .avatar,
+  .profile-avatar-slot img {
+    font-size: 34px;
+  }
+  .profile-avatar-edit {
+    bottom: 2px;
+    right: calc(50% - 44px);
+    width: 36px;
+    height: 36px;
+    font-size: 13px;
+  }
+
+  /* Info centred */
+  .profile-hero-info {
+    padding-top: 0;
+    width: 100%;
+  }
+  .profile-hero-name-row {
+    justify-content: center;
+    margin-bottom: 6px;
+  }
+  .profile-hero-name-row h1 {
+    font-size: var(--fs-xl);
+    text-align: center;
+  }
+  .profile-hero-handle {
+    text-align: center;
+    margin-bottom: var(--sp-3);
+  }
+  .profile-hero-tags {
+    justify-content: center;
+    margin-bottom: var(--sp-3);
+  }
+  .profile-hero-bio {
+    text-align: center;
+    max-width: 100%;
+    margin: 0 auto;
+    font-size: var(--fs-sm);
+    line-height: 1.6;
+  }
+
+  /* Full-width action buttons */
+  .profile-hero-actions {
+    padding-top: 0;
+    width: 100%;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .profile-hero-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Grid collapses to single column; cards keep their rounded corners */
+  .profile-v2-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Info grid stacks inside cards */
+  .profile-v2-info-grid {
+    grid-template-columns: 1fr;
+  }
+  .profile-v2-info {
+    border-right: 0 !important;
+    padding: var(--sp-4) var(--sp-5);
+  }
+  .profile-v2-info:nth-last-child(-n + 2) {
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .profile-v2-info:last-child {
+    border-bottom: 0;
+  }
+
+  /* Side rows — keep label/value aligned but tighter */
+  .profile-v2-side-row {
+    padding: var(--sp-3) var(--sp-5);
+  }
+
+  /* Avatar preview card centred */
+  .profile-v2-avatar-preview {
+    flex-direction: column;
+    text-align: center;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: var(--sp-5);
+  }
+  .profile-v2-avatar-actions {
+    width: 100%;
+    flex-direction: row;
+    justify-content: center;
+  }
+  .profile-v2-avatar-actions .btn {
+    flex: 1;
+    justify-content: center;
+  }
+  .profile-v2-avatar-hint {
+    text-align: center;
+    padding: 0 var(--sp-5) var(--sp-5);
+  }
+}
+
+/* ==========================================================================
+   PROFILE — Small mobile (<=420px)
+   ========================================================================== */
+@media (max-width: 420px) {
+  .profile-cover-v2 {
+    height: 112px;
+  }
+  .profile-hero-body-v2 {
+    padding: 0 var(--sp-3) var(--sp-5);
+    margin-top: -56px;
+  }
+  .profile-avatar-slot {
+    width: 100px;
+    height: 100px;
+  }
+  .profile-avatar-slot .avatar,
+  .profile-avatar-slot img {
+    font-size: 30px;
+  }
+  .profile-avatar-edit {
+    right: calc(50% - 40px);
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+  .profile-hero-name-row h1 {
+    font-size: var(--fs-lg);
+  }
+  .profile-hero-bio {
+    font-size: var(--fs-xs);
+  }
+  .profile-v2-info,
+  .profile-v2-side-row {
+    padding: var(--sp-3) var(--sp-4);
+  }
+}

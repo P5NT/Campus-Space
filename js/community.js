@@ -150,9 +150,16 @@ function renderPost(post, { linkToDetails = true } = {}) {
         ? `<span class="tag-leader">${Util.escape(post.tag)}</span>`
         : "";
 
-  const avatarHtml = post.avatar
-    ? `<img src="${post.avatar}" alt="" class="avatar avatar-40" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'avatar avatar-40 avatar-fallback',textContent:'${post.initials}'}))">`
-    : `<span class="avatar avatar-40 avatar-fallback">${post.initials}</span>`;
+  const currentSession = Auth.current();
+  const isOwnPost = currentSession && post.handle === currentSession.username;
+  const savedAvatar = typeof Avatar !== "undefined" ? Avatar.get() : "";
+
+  const avatarHtml =
+    isOwnPost && savedAvatar
+      ? `<img src="${savedAvatar}" alt="" class="avatar avatar-40">`
+      : post.avatar
+        ? `<img src="${post.avatar}" alt="" class="avatar avatar-40" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'avatar avatar-40 avatar-fallback',textContent:'${post.initials}'}))">`
+        : `<span class="avatar avatar-40 avatar-fallback">${post.initials}</span>`;
 
   el.innerHTML = `
     <div class="post-head">

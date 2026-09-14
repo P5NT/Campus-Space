@@ -206,11 +206,7 @@ function buildSidebar(nav, { role, session }) {
     <div class="sidebar-foot">
       <div class="dropdown">
         <button class="sidebar-user" data-dropdown aria-haspopup="true" aria-expanded="false" style="width:100%;">
-          ${
-            session.avatar
-              ? `<img src="${session.avatar}" alt="" class="avatar avatar-40" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'avatar avatar-40 avatar-fallback',textContent:'${Util.initials(session.name)}'}))">`
-              : `<span class="avatar avatar-40 avatar-fallback">${Util.initials(session.name)}</span>`
-          }
+          <span data-avatar-slot data-avatar-size="40" class="avatar avatar-40 avatar-fallback">${Util.initials(session.name)}</span>
           <div class="sidebar-user-info">
             <div class="sidebar-user-name">${Util.escape(session.name || session.username)}</div>
             <div class="sidebar-user-handle">@${Util.escape(session.username)}</div>
@@ -262,11 +258,7 @@ function buildHeader({ session }) {
       </a>
       <div class="dropdown">
         <button class="header-profile" data-dropdown aria-haspopup="true" aria-expanded="false">
-          ${
-            session.avatar
-              ? `<img src="${session.avatar}" alt="" class="avatar avatar-32" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'avatar avatar-32 avatar-fallback',textContent:'${Util.initials(session.name)}'}))">`
-              : `<span class="avatar avatar-32 avatar-fallback">${Util.initials(session.name)}</span>`
-          }
+          <span data-avatar-slot data-avatar-size="40" class="avatar avatar-40 avatar-fallback">${Util.initials(session.name)}</span>
           <span>${Util.escape(session.name.split(" ")[0] || session.username)}</span>
         </button>
         <div class="dropdown-menu" role="menu">

@@ -45,6 +45,7 @@
   </head>
   <body class="has-session">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
       <aside
         class="sidebar"
@@ -65,33 +66,76 @@
       id="edit-profile-modal"
       role="dialog"
       aria-modal="true"
+      aria-labelledby="ep-title"
     >
       <div class="modal modal-lg">
         <div class="modal-head">
-          <h3>Edit profile</h3>
+          <h3 id="ep-title">Edit profile</h3>
           <button class="btn-icon" data-modal-close aria-label="Close">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
         <form id="edit-profile-form" novalidate>
           <div class="modal-body">
-            <div class="field">
-              <label class="label" for="ep-first">First name</label>
-              <input class="input" type="text" id="ep-first" name="firstName" />
+            <div class="grid grid-2" style="gap: 16px">
+              <div class="field">
+                <label class="label" for="ep-first"
+                  >First name <span class="req">*</span></label
+                >
+                <input
+                  class="input"
+                  type="text"
+                  id="ep-first"
+                  name="firstName"
+                />
+                <div class="field-error">
+                  <i class="fa-solid fa-circle-exclamation"></i
+                  ><span>Please enter your first name.</span>
+                </div>
+              </div>
+              <div class="field">
+                <label class="label" for="ep-other"
+                  >Other name <span class="label-hint">Optional</span></label
+                >
+                <input
+                  class="input"
+                  type="text"
+                  id="ep-other"
+                  name="otherName"
+                />
+              </div>
+              <div class="field">
+                <label class="label" for="ep-last"
+                  >Last name <span class="req">*</span></label
+                >
+                <input class="input" type="text" id="ep-last" name="lastName" />
+                <div class="field-error">
+                  <i class="fa-solid fa-circle-exclamation"></i
+                  ><span>Please enter your last name.</span>
+                </div>
+              </div>
+              <div class="field">
+                <label class="label" for="ep-phone"
+                  >Phone <span class="req">*</span></label
+                >
+                <input class="input" type="tel" id="ep-phone" name="phone" />
+                <div class="field-error">
+                  <i class="fa-solid fa-circle-exclamation"></i
+                  ><span>Please enter a valid phone number.</span>
+                </div>
+              </div>
             </div>
             <div class="field">
-              <label class="label" for="ep-other"
-                >Other name <span class="label-hint">Optional</span></label
+              <label class="label" for="ep-bio"
+                >Short bio <span class="label-hint">Optional</span></label
               >
-              <input class="input" type="text" id="ep-other" name="otherName" />
-            </div>
-            <div class="field">
-              <label class="label" for="ep-last">Last name</label>
-              <input class="input" type="text" id="ep-last" name="lastName" />
-            </div>
-            <div class="field">
-              <label class="label" for="ep-phone">Phone</label>
-              <input class="input" type="tel" id="ep-phone" name="phone" />
+              <textarea
+                class="textarea"
+                id="ep-bio"
+                name="bio"
+                placeholder="A short line about you…"
+                style="min-height: 80px"
+              ></textarea>
             </div>
           </div>
           <div class="modal-foot">
@@ -120,6 +164,7 @@
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
     <script src="../../js/leaders.js"></script>
+    <script src="../../js/profile.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
         const session = Auth.current();
@@ -128,126 +173,6 @@
           return;
         }
         initAppShell("student");
-
-        const student =
-          DEMO_STUDENTS.find((s) => s.username === session.username) ||
-          DEMO_STUDENTS[0];
-        const isLeader = student.isLeader;
-        const leaderInfo = isLeader
-          ? getLeaderList().find((l) => l.student.id === student.id)
-          : null;
-
-        const root = document.getElementById("profile-root");
-        root.innerHTML = `
-    <div class="profile-hero">
-      <div class="profile-cover"></div>
-      <div class="profile-hero-body">
-        <div class="profile-avatar-wrap">
-          <span class="avatar avatar-96 avatar-fallback">${Util.initials(student.firstName + " " + student.lastName)}</span>
-        </div>
-        <div class="profile-info">
-          <h1>${Util.escape(student.firstName + " " + (student.otherName ? student.otherName + " " : "") + student.lastName)}
-            ${isLeader ? '<i class="fa-solid fa-circle-check tag-verified"></i>' : ""}
-          </h1>
-          <div class="handle">@${Util.escape(student.username)}</div>
-          <div class="profile-tags">
-            <span class="badge badge-marine">${Util.escape(student.department)}</span>
-            <span class="badge badge-neutral">${Util.escape(student.level)} Level</span>
-            ${isLeader && leaderInfo ? `<span class="badge badge-brand">${Util.escape(leaderInfo.assoc.acronym)} — ${Util.escape(leaderInfo.pos.name)}</span>` : ""}
-            <span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Verified</span>
-          </div>
-        </div>
-        <div class="profile-actions">
-          <button class="btn btn-primary" data-modal-open="edit-profile-modal">
-            <i class="fa-solid fa-pen"></i> Edit profile
-          </button>
-          <a href="settings.html" class="btn btn-secondary">
-            <i class="fa-solid fa-gear"></i> Settings
-          </a>
-        </div>
-      </div>
-    </div>
-
-    <div class="grid grid-3" style="gap:20px;">
-      <div class="card card-pad">
-        <h3 style="font-size:var(--fs-md); margin-bottom:16px;">Academic</h3>
-        <div class="stack">
-          <div>
-            <div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Faculty</div>
-            <div class="font-semibold">${Util.escape(student.faculty)}</div>
-          </div>
-          <div>
-            <div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Department</div>
-            <div class="font-semibold">${Util.escape(student.department)}</div>
-          </div>
-          <div>
-            <div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Level</div>
-            <div class="font-semibold">${Util.escape(student.level)} Level</div>
-          </div>
-          <div>
-            <div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Matric number</div>
-            <div class="font-semibold">${Util.escape(student.matric)}</div>
-            <div class="text-xs text-muted" style="margin-top:2px;">Private — only you and Admin</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card card-pad">
-        <h3 style="font-size:var(--fs-md); margin-bottom:16px;">Contact</h3>
-        <div class="stack">
-          <div>
-            <div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Email</div>
-            <div class="font-semibold" style="word-break:break-all;">${Util.escape(student.email)}</div>
-          </div>
-          <div>
-            <div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Phone</div>
-            <div class="font-semibold">${Util.escape(student.phone)}</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card card-pad">
-        <h3 style="font-size:var(--fs-md); margin-bottom:16px;">Account</h3>
-        <div class="stack">
-          <div>
-            <div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Username</div>
-            <div class="font-semibold">@${Util.escape(student.username)}</div>
-          </div>
-          <div>
-            <div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Member since</div>
-            <div class="font-semibold">${Util.formatDate(student.joined, { month: "long", year: "numeric" })}</div>
-          </div>
-          <div>
-            <div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Status</div>
-            <span class="badge ${student.status === "active" ? "badge-success" : "badge-warning"}">
-              <i class="fa-solid fa-circle-check"></i> ${student.status === "active" ? "Active" : student.status}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-
-        // Prefill edit form
-        const form = document.getElementById("edit-profile-form");
-        form.querySelector('[name="firstName"]').value = student.firstName;
-        form.querySelector('[name="otherName"]').value =
-          student.otherName || "";
-        form.querySelector('[name="lastName"]').value = student.lastName;
-        form.querySelector('[name="phone"]').value = student.phone;
-
-        bindForm(
-          form,
-          {
-            firstName: [Rules.required, Rules.name],
-            lastName: [Rules.required, Rules.name],
-            phone: [Rules.required, Rules.phone],
-          },
-          () => {
-            Modal.close("edit-profile-modal");
-            Toast.success("Profile updated (simulated).", "Saved");
-          },
-        );
       });
     </script>
   </body>
