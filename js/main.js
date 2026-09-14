@@ -584,6 +584,563 @@ function syncAvatarEverywhere() {
     });
 }
 
+/* ==========================================================================
+   GLOBAL SEARCH — live suggestions in the header.
+   Searches every dataset the student has access to, plus a static index
+   of every page in the app.
+   ========================================================================== */
+
+/* Static page index — pages, nav items, and tools the student can access */
+const SEARCH_PAGE_INDEX = [
+  {
+    title: "Dashboard",
+    sub: "Your personal workspace",
+    href: "dashboard.html",
+    icon: "fa-gauge-high",
+  },
+  {
+    title: "Academics",
+    sub: "Academic hub",
+    href: "academics.html",
+    icon: "fa-book-open-reader",
+  },
+  {
+    title: "Course Catalog",
+    sub: "Browse all courses",
+    href: "course-catalog.html",
+    icon: "fa-book",
+  },
+  {
+    title: "Course Materials",
+    sub: "Lecture notes and courseware",
+    href: "course-materials.html",
+    icon: "fa-folder-open",
+  },
+  {
+    title: "Past Questions",
+    sub: "Revise with past papers",
+    href: "past-questions.html",
+    icon: "fa-file-pdf",
+  },
+  {
+    title: "GPA Calculator",
+    sub: "Calculate your semester GPA",
+    href: "gpa-calculator.html",
+    icon: "fa-calculator",
+  },
+  {
+    title: "CGPA Calculator",
+    sub: "Calculate your cumulative GPA",
+    href: "cgpa-calculator.html",
+    icon: "fa-chart-line",
+  },
+  {
+    title: "Lecture Timetable",
+    sub: "Your weekly lecture schedule",
+    href: "lecture-timetable.html",
+    icon: "fa-chalkboard",
+  },
+  {
+    title: "Exam Timetable",
+    sub: "Examination dates and venues",
+    href: "exam-timetable.html",
+    icon: "fa-file-signature",
+  },
+  {
+    title: "Academic Calendar",
+    sub: "Key session dates",
+    href: "academic-calendar.html",
+    icon: "fa-calendar-days",
+  },
+  {
+    title: "Study Groups",
+    sub: "Join a study group",
+    href: "study-groups.html",
+    icon: "fa-users",
+  },
+  {
+    title: "Faculty Information",
+    sub: "Faculties and departments",
+    href: "faculty-information.html",
+    icon: "fa-building-columns",
+  },
+  {
+    title: "Department Information",
+    sub: "Your department at a glance",
+    href: "department-information.html",
+    icon: "fa-diagram-project",
+  },
+  {
+    title: "Course Representatives",
+    sub: "Contact your course rep",
+    href: "course-representatives.html",
+    icon: "fa-user-graduate",
+  },
+  {
+    title: "Community",
+    sub: "Student feed and discussions",
+    href: "community.html",
+    icon: "fa-comments",
+  },
+  {
+    title: "Campus News",
+    sub: "Editorial coverage",
+    href: "campus-news.html",
+    icon: "fa-newspaper",
+  },
+  {
+    title: "Announcements",
+    sub: "Official announcements",
+    href: "announcements.html",
+    icon: "fa-bullhorn",
+  },
+  {
+    title: "Opportunities",
+    sub: "Scholarships, internships, jobs",
+    href: "opportunities.html",
+    icon: "fa-briefcase",
+  },
+  {
+    title: "Events",
+    sub: "Discover what is happening",
+    href: "events.html",
+    icon: "fa-ticket",
+  },
+  {
+    title: "Marketplace",
+    sub: "Buy and sell via Campus Plug",
+    href: "marketplace.html",
+    icon: "fa-store",
+  },
+  {
+    title: "Student Leaders",
+    sub: "Contact a verified leader",
+    href: "student-leaders.html",
+    icon: "fa-user-tie",
+  },
+  {
+    title: "Complaints",
+    sub: "Submit or track a complaint",
+    href: "complaints.html",
+    icon: "fa-file-shield",
+  },
+  {
+    title: "Immediate Response",
+    sub: "Emergency contacts",
+    href: "immediate-response.html",
+    icon: "fa-circle-exclamation",
+  },
+  {
+    title: "Notifications",
+    sub: "Your recent activity",
+    href: "notifications.html",
+    icon: "fa-bell",
+  },
+  {
+    title: "Profile",
+    sub: "Your account details",
+    href: "profile.html",
+    icon: "fa-user",
+  },
+  {
+    title: "Settings",
+    sub: "Account, privacy, security",
+    href: "settings.html",
+    icon: "fa-gear",
+  },
+  {
+    title: "Help & Support",
+    sub: "FAQs and contact",
+    href: "help-support.html",
+    icon: "fa-circle-question",
+  },
+];
+
+function initHeaderSearch() {
+  const input = document.getElementById("header-search-input");
+  const suggest = document.getElementById("header-search-suggestions");
+  const wrap = document.getElementById("header-search-wrap");
+  if (!input || !suggest) return;
+
+  if (input.dataset.searchBound === "true") return;
+  input.dataset.searchBound = "true";
+
+  let activeIndex = -1;
+
+  function closeSuggest() {
+    suggest.hidden = true;
+    suggest.innerHTML = "";
+    input.setAttribute("aria-expanded", "false");
+    activeIndex = -1;
+  }
+
+  function openSuggest() {
+    suggest.hidden = false;
+    input.setAttribute("aria-expanded", "true");
+  }
+
+  function has(q, ...fields) {
+    for (const f of fields) {
+      if (f && String(f).toLowerCase().includes(q)) return true;
+    }
+    return false;
+  }
+
+  function buildResults(query) {
+    const results = [];
+    const q = query.toLowerCase().trim();
+    if (!q) return results;
+
+    /* ---- Students (with leader tags if applicable) ---- */
+    if (typeof DEMO_STUDENTS !== "undefined") {
+      const leaderMap =
+        typeof getLeaderList === "function"
+          ? Object.fromEntries(getLeaderList().map((l) => [l.student.id, l]))
+          : {};
+
+      DEMO_STUDENTS.forEach((s) => {
+        const full =
+          s.firstName +
+          " " +
+          (s.otherName ? s.otherName + " " : "") +
+          s.lastName;
+        if (!has(q, full, s.username, s.matric, s.department, s.faculty))
+          return;
+
+        const tag = leaderMap[s.id]
+          ? leaderMap[s.id].assoc.acronym + " · " + leaderMap[s.id].pos.name
+          : s.association || "";
+
+        results.push({
+          type: "Student",
+          icon: "fa-user",
+          title: full,
+          subtitle:
+            "@" + s.username + " · " + s.department + " · " + s.level + "L",
+          tag: tag,
+          href:
+            (leaderMap[s.id]
+              ? "leader-profile.html?id="
+              : "leader-profile.html?id=") + s.id,
+        });
+      });
+    }
+
+    /* ---- Courses ---- */
+    if (typeof DEMO_COURSES !== "undefined") {
+      DEMO_COURSES.forEach((c) => {
+        if (!has(q, c.code, c.title, c.lecturer, c.department)) return;
+        results.push({
+          type: "Course",
+          icon: "fa-book",
+          title: c.code + " — " + c.title,
+          subtitle: c.department + " · " + c.units + " units",
+          href: "course-details.html?id=" + c.id,
+        });
+      });
+    }
+
+    /* ---- Academic Resources (timetables, materials, past questions) ---- */
+    if (typeof DEMO_RESOURCES !== "undefined") {
+      DEMO_RESOURCES.forEach((r) => {
+        if (!has(q, r.name, r.course, r.category, r.department)) return;
+        results.push({
+          type: "Resource",
+          icon: "fa-file-lines",
+          title: r.name,
+          subtitle: r.category + " · " + (r.course || "General"),
+          href: "course-materials.html",
+        });
+      });
+    }
+
+    /* ---- Opportunities ---- */
+    if (typeof DEMO_OPPORTUNITIES !== "undefined") {
+      DEMO_OPPORTUNITIES.forEach((o) => {
+        if (!has(q, o.title, o.organization, o.category, o.summary)) return;
+        results.push({
+          type: "Opportunity",
+          icon: "fa-briefcase",
+          title: o.title,
+          subtitle: o.organization + " · " + o.category,
+          href: "opportunity-details.html?id=" + o.id,
+        });
+      });
+    }
+
+    /* ---- Events ---- */
+    if (typeof DEMO_EVENTS !== "undefined") {
+      DEMO_EVENTS.forEach((e) => {
+        if (!has(q, e.title, e.organizer, e.category, e.location)) return;
+        results.push({
+          type: "Event",
+          icon: "fa-ticket",
+          title: e.title,
+          subtitle: e.organizer + " · " + e.date,
+          href: "events.html",
+        });
+      });
+    }
+
+    /* ---- News ---- */
+    if (typeof DEMO_NEWS !== "undefined") {
+      DEMO_NEWS.forEach((n) => {
+        if (!has(q, n.title, n.excerpt, n.category, n.author)) return;
+        results.push({
+          type: "News",
+          icon: "fa-newspaper",
+          title: n.title,
+          subtitle: n.category + " · " + Util.formatDate(n.date),
+          href: "news-details.html?id=" + n.id,
+        });
+      });
+    }
+
+    /* ---- Announcements ---- */
+    if (typeof DEMO_ANNOUNCEMENTS !== "undefined") {
+      DEMO_ANNOUNCEMENTS.forEach((a) => {
+        if (!has(q, a.title, a.body, a.author, a.affected)) return;
+        results.push({
+          type: "Announcement",
+          icon: "fa-bullhorn",
+          title: a.title,
+          subtitle:
+            Util.formatDate(a.date) + (a.affected ? " · " + a.affected : ""),
+          href: "announcements.html",
+        });
+      });
+    }
+
+    /* ---- Student Leaders (as distinct entries) ---- */
+    if (typeof getLeaderList === "function") {
+      getLeaderList().forEach((l) => {
+        const full = l.student.firstName + " " + l.student.lastName;
+        if (!has(q, full, l.pos.name, l.assoc.name, l.assoc.acronym)) return;
+        // Only add if not already added from DEMO_STUDENTS
+        if (
+          results.some(
+            (r) => r.type === "Student" && r.href.includes(l.student.id),
+          )
+        )
+          return;
+        results.push({
+          type: "Leader",
+          icon: "fa-user-tie",
+          title: full,
+          subtitle: l.pos.name + " · " + l.assoc.acronym,
+          tag: l.assoc.acronym + " · " + l.pos.name,
+          href: "leader-profile.html?id=" + l.student.id,
+        });
+      });
+    }
+
+    /* ---- Community Posts ---- */
+    if (
+      typeof Community !== "undefined" &&
+      typeof Community.all === "function"
+    ) {
+      Community.all().forEach((p) => {
+        if (!has(q, p.text, p.author, p.handle, p.tag)) return;
+        results.push({
+          type: "Post",
+          icon: "fa-comments",
+          title: p.author + " · @" + p.handle,
+          subtitle: p.text.slice(0, 90) + (p.text.length > 90 ? "…" : ""),
+          href: "post-details.html?id=" + p.id,
+        });
+      });
+    }
+
+    /* ---- Pages / Navigation ---- */
+    SEARCH_PAGE_INDEX.forEach((p) => {
+      if (!has(q, p.title, p.sub)) return;
+      results.push({
+        type: "Page",
+        icon: p.icon,
+        title: p.title,
+        subtitle: p.sub,
+        href: p.href,
+      });
+    });
+
+    return results.slice(0, 10);
+  }
+
+  function renderSuggest(query) {
+    const results = buildResults(query);
+    activeIndex = -1;
+
+    if (!query.trim()) {
+      suggest.innerHTML =
+        '<div class="search-suggest-hint">' +
+        '<i class="fa-solid fa-magnifying-glass"></i>' +
+        "<span>Search students, courses, leaders, events, pages and more…</span>" +
+        "</div>";
+      openSuggest();
+      return;
+    }
+
+    if (!results.length) {
+      suggest.innerHTML =
+        '<div class="search-suggest-empty">' +
+        '<i class="fa-solid fa-circle-question"></i>' +
+        "<div>" +
+        '<div class="search-suggest-empty-title">No results for "' +
+        Util.escape(query) +
+        '"</div>' +
+        '<div class="search-suggest-empty-sub">Try a different name, course code or keyword</div>' +
+        "</div>" +
+        "</div>";
+      openSuggest();
+      return;
+    }
+
+    suggest.innerHTML =
+      results
+        .map(function (r, i) {
+          var tagHtml = r.tag
+            ? '<span class="search-suggest-tag"><i class="fa-solid fa-circle-check"></i> ' +
+              Util.escape(r.tag) +
+              "</span>"
+            : "";
+          return (
+            '<a class="search-suggest-item" href="' +
+            r.href +
+            '" role="option" data-index="' +
+            i +
+            '">' +
+            '<span class="search-suggest-icon"><i class="fa-solid ' +
+            r.icon +
+            '"></i></span>' +
+            '<span class="search-suggest-body">' +
+            '<span class="search-suggest-title">' +
+            Util.escape(r.title) +
+            "</span>" +
+            '<span class="search-suggest-sub">' +
+            Util.escape(r.subtitle) +
+            "</span>" +
+            tagHtml +
+            "</span>" +
+            '<span class="search-suggest-type">' +
+            Util.escape(r.type) +
+            "</span>" +
+            "</a>"
+          );
+        })
+        .join("") +
+      '<a class="search-suggest-all" href="search.html?q=' +
+      encodeURIComponent(query) +
+      '">' +
+      '<i class="fa-solid fa-arrow-right"></i>' +
+      'View all results for "' +
+      Util.escape(query) +
+      '"' +
+      "</a>";
+    openSuggest();
+  }
+
+  input.addEventListener("input", function () {
+    renderSuggest(input.value);
+  });
+  input.addEventListener("focus", function () {
+    renderSuggest(input.value);
+  });
+
+  input.addEventListener("keydown", function (e) {
+    const items = suggest.querySelectorAll(".search-suggest-item");
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      activeIndex = Math.min(activeIndex + 1, items.length - 1);
+      items.forEach(function (el, i) {
+        el.classList.toggle("is-active", i === activeIndex);
+      });
+      if (items[activeIndex])
+        items[activeIndex].scrollIntoView({ block: "nearest" });
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      activeIndex = Math.max(activeIndex - 1, -1);
+      items.forEach(function (el, i) {
+        el.classList.toggle("is-active", i === activeIndex);
+      });
+      if (items[activeIndex])
+        items[activeIndex].scrollIntoView({ block: "nearest" });
+    } else if (e.key === "Enter") {
+      if (activeIndex >= 0 && items[activeIndex]) {
+        e.preventDefault();
+        items[activeIndex].click();
+      } else if (input.value.trim()) {
+        e.preventDefault();
+        window.location.href =
+          "search.html?q=" + encodeURIComponent(input.value.trim());
+      }
+    } else if (e.key === "Escape") {
+      closeSuggest();
+      input.blur();
+    }
+  });
+
+  /* Submit button — navigates to the full search page with the current query */
+  const submitBtn = document.getElementById("header-search-submit");
+  if (submitBtn) {
+    submitBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const q = input.value.trim();
+      if (!q) {
+        input.focus();
+        return;
+      }
+      window.location.href = "search.html?q=" + encodeURIComponent(q);
+    });
+  }
+
+  document.addEventListener("click", function (e) {
+    if (wrap && !wrap.contains(e.target)) closeSuggest();
+  });
+  suggest.addEventListener("mousedown", function (e) {
+    e.stopPropagation();
+  });
+}
+
+/* Also: capture the Enter key via the form wrapper if present */
+
+/* -------------------------------------------------------------------------
+   Mobile search button
+   ------------------------------------------------------------------------- */
+function initSearchButtons() {
+  if (document._searchButtonsBound) return;
+  document._searchButtonsBound = true;
+
+  document.addEventListener("click", function (e) {
+    const btn = e.target.closest("[data-search-open], #header-search-mobile");
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const input = document.getElementById("header-search-input");
+    const wrap = document.getElementById("header-search-wrap");
+
+    if (wrap && input) {
+      wrap.classList.add("is-open");
+      input.focus();
+      if (input.select) input.select();
+
+      const collapse = function (ev) {
+        if (!wrap.contains(ev.target)) {
+          wrap.classList.remove("is-open");
+          document.removeEventListener("click", collapse);
+        }
+      };
+      setTimeout(function () {
+        document.addEventListener("click", collapse);
+      }, 50);
+      return;
+    }
+
+    window.location.href = "search.html";
+  });
+}
+
 /* -------------------------------------------------------------------------
    Page init
    ------------------------------------------------------------------------- */

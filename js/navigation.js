@@ -268,16 +268,20 @@ function buildHeader({ session }) {
       <img src="../../assets/icons/brand-icon.svg" alt="" width="28" height="28">
     </a>
 
-    <div class="header-search">
-      <i class="fa-solid fa-magnifying-glass search-icon"></i>
-      <input class="input" type="search" placeholder="Search Campus Space…" aria-label="Search" id="header-search-input">
-      <kbd>⌘K</kbd>
+    <div class="header-search" id="header-search-wrap">
+      <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
+      <input class="input" type="search" placeholder="Search Campus Space…" aria-label="Search" id="header-search-input" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="header-search-suggestions" aria-autocomplete="list">
+      <button type="button" class="header-search-submit" id="header-search-submit" aria-label="Submit search">
+        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+        <span>Search</span>
+    </button>
+      <div class="search-suggest" id="header-search-suggestions" role="listbox" hidden></div>
     </div>
 
     <div class="header-actions">
-      <a href="search.html" class="btn-icon" aria-label="Search" id="header-search-mobile">
-        <i class="fa-solid fa-magnifying-glass"></i>
-      </a>
+      <button type="button" class="btn-icon header-search-btn" aria-label="Search" id="header-search-mobile" data-search-open>
+        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+      </button>
       <a href="notifications.html" class="btn-icon" aria-label="Notifications">
         <i class="fa-regular fa-bell"></i>
         ${notifCount > 0 ? `<span class="badge-notif">${notifCount}</span>` : ""}
@@ -399,17 +403,6 @@ function initAppShell(role = "student") {
     `;
   }
 
-  // Wire header search
-  const searchInput = document.getElementById("header-search-input");
-  if (searchInput) {
-    searchInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && searchInput.value.trim()) {
-        window.location.href =
-          "search.html?q=" + encodeURIComponent(searchInput.value.trim());
-      }
-    });
-  }
-
   // Highlight current page in nav
   const here = window.location.pathname.split("/").pop();
   document.querySelectorAll(".nav-item, .mobile-nav-item").forEach((el) => {
@@ -422,6 +415,10 @@ function initAppShell(role = "student") {
 
   // After the header is rendered, sync the user avatar into any [data-avatar-slot] elements
   if (typeof syncAvatarEverywhere === "function") syncAvatarEverywhere();
+
+  // Wire the search input and mobile search button now that the header exists
+  if (typeof initHeaderSearch === "function") initHeaderSearch();
+  if (typeof initSearchButtons === "function") initSearchButtons();
 }
 
 /* -------------------------------------------------------------------------
