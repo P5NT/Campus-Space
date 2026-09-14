@@ -61,6 +61,7 @@
     <header class="landing-nav">
       <div class="container">
         <div class="landing-nav-inner">
+          <!-- Brand -->
           <a
             href="index.html"
             class="landing-nav-brand"
@@ -74,6 +75,8 @@
             />
             <span>Campus Space</span>
           </a>
+
+          <!-- Center nav links (desktop) -->
           <nav aria-label="Primary">
             <ul class="landing-nav-links">
               <li><a href="#features">Features</a></li>
@@ -81,23 +84,49 @@
               <li><a href="#safety">Safety</a></li>
             </ul>
           </nav>
-          <div class="cluster">
+
+          <!-- Right action cluster -->
+          <div class="landing-nav-actions">
             <button
               class="btn-icon"
               data-theme-toggle
               aria-label="Toggle theme"
+              type="button"
             >
-              <i class="fa-solid fa-moon"></i>
+              <i class="fa-solid fa-moon" aria-hidden="true"></i>
             </button>
             <a href="pages/auth/login.html" class="btn btn-ghost">Sign in</a>
             <a href="pages/auth/register.html" class="btn btn-primary"
               >Create account</a
             >
+            <button
+              class="landing-nav-toggle"
+              id="landing-nav-toggle"
+              type="button"
+              aria-label="Open menu"
+              aria-expanded="false"
+            >
+              <i class="fa-solid fa-bars" aria-hidden="true"></i>
+            </button>
           </div>
         </div>
       </div>
-    </header>
 
+      <!-- Mobile dropdown menu -->
+      <nav
+        class="landing-nav-mobile"
+        id="landing-nav-mobile"
+        aria-label="Mobile navigation"
+      >
+        <a href="#features">Features</a>
+        <a href="#ecosystem">Ecosystem</a>
+        <a href="#safety">Safety</a>
+        <a href="pages/auth/login.html" class="btn btn-secondary">Sign in</a>
+        <a href="pages/auth/register.html" class="btn btn-primary"
+          >Create account</a
+        >
+      </nav>
+    </header>
     <main id="main">
       <!-- ===================================================================
        Hero
@@ -522,5 +551,43 @@
 
     <!-- Scripts -->
     <script src="js/main.js"></script>
+    <script>
+      /* -------------------------------------------------------------------------
+   Landing page — mobile navigation dropdown toggle.
+   ------------------------------------------------------------------------- */
+      document.addEventListener("DOMContentLoaded", function () {
+        var toggle = document.getElementById("landing-nav-toggle");
+        var menu = document.getElementById("landing-nav-mobile");
+        if (!toggle || !menu) return;
+
+        var setOpen = function (open) {
+          menu.classList.toggle("is-open", open);
+          toggle.setAttribute("aria-expanded", String(open));
+          var icon = toggle.querySelector("i");
+          if (icon)
+            icon.className = open ? "fa-solid fa-xmark" : "fa-solid fa-bars";
+        };
+
+        toggle.addEventListener("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          setOpen(!menu.classList.contains("is-open"));
+        });
+
+        menu.addEventListener("click", function (e) {
+          if (e.target.closest("a")) setOpen(false);
+        });
+
+        document.addEventListener("click", function (e) {
+          if (!menu.contains(e.target) && !toggle.contains(e.target)) {
+            setOpen(false);
+          }
+        });
+
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape") setOpen(false);
+        });
+      });
+    </script>
   </body>
 </html>
