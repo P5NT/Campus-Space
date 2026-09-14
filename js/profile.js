@@ -6,55 +6,6 @@
 "use strict";
 
 /* -------------------------------------------------------------------------
-   Avatar store — persisted in localStorage.
-   ------------------------------------------------------------------------- */
-const Avatar = {
-  KEY: "user_avatar",
-
-  get() {
-    return Store.get(this.KEY, "");
-  },
-  set(dataUrl) {
-    Store.set(this.KEY, dataUrl);
-  },
-  clear() {
-    Store.remove(this.KEY);
-  },
-
-  applyTo(el, initials, size) {
-    if (!el) return null;
-    const url = this.get();
-
-    if (!url) {
-      if (el.tagName === "IMG") {
-        const span = document.createElement("span");
-        span.className = `avatar avatar-${size} avatar-fallback`;
-        span.setAttribute("data-avatar-slot", "");
-        span.setAttribute("data-avatar-size", size);
-        span.textContent = initials;
-        el.replaceWith(span);
-        return span;
-      }
-      return el;
-    }
-
-    if (el.tagName === "SPAN") {
-      const img = document.createElement("img");
-      img.src = url;
-      img.alt = "";
-      img.className = `avatar avatar-${size}`;
-      img.setAttribute("data-avatar-slot", "");
-      img.setAttribute("data-avatar-size", size);
-      el.replaceWith(img);
-      return img;
-    }
-
-    el.src = url;
-    return el;
-  },
-};
-
-/* -------------------------------------------------------------------------
    Cover store — persisted in localStorage.
    ------------------------------------------------------------------------- */
 const Cover = {
@@ -70,34 +21,6 @@ const Cover = {
     Store.remove(this.KEY);
   },
 };
-
-/* -------------------------------------------------------------------------
-   Global avatar sync — applies the saved avatar to every tagged slot
-   in the app (header, sidebar, dashboard, etc.).
-   ------------------------------------------------------------------------- */
-function syncAvatarEverywhere() {
-  const session = Auth.current();
-  if (!session) return;
-
-  const initials = Util.initials(session.name || session.username);
-
-  document.querySelectorAll("[data-avatar-slot]").forEach((el) => {
-    const size = el.getAttribute("data-avatar-size") || "40";
-    Avatar.applyTo(el, initials, size);
-  });
-
-  // Also patch the standard header-profile and sidebar-user avatars
-  document
-    .querySelectorAll(".header-profile .avatar, .sidebar-user .avatar")
-    .forEach((el) => {
-      const size = el.classList.contains("avatar-32")
-        ? "32"
-        : el.classList.contains("avatar-40")
-          ? "40"
-          : "40";
-      Avatar.applyTo(el, initials, size);
-    });
-}
 
 /* -------------------------------------------------------------------------
    Profile page initialisation

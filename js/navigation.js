@@ -159,6 +159,19 @@ const ADMIN_NAV = [
 ];
 
 /* -------------------------------------------------------------------------
+   Avatar resolver — reads the user's saved avatar from localStorage
+   (stored by profile.js when they upload a picture).
+   Returns { url, initials } ready for rendering.
+   ------------------------------------------------------------------------- */
+function resolveAvatar(session) {
+  const url = typeof Avatar !== "undefined" && Avatar.get ? Avatar.get() : "";
+  const initials = Util.initials(
+    (session && session.name) || (session && session.username) || "?",
+  );
+  return { url, initials };
+}
+
+/* -------------------------------------------------------------------------
    Build sidebar markup
    ------------------------------------------------------------------------- */
 function buildSidebar(nav, { role, session }) {
@@ -187,8 +200,14 @@ function buildSidebar(nav, { role, session }) {
     )
     .join("");
 
+  const { url: avatarUrl, initials } = resolveAvatar(session);
+
+  const avatarHtml = avatarUrl
+    ? `<img src="${avatarUrl}" alt="" class="avatar avatar-40">`
+    : `<span class="avatar avatar-40 avatar-fallback">${initials}</span>`;
+
   return `
-    <a href="${role === "student" ? "dashboard.html" : "dashboard.html"}" class="sidebar-brand" aria-label="Campus Space home">
+    <a href="dashboard.html" class="sidebar-brand" aria-label="Campus Space home">
       <img src="../../assets/icons/brand-icon.svg" alt="" width="34" height="34">
       <span class="sidebar-brand-text">Campus Space</span>
     </a>
@@ -206,7 +225,7 @@ function buildSidebar(nav, { role, session }) {
     <div class="sidebar-foot">
       <div class="dropdown">
         <button class="sidebar-user" data-dropdown aria-haspopup="true" aria-expanded="false" style="width:100%;">
-          <span data-avatar-slot data-avatar-size="40" class="avatar avatar-40 avatar-fallback">${Util.initials(session.name)}</span>
+          ${avatarHtml}
           <div class="sidebar-user-info">
             <div class="sidebar-user-name">${Util.escape(session.name || session.username)}</div>
             <div class="sidebar-user-handle">@${Util.escape(session.username)}</div>
@@ -230,10 +249,17 @@ function buildSidebar(nav, { role, session }) {
 }
 
 /* -------------------------------------------------------------------------
-   Build header markup (for authenticated pages)
+   Build header markup
    ------------------------------------------------------------------------- */
 function buildHeader({ session }) {
   const notifCount = Store.get("notif_unread", 3);
+  const { url: avatarUrl, initials } = resolveAvatar(session);
+  const firstName = (session.name || session.username || "").split(" ")[0];
+
+  const avatarHtml = avatarUrl
+    ? `<img src="${avatarUrl}" alt="" class="avatar avatar-32">`
+    : `<span class="avatar avatar-32 avatar-fallback">${initials}</span>`;
+
   return `
     <button class="btn-icon header-brand-mobile" data-mobile-menu-open aria-label="Open menu">
       <i class="fa-solid fa-bars"></i>
@@ -258,8 +284,8 @@ function buildHeader({ session }) {
       </a>
       <div class="dropdown">
         <button class="header-profile" data-dropdown aria-haspopup="true" aria-expanded="false">
-          <span data-avatar-slot data-avatar-size="40" class="avatar avatar-40 avatar-fallback">${Util.initials(session.name)}</span>
-          <span>${Util.escape(session.name.split(" ")[0] || session.username)}</span>
+          ${avatarHtml}
+          <span>${Util.escape(firstName)}</span>
         </button>
         <div class="dropdown-menu" role="menu">
           <div class="dropdown-header">
@@ -304,19 +330,19 @@ function buildMobileNav() {
 }
 
 /* -------------------------------------------------------------------------
-   Mount the full app shell (sidebar + header + mobile nav)
+   Mount the full app shell (sidebar + header + mobile nav + drawer)
    Called by each authenticated page via initAppShell(role)
    ------------------------------------------------------------------------- */
 function initAppShell(role = "student") {
   const session = Auth.current();
   if (!session) return;
 
+  const nav = role === "student" ? STUDENT_NAV : ADMIN_NAV;
+
   // Sidebar
   const sidebarEl = document.getElementById("app-sidebar");
-  if (sidebarEl) {
-    const nav = role === "student" ? STUDENT_NAV : ADMIN_NAV;
+  if (sidebarEl)
     sidebarEl.innerHTML = buildSidebar(nav, { role: session.role, session });
-  }
 
   // Header
   const headerEl = document.getElementById("app-header");
@@ -331,7 +357,6 @@ function initAppShell(role = "student") {
   // Mobile menu drawer
   const menuEl = document.getElementById("mobile-menu-mount");
   if (menuEl) {
-    const nav = role === "student" ? STUDENT_NAV : ADMIN_NAV;
     menuEl.innerHTML = `
       <div class="mobile-menu-head">
         <div class="cluster">
@@ -394,6 +419,9 @@ function initAppShell(role = "student") {
 
   // Re-init mobile menu bindings after header + drawer were rendered
   if (typeof initMobileMenu === "function") initMobileMenu();
+
+  // After the header is rendered, sync the user avatar into any [data-avatar-slot] elements
+  if (typeof syncAvatarEverywhere === "function") syncAvatarEverywhere();
 }
 
 /* -------------------------------------------------------------------------

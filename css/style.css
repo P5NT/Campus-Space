@@ -5285,7 +5285,7 @@ p {
   border-color: rgba(255, 255, 255, 0.4);
 }
 .profile-cover-remove {
-  right: 132px; /* ← sits 132px from the right edge */
+  right: 155px; /* ← sits 132px from the right edge */
 }
 .profile-cover-remove:hover {
   background: rgba(192, 57, 43, 0.55);
