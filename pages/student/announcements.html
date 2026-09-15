@@ -93,17 +93,14 @@
           const el = document.createElement("div");
           el.className = "announcement" + (a.important ? " is-important" : "");
           el.innerHTML = `
-      <div class="announcement-head">
-        <span class="avatar avatar-32 avatar-fallback" style="background:var(--brand-secondary);">SA</span>
-        <div>
+         <div class="announcement-head">
+          <span class="avatar avatar-32 avatar-fallback" style="background:var(--brand-secondary); flex-shrink:0;">SA</span>
+          <div class="announcement-head-info">
           <div class="font-semibold" style="font-size:var(--fs-sm);">${Util.escape(a.author)}</div>
           <div class="text-xs text-muted">${Util.formatDate(a.date, { day: "numeric", month: "long", year: "numeric" })}</div>
         </div>
-        <div class="cluster" style="margin-left:auto;">
-          <span class="tag-admin"><i class="fa-solid fa-shield-halved"></i> Admin</span>
-          ${a.important ? '<span class="badge badge-brand">Important</span>' : ""}
-        </div>
-      </div>
+  ${a.important ? '<span class="badge badge-brand announcement-important-badge">Important</span>' : ""}
+</div>
       <h3>${Util.escape(a.title)}</h3>
       ${a.body
         .split("\n\n")

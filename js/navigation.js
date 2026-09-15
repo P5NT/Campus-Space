@@ -419,6 +419,7 @@ function initAppShell(role = "student") {
   // Wire the search input and mobile search button now that the header exists
   if (typeof initHeaderSearch === "function") initHeaderSearch();
   if (typeof initSearchButtons === "function") initSearchButtons();
+  if (typeof initCustomSelects === "function") initCustomSelects();
 }
 
 /* -------------------------------------------------------------------------

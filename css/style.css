@@ -6414,3 +6414,170 @@ p {
   min-width: 54px;
   text-align: center;
 }
+
+/* ==========================================================================
+   CUSTOM SELECT — themed dropdown
+   ========================================================================== */
+
+/* Hide the native select but keep it in the DOM for form submission and
+   for our script to keep reading/writing values. */
+.cselect-native {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  border: 0 !important;
+}
+
+.cselect {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+/* Trigger button — looks like the old .select input */
+.cselect-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 11px 14px;
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  font-weight: 500;
+  line-height: 1.4;
+  text-align: left;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    background 120ms ease;
+}
+.cselect-trigger:hover {
+  border-color: var(--border-strong);
+}
+.cselect-trigger:focus-visible {
+  outline: none;
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 3px var(--brand-primary-ring);
+}
+.cselect.is-open .cselect-trigger {
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 3px var(--brand-primary-ring);
+}
+
+.cselect-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cselect-icon {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  transition:
+    transform 200ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    color 120ms ease;
+  flex-shrink: 0;
+}
+.cselect.is-open .cselect-icon {
+  transform: rotate(180deg);
+  color: var(--brand-primary);
+}
+
+/* The dropdown list */
+.cselect-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 55;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 32px rgba(16, 24, 40, 0.16);
+  padding: 6px;
+  max-height: 280px;
+  overflow-y: auto;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease,
+    visibility 140ms;
+}
+.cselect.is-open .cselect-list {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Individual option row */
+.cselect-option {
+  padding: 10px 12px;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    background 100ms ease,
+    color 100ms ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cselect-option:hover,
+.cselect-option.is-focused {
+  background: var(--bg-subtle);
+}
+.cselect-option.is-selected {
+  background: var(--brand-primary-soft);
+  color: var(--brand-primary);
+  font-weight: 600;
+}
+.cselect-option.is-selected::after {
+  content: "\f00c"; /* fa-check */
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+  float: right;
+  font-size: 11px;
+  margin-left: 8px;
+  color: var(--brand-primary);
+}
+
+/* Scrollbar inside the list */
+.cselect-list::-webkit-scrollbar {
+  width: 8px;
+}
+.cselect-list::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 4px;
+}
+.cselect-list::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}
+
+/* Dark theme — additional contrast for the option hover state */
+[data-theme="dark"] .cselect-list {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+[data-theme="dark"] .cselect-option:hover,
+[data-theme="dark"] .cselect-option.is-focused {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.cselect-list {
+  transform-origin: top center;
+}
