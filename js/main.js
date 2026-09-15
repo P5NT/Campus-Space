@@ -556,6 +556,19 @@ const Avatar = {
   },
 };
 
+const Cover = {
+  KEY: "user_cover",
+  get() {
+    return Store.get(this.KEY, "");
+  },
+  set(dataUrl) {
+    Store.set(this.KEY, dataUrl);
+  },
+  clear() {
+    Store.remove(this.KEY);
+  },
+};
+
 /* -------------------------------------------------------------------------
    Global avatar sync — applies the saved avatar to every tagged slot
    in the app (header, sidebar, dashboard, etc.).
@@ -806,8 +819,11 @@ function initHeaderSearch() {
             : {};
 
         DEMO_STUDENTS.forEach((s) => {
-          // Skip deactivated / suspended accounts from public search
           if (s.status && s.status !== "active") return;
+
+          const isLeader = !!leaderMap[s.id];
+
+          if (!isLeader && s.searchable === false) return;
 
           const full = [s.firstName, s.otherName, s.lastName]
             .filter(Boolean)
@@ -815,21 +831,31 @@ function initHeaderSearch() {
           if (!has(q, full, s.username, s.matric, s.department, s.faculty))
             return;
 
-          const isLeader = !!leaderMap[s.id];
+          const currentSession =
+            typeof Auth !== "undefined" ? Auth.current() : null;
+          const isSelf =
+            currentSession && currentSession.username === s.username;
+
           const tag = isLeader
-            ? leaderMap[s.id].assoc.acronym + " · " + leaderMap[s.id].pos.name
+            ? leaderMap[s.id].assoc.acronym + " - " + leaderMap[s.id].pos.name
             : s.association || "";
 
           results.push({
-            type: isLeader ? "Leader" : "Student",
-            icon: isLeader ? "fa-user-tie" : "fa-user",
+            type: isSelf ? "You" : isLeader ? "Leader" : "Student",
+            icon: isSelf
+              ? "fa-user-circle"
+              : isLeader
+                ? "fa-user-tie"
+                : "fa-user",
             title: full,
             subtitle:
-              "@" + s.username + " · " + s.department + " · " + s.level + "L",
+              "@" + s.username + " - " + s.department + " - " + s.level + "L",
             tag: tag,
-            href: isLeader
-              ? "leader-profile.html?id=" + s.id
-              : "student-profile.html?id=" + s.id,
+            href: isSelf
+              ? "profile.html"
+              : isLeader
+                ? "leader-profile.html?id=" + s.id
+                : "student-profile.html?id=" + s.id,
           });
         });
       }
@@ -916,29 +942,6 @@ function initHeaderSearch() {
           subtitle:
             Util.formatDate(a.date) + (a.affected ? " · " + a.affected : ""),
           href: "announcements.html",
-        });
-      });
-    }
-
-    /* ---- Student Leaders (as distinct entries) ---- */
-    if (typeof getLeaderList === "function") {
-      getLeaderList().forEach((l) => {
-        const full = l.student.firstName + " " + l.student.lastName;
-        if (!has(q, full, l.pos.name, l.assoc.name, l.assoc.acronym)) return;
-        // Only add if not already added from DEMO_STUDENTS
-        if (
-          results.some(
-            (r) => r.type === "Student" && r.href.includes(l.student.id),
-          )
-        )
-          return;
-        results.push({
-          type: "Leader",
-          icon: "fa-user-tie",
-          title: full,
-          subtitle: l.pos.name + " · " + l.assoc.acronym,
-          tag: l.assoc.acronym + " · " + l.pos.name,
-          href: "leader-profile.html?id=" + l.student.id,
         });
       });
     }

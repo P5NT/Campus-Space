@@ -6408,3 +6408,9 @@ p {
     display: none;
   }
 }
+
+/* Highlighted self-result in search */
+.search-suggest-item .search-suggest-type {
+  min-width: 54px;
+  text-align: center;
+}

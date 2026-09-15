@@ -84,8 +84,14 @@
     <script src="../../js/leaders.js"></script>
     <script>
       /* ==========================================================================
-   Public student profile — for any registered student.
-   Matches the leader-profile and profile.html design language.
+   Public student profile.
+
+   Phone visibility rules:
+   - Leaders: phone ALWAYS visible (Admin-tagged, mandatory).
+   - Regular students: phone visible only if student.phoneVisible === true.
+     Default when the field is missing: hidden.
+   - When phone is hidden, the Call button is also hidden (both in the
+     hero actions and in the sidebar Contact card).
    ========================================================================== */
       document.addEventListener("DOMContentLoaded", function () {
         if (window._studentProfileInit) return;
@@ -113,13 +119,13 @@
             '<div class="empty-state">' +
             '<div class="empty-icon"><i class="fa-solid fa-user-slash"></i></div>' +
             "<h3>Student not found</h3>" +
-            "<p>We couldn't find that student. The account may have been removed or deactivated.</p>" +
+            "<p>We couldn't find that student.</p>" +
             '<a class="btn btn-secondary" href="community.html">Back to Community</a>' +
             "</div>";
           return;
         }
 
-        if (student.status !== "active") {
+        if (student.status && student.status !== "active") {
           root.innerHTML =
             '<div class="empty-state">' +
             '<div class="empty-icon"><i class="fa-solid fa-user-lock"></i></div>' +
@@ -131,11 +137,6 @@
         }
 
         var isSelf = session.username === student.username;
-        var fullName = [student.firstName, student.otherName, student.lastName]
-          .filter(Boolean)
-          .join(" ");
-        var initials = Util.initials(fullName);
-        var avatarUrl = student.avatar || "";
         var leaderInfo =
           typeof getLeaderList === "function"
             ? getLeaderList().find(function (l) {
@@ -144,20 +145,42 @@
             : null;
         var isLeader = !!leaderInfo;
 
+        /* ---------- The visibility rule ---------- */
+        var phoneVisible = isLeader ? true : student.phoneVisible === true;
+
+        var fullName = [student.firstName, student.otherName, student.lastName]
+          .filter(Boolean)
+          .join(" ");
+        var initials = Util.initials(fullName);
+        var avatarUrl = student.avatar || "";
+
         var avatarInner = avatarUrl
           ? '<img src="' + avatarUrl + '" alt="" class="avatar avatar-96">'
           : '<span class="avatar avatar-96 avatar-fallback">' +
             initials +
             "</span>";
 
-        var primaryAction = isSelf
-          ? '<a href="profile.html" class="btn btn-primary"><i class="fa-solid fa-pen"></i> Edit my profile</a>' +
-            '<a href="settings.html" class="btn btn-secondary"><i class="fa-solid fa-gear"></i> Settings</a>'
-          : '<a href="tel:' +
+        /* ---------- Hero actions ---------- */
+        var heroActions;
+        if (isSelf) {
+          heroActions =
+            '<a href="profile.html" class="btn btn-primary"><i class="fa-solid fa-pen"></i> Edit my profile</a>' +
+            '<a href="settings.html" class="btn btn-secondary"><i class="fa-solid fa-gear"></i> Settings</a>';
+        } else if (phoneVisible) {
+          heroActions =
+            '<a href="tel:' +
             student.phone.replace(/\s+/g, "") +
             '" class="btn btn-primary"><i class="fa-solid fa-phone"></i> Call</a>' +
             '<button class="btn btn-secondary" id="copy-contact-btn" type="button"><i class="fa-solid fa-copy"></i> Copy contact</button>';
+        } else {
+          // Phone hidden — no Call CTA, no copy
+          heroActions =
+            '<a href="mailto:' +
+            student.email +
+            '" class="btn btn-secondary"><i class="fa-solid fa-envelope"></i> Send email</a>';
+        }
 
+        /* ---------- Leader tags row ---------- */
         var leaderTagHtml = isLeader
           ? '<span class="badge badge-brand"><i class="fa-solid fa-ranking-star"></i> ' +
             Util.escape(leaderInfo.assoc.acronym) +
@@ -166,6 +189,7 @@
             "</span>"
           : "";
 
+        /* ---------- Leadership section ---------- */
         var leaderSection = isLeader
           ? '<div class="card profile-v2-card">' +
             '<div class="card-head">' +
@@ -193,6 +217,41 @@
             "</div>" +
             "</div>"
           : "";
+
+        /* ---------- Contact sidebar — dynamic per phone visibility ---------- */
+        var phoneRow = phoneVisible
+          ? '<div class="profile-v2-side-row">' +
+            '<span class="label">Phone</span>' +
+            '<a class="value" href="tel:' +
+            student.phone.replace(/\s+/g, "") +
+            '" style="color:var(--brand-primary); text-decoration:none; font-weight:600;">' +
+            Util.escape(student.phone) +
+            "</a>" +
+            "</div>"
+          : '<div class="profile-v2-side-row">' +
+            '<span class="label">Phone</span>' +
+            '<span class="value" style="color:var(--text-tertiary); font-weight:500; display:inline-flex; align-items:center; gap:6px;">' +
+            '<i class="fa-solid fa-eye-slash" style="font-size:11px;"></i> Hidden by user' +
+            "</span>" +
+            "</div>";
+
+        var contactCard =
+          '<div class="card profile-v2-card">' +
+          '<div class="card-head">' +
+          '<h3><i class="fa-solid fa-address-book" style="color:var(--brand-secondary); margin-right:8px;"></i> Contact</h3>' +
+          "</div>" +
+          '<div class="profile-v2-side-list">' +
+          phoneRow +
+          '<div class="profile-v2-side-row">' +
+          '<span class="label">Email</span>' +
+          '<a class="value" href="mailto:' +
+          student.email +
+          '" style="color:var(--brand-primary); text-decoration:none; font-weight:600; word-break:break-all;">' +
+          Util.escape(student.email) +
+          "</a>" +
+          "</div>" +
+          "</div>" +
+          "</div>";
 
         root.innerHTML =
           '<div class="profile-hero-v2">' +
@@ -235,7 +294,7 @@
           "</p>" +
           "</div>" +
           '<div class="profile-hero-actions">' +
-          primaryAction +
+          heroActions +
           "</div>" +
           "</div>" +
           "</div>" +
@@ -247,72 +306,32 @@
           '<h3><i class="fa-solid fa-graduation-cap" style="color:var(--brand-primary); margin-right:8px;"></i> Academic Information</h3>' +
           "</div>" +
           '<div class="profile-v2-info-grid">' +
-          '<div class="profile-v2-info">' +
-          '<span class="label">Faculty</span>' +
-          '<span class="value">' +
+          '<div class="profile-v2-info"><span class="label">Faculty</span><span class="value">' +
           Util.escape(student.faculty) +
-          "</span>" +
-          "</div>" +
-          '<div class="profile-v2-info">' +
-          '<span class="label">Department</span>' +
-          '<span class="value">' +
+          "</span></div>" +
+          '<div class="profile-v2-info"><span class="label">Department</span><span class="value">' +
           Util.escape(student.department) +
-          "</span>" +
-          "</div>" +
-          '<div class="profile-v2-info">' +
-          '<span class="label">Level</span>' +
-          '<span class="value">' +
+          "</span></div>" +
+          '<div class="profile-v2-info"><span class="label">Level</span><span class="value">' +
           Util.escape(student.level) +
-          " Level</span>" +
-          "</div>" +
-          '<div class="profile-v2-info">' +
-          '<span class="label">Member since</span>' +
-          '<span class="value">' +
+          " Level</span></div>" +
+          '<div class="profile-v2-info"><span class="label">Member since</span><span class="value">' +
           Util.formatDate(student.joined, { month: "long", year: "numeric" }) +
-          "</span>" +
-          "</div>" +
+          "</span></div>" +
           "</div>" +
           "</div>" +
           "</div>" +
           '<aside class="profile-v2-side">' +
-          '<div class="card profile-v2-card">' +
-          '<div class="card-head">' +
-          '<h3><i class="fa-solid fa-address-book" style="color:var(--brand-secondary); margin-right:8px;"></i> Contact</h3>' +
-          "</div>" +
-          '<div class="profile-v2-side-list">' +
-          '<div class="profile-v2-side-row">' +
-          '<span class="label">Phone</span>' +
-          '<a class="value" href="tel:' +
-          student.phone.replace(/\s+/g, "") +
-          '" style="color:var(--brand-primary); text-decoration:none; font-weight:600;">' +
-          Util.escape(student.phone) +
-          "</a>" +
-          "</div>" +
-          '<div class="profile-v2-side-row">' +
-          '<span class="label">Email</span>' +
-          '<a class="value" href="mailto:' +
-          student.email +
-          '" style="color:var(--brand-primary); text-decoration:none; font-weight:600; word-break:break-all;">' +
-          Util.escape(student.email) +
-          "</a>" +
-          "</div>" +
-          "</div>" +
-          "</div>" +
+          contactCard +
           '<div class="card profile-v2-card">' +
           '<div class="card-head">' +
           '<h3><i class="fa-solid fa-user-check" style="color:var(--brand-primary); margin-right:8px;"></i> Account</h3>' +
           "</div>" +
           '<div class="profile-v2-side-list">' +
-          '<div class="profile-v2-side-row">' +
-          '<span class="label">Username</span>' +
-          '<span class="value">@' +
+          '<div class="profile-v2-side-row"><span class="label">Username</span><span class="value">@' +
           Util.escape(student.username) +
-          "</span>" +
-          "</div>" +
-          '<div class="profile-v2-side-row">' +
-          '<span class="label">Status</span>' +
-          '<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Active</span>' +
-          "</div>" +
+          "</span></div>" +
+          '<div class="profile-v2-side-row"><span class="label">Status</span><span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Active</span></div>' +
           "</div>" +
           "</div>" +
           "</aside>" +
@@ -340,10 +359,7 @@
                 })
                 .catch(function () {
                   if (typeof Toast !== "undefined")
-                    Toast.info(
-                      "Copy failed. You can still tap Call or Email.",
-                      "Copied",
-                    );
+                    Toast.info("Copy failed.", "Copied");
                 });
             } else {
               if (typeof Toast !== "undefined")

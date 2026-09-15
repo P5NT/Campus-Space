@@ -124,16 +124,17 @@
                     </div>
                   </div>
                   <div class="card-body" style="padding-top: 0">
-                    <div class="setting-row">
+                    <div class="setting-row" id="phone-visibility-row">
                       <div class="setting-row-info">
                         <h4>Show my phone number</h4>
-                        <p>
+                        <p id="phone-visibility-desc">
                           Allow other verified students to see your contact
                           number on your profile.
                         </p>
                       </div>
                       <button
                         class="toggle"
+                        id="phone-visibility-toggle"
                         data-setting="privacy_show_phone"
                         aria-checked="false"
                         aria-label="Toggle phone visibility"
@@ -465,6 +466,7 @@
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
     <script src="../../js/settings.js"></script>
+    <script src="../../js/leaders.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
         const session = Auth.current();
@@ -530,6 +532,50 @@
           });
         });
       });
+
+      /* Phone visibility — respects leader override */
+      (function () {
+        var session = Auth.current();
+        if (!session) return;
+        var student =
+          typeof DEMO_STUDENTS !== "undefined"
+            ? DEMO_STUDENTS.find(function (s) {
+                return s.username === session.username;
+              })
+            : null;
+        if (!student) return;
+
+        var isLeader = student.isLeader === true;
+
+        var toggle = document.getElementById("phone-visibility-toggle");
+        var desc = document.getElementById("phone-visibility-desc");
+
+        if (isLeader) {
+          // Leaders must always display their phone — disable the toggle
+          if (toggle) {
+            toggle.setAttribute("aria-checked", "true");
+            toggle.setAttribute("disabled", "true");
+            toggle.style.opacity = "0.6";
+            toggle.style.cursor = "not-allowed";
+            toggle.setAttribute(
+              "title",
+              "Phone is always visible for verified leaders",
+            );
+          }
+          if (desc) {
+            desc.innerHTML =
+              "You are a verified student leader — your phone number is always visible on your profile. This is required for your leadership role.";
+          }
+        } else {
+          // Regular student — reflect their actual phoneVisible setting
+          if (toggle) {
+            toggle.setAttribute(
+              "aria-checked",
+              student.phoneVisible === true ? "true" : "false",
+            );
+          }
+        }
+      })();
     </script>
   </body>
 </html>

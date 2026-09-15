@@ -61,4 +61,7 @@ const DEMO_LEADERS = [
   { studentId: "STU002", associationId: "as-nesa", positionId: "pos-4" },
   { studentId: "STU004", associationId: "as-nasms", positionId: "pos-3" },
   { studentId: "STU005", associationId: "as-nansn", positionId: "pos-5" },
+  { studentId: "STU007", associationId: "as-nacos", positionId: "pos-6" },
+  { studentId: "STU005", associationId: "as-nansn", positionId: "pos-5" },
+  { studentId: "STU001", associationId: "as-nass", positionId: "pos-1" },
 ];
