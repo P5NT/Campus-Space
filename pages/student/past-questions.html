@@ -45,6 +45,7 @@
   </head>
   <body class="has-session">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
       <aside
         class="sidebar"
@@ -57,17 +58,35 @@
           <div class="page-head">
             <div class="page-head-text">
               <h1 class="page-title">Past Questions</h1>
-              <p class="page-subtitle">
-                Practice with past examination papers by course and session.
+              <p class="page-subtitle" id="pq-subtitle">
+                Past examination papers for your courses.
               </p>
             </div>
           </div>
+
+          <div class="toolbar">
+            <div class="input-wrap">
+              <i class="fa-solid fa-magnifying-glass input-icon"></i>
+              <input
+                class="input"
+                type="search"
+                id="pq-search"
+                placeholder="Search past questions…"
+                aria-label="Search past questions"
+              />
+            </div>
+          </div>
+
           <div class="card">
+            <div class="card-head">
+              <h3 id="pq-count">Loading…</h3>
+            </div>
             <div id="pq-list"></div>
           </div>
         </main>
       </div>
     </div>
+
     <div id="mobile-nav-mount"></div>
     <div class="mobile-menu-backdrop"></div>
     <aside
@@ -77,86 +96,217 @@
     ></aside>
 
     <script src="../../data/students.js"></script>
+    <script src="../../data/faculties.js"></script>
     <script src="../../data/courses.js"></script>
     <script src="../../js/main.js"></script>
     <script src="../../js/validation.js"></script>
     <script src="../../js/auth.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
-    <script src="../../js/leaders.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
+      /* ==========================================================================
+   Past Questions — file library.
+   Students download individual papers (each row has its own button).
+   No top-level PDF button — this is a library, not a document.
+   ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
         if (!session) {
           window.location.href = "../auth/login.html";
           return;
         }
         initAppShell("student");
 
-        // Build PQ list from course materials + resources
-        const pqs = [];
-        DEMO_COURSES.forEach((c) => {
-          c.materials.forEach((m) => {
-            if (
-              m.name.toLowerCase().includes("past question") ||
-              m.name.toLowerCase().includes("past questions")
-            ) {
-              pqs.push({
-                name: m.name,
-                course: c.code,
-                size: m.size,
-                uploaded: m.uploaded,
-                type: "pdf",
-              });
-            }
-          });
+        var student = DEMO_STUDENTS.find(function (s) {
+          return s.username === session.username;
         });
-        DEMO_RESOURCES.filter((r) => r.category === "Past Questions").forEach(
-          (r) => {
-            pqs.push({
-              name: r.name,
-              course: r.course,
-              size: r.size,
-              uploaded: r.uploaded,
-              type: r.type,
-            });
-          },
-        );
+        var listEl = document.getElementById("pq-list");
+        var countEl = document.getElementById("pq-count");
+        var searchEl = document.getElementById("pq-search");
 
-        const listEl = document.getElementById("pq-list");
-        if (!pqs.length) {
-          listEl.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon"><i class="fa-solid fa-file-pdf"></i></div>
-        <h3>No past questions yet</h3>
-        <p>Past questions uploaded by Admin will appear here.</p>
-      </div>`;
+        if (!student) {
+          listEl.innerHTML =
+            '<div class="empty-state">' +
+            '<div class="empty-icon"><i class="fa-solid fa-user-slash"></i></div>' +
+            "<h3>Account not found</h3>" +
+            "<p>We couldn't find your student record.</p>" +
+            "</div>";
+          countEl.textContent = "";
           return;
         }
-        pqs.forEach((p) => {
-          const el = document.createElement("div");
-          el.className = "resource-row";
-          el.innerHTML = `
-      <div class="resource-icon pdf"><i class="fa-solid fa-file-pdf"></i></div>
-      <div class="resource-info">
-        <div class="resource-name">${Util.escape(p.name)}</div>
-        <div class="resource-meta">
-          <span><i class="fa-solid fa-book"></i> ${Util.escape(p.course || "General")}</span>
-          <span>${Util.escape(p.size)}</span>
-          <span><i class="fa-regular fa-clock"></i> ${Util.relativeTime(p.uploaded)}</span>
-        </div>
-      </div>
-      <button class="btn btn-secondary btn-sm" data-dl>
-        <i class="fa-solid fa-download"></i> Download
-      </button>`;
-          el.querySelector("[data-dl]").addEventListener("click", () => {
-            Toast.success(
-              'Downloading "' + p.name + '" (simulated).',
-              "Download started",
-            );
-          });
-          listEl.appendChild(el);
+
+        /* Subtitle */
+        var sub = document.getElementById("pq-subtitle");
+        if (sub) {
+          sub.textContent =
+            "Past papers for " +
+            student.department +
+            " · " +
+            student.level +
+            " Level";
+        }
+
+        /* ------------------------------------------------------------------
+     Scope: resources in the "Past Questions" category matching
+     the student's faculty/department/level ("All" is a wildcard).
+     ------------------------------------------------------------------ */
+        var scopedFromResources = DEMO_RESOURCES.filter(function (r) {
+          if (r.category !== "Past Questions") return false;
+          var facOk =
+            !r.faculty || r.faculty === "All" || r.faculty === student.faculty;
+          var deptOk =
+            !r.department ||
+            r.department === "All" ||
+            r.department === student.department;
+          var lvlOk =
+            !r.level || r.level === "All" || r.level === student.level;
+          return facOk && deptOk && lvlOk;
         });
+
+        /* Past papers attached to courses in the student's dept + level */
+        var matchingCourses = DEMO_COURSES.filter(function (c) {
+          return (
+            c.department === student.department && c.level === student.level
+          );
+        });
+
+        var fromCourses = [];
+        matchingCourses.forEach(function (c) {
+          (c.materials || []).forEach(function (m) {
+            var nameLower = (m.name || "").toLowerCase();
+            if (nameLower.indexOf("past question") === -1) return;
+            fromCourses.push({
+              id: "pq-" + c.id + "-" + nameLower.replace(/\s+/g, "-"),
+              name: m.name,
+              category: "Past Questions",
+              course: c.code,
+              faculty: c.faculty,
+              department: c.department,
+              level: c.level,
+              type: m.type,
+              size: m.size,
+              uploaded: m.uploaded,
+              uploadedBy: c.lecturer,
+            });
+          });
+        });
+
+        /* Combine and de-duplicate */
+        var all = scopedFromResources.concat(fromCourses);
+        var seen = {};
+        var scoped = [];
+        all.forEach(function (r) {
+          if (seen[r.name]) return;
+          seen[r.name] = true;
+          scoped.push(r);
+        });
+
+        /* ------------------------------------------------------------------
+     Render
+     ------------------------------------------------------------------ */
+        function render(list) {
+          listEl.innerHTML = "";
+
+          if (!list.length) {
+            listEl.innerHTML =
+              '<div class="empty-state">' +
+              '<div class="empty-icon"><i class="fa-solid fa-file-pdf"></i></div>' +
+              "<h3>No past questions available yet</h3>" +
+              "<p>" +
+              (scoped.length
+                ? "No past questions match your search."
+                : "Past questions for your department at this level haven't been uploaded yet.") +
+              "</p>" +
+              "</div>";
+            countEl.textContent = "No past questions";
+            return;
+          }
+
+          var ICONS = {
+            pdf: "fa-file-pdf",
+            doc: "fa-file-word",
+            docx: "fa-file-word",
+          };
+
+          list.forEach(function (r) {
+            var el = document.createElement("div");
+            el.className = "resource-row material-row";
+            el.innerHTML =
+              '<div class="material-icon-wrap">' +
+              '<div class="resource-icon ' +
+              (r.type || "pdf") +
+              '">' +
+              '<i class="fa-solid ' +
+              (ICONS[r.type] || "fa-file-pdf") +
+              '"></i>' +
+              "</div>" +
+              "</div>" +
+              '<div class="material-body">' +
+              '<div class="material-name" title="' +
+              Util.escape(r.name) +
+              '">' +
+              Util.escape(r.name) +
+              "</div>" +
+              '<div class="material-tags">' +
+              '<span class="material-tag"><i class="fa-solid fa-book"></i> ' +
+              Util.escape(r.course) +
+              "</span>" +
+              '<span class="material-tag"><i class="fa-regular fa-clock"></i> ' +
+              Util.relativeTime(r.uploaded) +
+              "</span>" +
+              '<span class="material-tag">' +
+              Util.escape(r.size) +
+              "</span>" +
+              "</div>" +
+              "</div>" +
+              '<div class="material-action">' +
+              '<button class="btn btn-primary btn-sm" data-download aria-label="Download ' +
+              Util.escape(r.name) +
+              '">' +
+              '<i class="fa-solid fa-download"></i>' +
+              "<span>Download</span>" +
+              "</button>" +
+              "</div>";
+
+            var btn = el.querySelector("[data-download]");
+            if (btn) {
+              btn.addEventListener("click", function (e) {
+                e.stopPropagation();
+                Toast.success(
+                  'Downloading "' + r.name + '" (simulated).',
+                  "Download started",
+                );
+              });
+            }
+
+            listEl.appendChild(el);
+          });
+
+          countEl.textContent =
+            list.length + " item" + (list.length === 1 ? "" : "s");
+        }
+
+        /* ------------------------------------------------------------------
+     Apply search
+     ------------------------------------------------------------------ */
+        function apply() {
+          var q = searchEl.value.trim().toLowerCase();
+          var list = scoped.slice();
+
+          if (q) {
+            list = list.filter(function (r) {
+              return (
+                r.name.toLowerCase().indexOf(q) !== -1 ||
+                (r.course || "").toLowerCase().indexOf(q) !== -1
+              );
+            });
+          }
+
+          render(list);
+        }
+
+        searchEl.addEventListener("input", apply);
+        apply();
       });
     </script>
   </body>

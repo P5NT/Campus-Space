@@ -86,15 +86,129 @@
             </div>
             <div class="field">
               <label class="label">Audience <span class="req">*</span></label>
-              <input
-                class="input"
-                name="affected"
-                placeholder="e.g. All students"
-                value="All students"
-              />
+              <div class="audience-picker" id="audience-picker">
+                <label class="audience-option">
+                  <input type="checkbox" name="audience" value="All students" />
+                  <span>All students</span>
+                </label>
+
+                <div class="audience-group">
+                  <div class="audience-group-title">By Level</div>
+                  <label class="audience-option"
+                    ><input
+                      type="checkbox"
+                      name="audience"
+                      value="100 Level"
+                    /><span>100 Level</span></label
+                  >
+                  <label class="audience-option"
+                    ><input
+                      type="checkbox"
+                      name="audience"
+                      value="200 Level"
+                    /><span>200 Level</span></label
+                  >
+                  <label class="audience-option"
+                    ><input
+                      type="checkbox"
+                      name="audience"
+                      value="300 Level"
+                    /><span>300 Level</span></label
+                  >
+                  <label class="audience-option"
+                    ><input
+                      type="checkbox"
+                      name="audience"
+                      value="400 Level"
+                    /><span>400 Level</span></label
+                  >
+                  <label class="audience-option"
+                    ><input
+                      type="checkbox"
+                      name="audience"
+                      value="500 Level"
+                    /><span>500 Level</span></label
+                  >
+                </div>
+
+                <div class="audience-group">
+                  <div class="audience-group-title">By Faculty</div>
+                  <label class="audience-option"
+                    ><input
+                      type="checkbox"
+                      name="audience"
+                      value="Agriculture, Food & Natural Resources"
+                    /><span>Agriculture, Food & Natural Resources</span></label
+                  >
+                  <label class="audience-option"
+                    ><input
+                      type="checkbox"
+                      name="audience"
+                      value="Earth Sciences"
+                    /><span>Earth Sciences</span></label
+                  >
+                  <label class="audience-option"
+                    ><input
+                      type="checkbox"
+                      name="audience"
+                      value="Engineering and Engineering Technology"
+                    /><span>Engineering and Engineering Technology</span></label
+                  >
+                  <label class="audience-option"
+                    ><input
+                      type="checkbox"
+                      name="audience"
+                      value="Management Sciences"
+                    /><span>Management Sciences</span></label
+                  >
+                  <label class="audience-option"
+                    ><input
+                      type="checkbox"
+                      name="audience"
+                      value="Nursing and Allied Sciences"
+                    /><span>Nursing and Allied Sciences</span></label
+                  >
+                  <label class="audience-option"
+                    ><input
+                      type="checkbox"
+                      name="audience"
+                      value="Sciences"
+                    /><span>Sciences</span></label
+                  >
+                  <label class="audience-option"
+                    ><input
+                      type="checkbox"
+                      name="audience"
+                      value="Computing"
+                    /><span>Computing</span></label
+                  >
+                </div>
+
+                <div class="audience-group">
+                  <div class="audience-group-title">By Special Group</div>
+                  <label class="audience-option"
+                    ><input
+                      type="checkbox"
+                      name="audience"
+                      value="New students"
+                    /><span>New students</span></label
+                  >
+                  <label class="audience-option"
+                    ><input
+                      type="checkbox"
+                      name="audience"
+                      value="Final year students"
+                    /><span>Final year students</span></label
+                  >
+                </div>
+              </div>
+              <div class="field-help">
+                Select one or more audiences. Students matching any of these
+                will see the announcement.
+              </div>
               <div class="field-error">
                 <i class="fa-solid fa-circle-exclamation"></i
-                ><span>Please specify the audience.</span>
+                ><span>Please select at least one audience group.</span>
               </div>
             </div>
             <div class="field">
@@ -212,10 +326,20 @@
           document.getElementById("add-ann-form"),
           {
             title: [Rules.required],
-            affected: [Rules.required],
             body: [Rules.required, Rules.minLen(20)],
           },
           (data) => {
+            // Collect selected audiences
+            const audiences = data.getAll("audience");
+
+            if (!audiences.length) {
+              Toast.warning(
+                "Please select at least one audience group.",
+                "Audience required",
+              );
+              return;
+            }
+
             DEMO_ANNOUNCEMENTS.unshift({
               id: "ann-" + Date.now(),
               title: data.get("title"),
@@ -223,15 +347,13 @@
               date: new Date().toISOString().slice(0, 10),
               important: !!data.get("important"),
               body: data.get("body"),
-              affected: data.get("affected"),
+              affected: audiences, // ← now an ARRAY
             });
+
             render();
             Modal.close("add-ann-modal");
             document.getElementById("add-ann-form").reset();
-            Toast.success(
-              "Announcement published. All students notified.",
-              "Published",
-            );
+            Toast.success("Announcement published.", "Published");
           },
         );
       });

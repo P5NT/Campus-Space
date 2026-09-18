@@ -243,3 +243,466 @@ const DEMO_RESOURCES = [
     uploadedBy: "Segun Oyelaran",
   },
 ];
+
+/* ==========================================================================
+   LECTURE & EXAM TIMETABLES — by Faculty, Department, Level
+   Each entry is scoped to a specific department and level.
+   A student only sees entries matching their own faculty, department, level.
+   ========================================================================== */
+
+const DEMO_LECTURE_TIMETABLES = [
+  /* Computing — Computer Science */
+  {
+    faculty: "Computing",
+    department: "Computer Science",
+    level: "400",
+    slots: [
+      {
+        time: "8:00 – 10:00 AM",
+        periods: {
+          Monday: {
+            code: "CSC 401",
+            venue: "Hall A",
+            lecturer: "Dr. Ogunlade",
+            color: "brand",
+          },
+          Wednesday: {
+            code: "CSC 403",
+            venue: "Hall B",
+            lecturer: "Prof. Adeleke",
+            color: "marine",
+          },
+        },
+      },
+      {
+        time: "10:00 – 12:00 PM",
+        periods: {
+          Tuesday: {
+            code: "CYB 301",
+            venue: "ICT Lab 1",
+            lecturer: "Dr. Bakare",
+            color: "success",
+          },
+          Thursday: {
+            code: "CSC 405",
+            venue: "Hall A",
+            lecturer: "Dr. Salako",
+            color: "warning",
+          },
+        },
+      },
+      {
+        time: "12:00 – 2:00 PM",
+        periods: {
+          Wednesday: {
+            code: "CSC 401",
+            venue: "Hall A",
+            lecturer: "Dr. Ogunlade",
+            color: "brand",
+          },
+          Friday: {
+            code: "EEE 305",
+            venue: "Eng Hall",
+            lecturer: "Dr. Ajayi",
+            color: "marine",
+          },
+        },
+      },
+      {
+        time: "2:00 – 4:00 PM",
+        periods: {
+          Monday: {
+            code: "CSC 407",
+            venue: "Lab 2",
+            lecturer: "Dr. Aliyu",
+            color: "warning",
+          },
+          Thursday: {
+            code: "CSC 403",
+            venue: "Hall B",
+            lecturer: "Prof. Adeleke",
+            color: "marine",
+          },
+        },
+      },
+    ],
+  },
+  /* Computing — Cyber Security */
+  {
+    faculty: "Computing",
+    department: "Cyber Security",
+    level: "200",
+    slots: [
+      {
+        time: "8:00 – 10:00 AM",
+        periods: {
+          Tuesday: {
+            code: "CYB 201",
+            venue: "ICT Lab 2",
+            lecturer: "Dr. Bakare",
+            color: "success",
+          },
+          Thursday: {
+            code: "CYB 203",
+            venue: "ICT Lab 1",
+            lecturer: "Dr. Adeyemi",
+            color: "marine",
+          },
+        },
+      },
+      {
+        time: "10:00 – 12:00 PM",
+        periods: {
+          Monday: {
+            code: "CSC 201",
+            venue: "Hall C",
+            lecturer: "Dr. Ogunlade",
+            color: "brand",
+          },
+          Wednesday: {
+            code: "CYB 205",
+            venue: "ICT Lab 3",
+            lecturer: "Dr. Yakubu",
+            color: "warning",
+          },
+        },
+      },
+    ],
+  },
+  /* Engineering — EEE */
+  {
+    faculty: "Engineering and Engineering Technology",
+    department: "Electrical and Electronics Engineering",
+    level: "300",
+    slots: [
+      {
+        time: "8:00 – 10:00 AM",
+        periods: {
+          Monday: {
+            code: "EEE 301",
+            venue: "Eng Hall A",
+            lecturer: "Dr. Ajayi",
+            color: "marine",
+          },
+        },
+      },
+      {
+        time: "10:00 – 12:00 PM",
+        periods: {
+          Tuesday: {
+            code: "EEE 305",
+            venue: "Eng Hall B",
+            lecturer: "Dr. Ajayi",
+            color: "marine",
+          },
+          Thursday: {
+            code: "EEE 307",
+            venue: "Lab 1",
+            lecturer: "Dr. Ogunbiyi",
+            color: "success",
+          },
+        },
+      },
+      {
+        time: "2:00 – 4:00 PM",
+        periods: {
+          Wednesday: {
+            code: "EEE 303",
+            venue: "Eng Hall A",
+            lecturer: "Prof. Salami",
+            color: "brand",
+          },
+        },
+      },
+    ],
+  },
+  /* Sciences — Biochemistry */
+  {
+    faculty: "Sciences",
+    department: "Biochemistry",
+    level: "200",
+    slots: [
+      {
+        time: "8:00 – 10:00 AM",
+        periods: {
+          Tuesday: {
+            code: "BCH 201",
+            venue: "Sci Hall A",
+            lecturer: "Dr. Akintola",
+            color: "brand",
+          },
+        },
+      },
+      {
+        time: "10:00 – 12:00 PM",
+        periods: {
+          Monday: {
+            code: "BCH 203",
+            venue: "Sci Lab 2",
+            lecturer: "Dr. Oladipo",
+            color: "success",
+          },
+          Wednesday: {
+            code: "CHM 201",
+            venue: "Sci Hall B",
+            lecturer: "Dr. Eze",
+            color: "warning",
+          },
+        },
+      },
+    ],
+  },
+  /* Management — Accounting */
+  {
+    faculty: "Management Sciences",
+    department: "Accounting",
+    level: "400",
+    slots: [
+      {
+        time: "8:00 – 10:00 AM",
+        periods: {
+          Monday: {
+            code: "ACC 401",
+            venue: "Mgmt Hall 1",
+            lecturer: "Dr. Adegoke",
+            color: "brand",
+          },
+        },
+      },
+      {
+        time: "10:00 – 12:00 PM",
+        periods: {
+          Wednesday: {
+            code: "ACC 405",
+            venue: "Mgmt Hall 2",
+            lecturer: "Dr. Oyedeji",
+            color: "marine",
+          },
+        },
+      },
+    ],
+  },
+  /* Nursing — Nursing Science */
+  {
+    faculty: "Nursing and Allied Sciences",
+    department: "Nursing Science",
+    level: "500",
+    slots: [
+      {
+        time: "8:00 – 10:00 AM",
+        periods: {
+          Monday: {
+            code: "NSC 501",
+            venue: "Nursing Hall",
+            lecturer: "Dr. Okafor",
+            color: "brand",
+          },
+          Wednesday: {
+            code: "NSC 503",
+            venue: "Clinical Lab",
+            lecturer: "Dr. Adeleke",
+            color: "success",
+          },
+        },
+      },
+      {
+        time: "12:00 – 2:00 PM",
+        periods: {
+          Friday: {
+            code: "NSC 507",
+            venue: "Nursing Hall",
+            lecturer: "Dr. Nwosu",
+            color: "marine",
+          },
+        },
+      },
+    ],
+  },
+];
+
+const DEMO_EXAM_TIMETABLES = [
+  /* Computing — Computer Science Level 400 */
+  {
+    faculty: "Computing",
+    department: "Computer Science",
+    level: "400",
+    exams: [
+      {
+        date: "2026-04-20",
+        time: "9:00 AM – 12:00 PM",
+        course: "CSC 401",
+        title: "Software Engineering",
+        venue: "Main Hall A",
+      },
+      {
+        date: "2026-04-21",
+        time: "9:00 AM – 12:00 PM",
+        course: "CSC 403",
+        title: "Compiler Construction",
+        venue: "Main Hall B",
+      },
+      {
+        date: "2026-04-23",
+        time: "1:00 PM – 4:00 PM",
+        course: "CYB 301",
+        title: "Network Security",
+        venue: "ICT Centre Lab 1",
+      },
+      {
+        date: "2026-04-25",
+        time: "9:00 AM – 12:00 PM",
+        course: "EEE 305",
+        title: "Signals and Systems",
+        venue: "Engineering Hall",
+      },
+    ],
+  },
+  /* Computing — Cyber Security Level 200 */
+  {
+    faculty: "Computing",
+    department: "Cyber Security",
+    level: "200",
+    exams: [
+      {
+        date: "2026-04-20",
+        time: "1:00 PM – 4:00 PM",
+        course: "CYB 201",
+        title: "Introduction to Cyber Security",
+        venue: "ICT Centre Lab 1",
+      },
+      {
+        date: "2026-04-22",
+        time: "9:00 AM – 12:00 PM",
+        course: "CSC 201",
+        title: "Data Structures",
+        venue: "Main Hall C",
+      },
+      {
+        date: "2026-04-24",
+        time: "1:00 PM – 4:00 PM",
+        course: "CYB 205",
+        title: "Cryptography Foundations",
+        venue: "ICT Centre Lab 3",
+      },
+    ],
+  },
+  /* Engineering — EEE Level 300 */
+  {
+    faculty: "Engineering and Engineering Technology",
+    department: "Electrical and Electronics Engineering",
+    level: "300",
+    exams: [
+      {
+        date: "2026-04-22",
+        time: "9:00 AM – 12:00 PM",
+        course: "EEE 301",
+        title: "Circuit Theory II",
+        venue: "Engineering Hall A",
+      },
+      {
+        date: "2026-04-24",
+        time: "1:00 PM – 4:00 PM",
+        course: "EEE 305",
+        title: "Signals and Systems",
+        venue: "Engineering Hall B",
+      },
+      {
+        date: "2026-04-27",
+        time: "9:00 AM – 12:00 PM",
+        course: "EEE 303",
+        title: "Electromagnetic Fields",
+        venue: "Engineering Hall A",
+      },
+    ],
+  },
+  /* Sciences — Biochemistry Level 200 */
+  {
+    faculty: "Sciences",
+    department: "Biochemistry",
+    level: "200",
+    exams: [
+      {
+        date: "2026-04-21",
+        time: "9:00 AM – 12:00 PM",
+        course: "BCH 201",
+        title: "General Biochemistry I",
+        venue: "Science Hall A",
+      },
+      {
+        date: "2026-04-24",
+        time: "1:00 PM – 4:00 PM",
+        course: "CHM 201",
+        title: "Organic Chemistry",
+        venue: "Science Hall B",
+      },
+    ],
+  },
+  /* Management — Accounting Level 400 */
+  {
+    faculty: "Management Sciences",
+    department: "Accounting",
+    level: "400",
+    exams: [
+      {
+        date: "2026-04-30",
+        time: "9:00 AM – 12:00 PM",
+        course: "ACC 401",
+        title: "Advanced Financial Accounting",
+        venue: "Management Hall",
+      },
+      {
+        date: "2026-05-04",
+        time: "1:00 PM – 4:00 PM",
+        course: "ACC 405",
+        title: "Auditing and Assurance",
+        venue: "Management Hall",
+      },
+    ],
+  },
+  /* Nursing — Nursing Science Level 500 */
+  {
+    faculty: "Nursing and Allied Sciences",
+    department: "Nursing Science",
+    level: "500",
+    exams: [
+      {
+        date: "2026-04-23",
+        time: "9:00 AM – 12:00 PM",
+        course: "NSC 501",
+        title: "Advanced Clinical Practice",
+        venue: "Nursing Hall",
+      },
+      {
+        date: "2026-04-26",
+        time: "1:00 PM – 4:00 PM",
+        course: "NSC 503",
+        title: "Community Health Nursing",
+        venue: "Nursing Hall",
+      },
+    ],
+  },
+];
+
+/* Helper — find the current student's lecture timetable */
+function getStudentLectureTimetable(student) {
+  if (!student) return null;
+  return DEMO_LECTURE_TIMETABLES.find(function (t) {
+    return (
+      t.faculty === student.faculty &&
+      t.department === student.department &&
+      t.level === student.level
+    );
+  });
+}
+
+/* Helper — find the current student's exam timetable */
+function getStudentExamTimetable(student) {
+  if (!student) return null;
+  return DEMO_EXAM_TIMETABLES.find(function (t) {
+    return (
+      t.faculty === student.faculty &&
+      t.department === student.department &&
+      t.level === student.level
+    );
+  });
+}

@@ -45,6 +45,7 @@
   </head>
   <body class="has-session">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
       <aside
         class="sidebar"
@@ -57,8 +58,8 @@
           <div class="page-head">
             <div class="page-head-text">
               <h1 class="page-title">Course Materials</h1>
-              <p class="page-subtitle">
-                Download notes, slides and courseware uploaded by Admin.
+              <p class="page-subtitle" id="materials-subtitle">
+                Download notes, slides and courseware for your courses.
               </p>
             </div>
           </div>
@@ -78,20 +79,19 @@
               <option value="">All categories</option>
               <option value="Course Materials">Course Materials</option>
               <option value="Past Questions">Past Questions</option>
-              <option value="Lecture Timetable">Lecture Timetable</option>
-              <option value="Exam Timetable">Exam Timetable</option>
-              <option value="Academic Calendar">Academic Calendar</option>
-              <option value="Academic Resource">Other</option>
             </select>
           </div>
 
           <div class="card">
-            <div class="card-head"><h3 id="mat-count">Loading…</h3></div>
+            <div class="card-head">
+              <h3 id="mat-count">Loading…</h3>
+            </div>
             <div id="materials-list"></div>
           </div>
         </main>
       </div>
     </div>
+
     <div id="mobile-nav-mount"></div>
     <div class="mobile-menu-backdrop"></div>
     <aside
@@ -101,45 +101,226 @@
     ></aside>
 
     <script src="../../data/students.js"></script>
+    <script src="../../data/faculties.js"></script>
     <script src="../../data/courses.js"></script>
     <script src="../../js/main.js"></script>
     <script src="../../js/validation.js"></script>
     <script src="../../js/auth.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
-    <script src="../../js/academics.js"></script>
-    <script src="../../js/leaders.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
+      /* ==========================================================================
+   Course Materials — file library.
+   Students download individual files (each row has its own button).
+   No top-level PDF button — this is a library, not a document.
+   ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
         if (!session) {
           window.location.href = "../auth/login.html";
           return;
         }
         initAppShell("student");
 
-        const listEl = document.getElementById("materials-list");
-        const countEl = document.getElementById("mat-count");
-        const searchEl = document.getElementById("mat-search");
-        const catEl = document.getElementById("mat-cat");
+        var student = DEMO_STUDENTS.find(function (s) {
+          return s.username === session.username;
+        });
+        var listEl = document.getElementById("materials-list");
+        var countEl = document.getElementById("mat-count");
+        var searchEl = document.getElementById("mat-search");
+        var catEl = document.getElementById("mat-cat");
 
-        function apply() {
-          const s = searchEl.value.trim().toLowerCase();
-          const cat = catEl.value;
-          let list = DEMO_RESOURCES.slice();
-          if (cat) list = list.filter((r) => r.category === cat);
-          if (s)
-            list = list.filter(
-              (r) =>
-                r.name.toLowerCase().includes(s) ||
-                r.course.toLowerCase().includes(s),
-            );
-          renderResources(listEl, list);
-          countEl.textContent =
-            list.length === 0
-              ? "No materials"
-              : `${list.length} item${list.length === 1 ? "" : "s"}`;
+        if (!student) {
+          listEl.innerHTML =
+            '<div class="empty-state">' +
+            '<div class="empty-icon"><i class="fa-solid fa-user-slash"></i></div>' +
+            "<h3>Account not found</h3>" +
+            "<p>We couldn't find your student record.</p>" +
+            "</div>";
+          countEl.textContent = "";
+          return;
         }
+
+        /* Update subtitle */
+        var sub = document.getElementById("materials-subtitle");
+        if (sub) {
+          sub.textContent =
+            "Materials for " +
+            student.department +
+            " · " +
+            student.level +
+            " Level";
+        }
+
+        /* ------------------------------------------------------------------
+     Scope: resources whose faculty/department/level match the student.
+     "All" acts as a wildcard.
+     ------------------------------------------------------------------ */
+        var scopedFromResources = DEMO_RESOURCES.filter(function (r) {
+          var facOk =
+            !r.faculty || r.faculty === "All" || r.faculty === student.faculty;
+          var deptOk =
+            !r.department ||
+            r.department === "All" ||
+            r.department === student.department;
+          var lvlOk =
+            !r.level || r.level === "All" || r.level === student.level;
+          return facOk && deptOk && lvlOk;
+        });
+
+        /* Pull course-specific materials from DEMO_COURSES */
+        var matchingCourses = DEMO_COURSES.filter(function (c) {
+          return (
+            c.department === student.department && c.level === student.level
+          );
+        });
+
+        var courseMaterials = [];
+        matchingCourses.forEach(function (c) {
+          (c.materials || []).forEach(function (m) {
+            courseMaterials.push({
+              id:
+                "cm-" + c.id + "-" + m.name.replace(/\s+/g, "-").toLowerCase(),
+              name: m.name,
+              category: "Course Materials",
+              course: c.code,
+              faculty: c.faculty,
+              department: c.department,
+              level: c.level,
+              type: m.type,
+              size: m.size,
+              uploaded: m.uploaded,
+              uploadedBy: c.lecturer,
+            });
+          });
+        });
+
+        /* Combine and de-duplicate by name */
+        var allScoped = scopedFromResources.concat(courseMaterials);
+        var seen = {};
+        var scoped = [];
+        allScoped.forEach(function (r) {
+          if (seen[r.name]) return;
+          seen[r.name] = true;
+          scoped.push(r);
+        });
+
+        /* ------------------------------------------------------------------
+     Render
+     ------------------------------------------------------------------ */
+        function render(list) {
+          listEl.innerHTML = "";
+
+          if (!list.length) {
+            listEl.innerHTML =
+              '<div class="empty-state">' +
+              '<div class="empty-icon"><i class="fa-solid fa-file-lines"></i></div>' +
+              "<h3>No materials available yet</h3>" +
+              "<p>" +
+              (scoped.length
+                ? "No materials match your search or filter."
+                : "Admin hasn't uploaded materials for your department at this level yet.") +
+              "</p>" +
+              "</div>";
+            countEl.textContent = "No materials";
+            return;
+          }
+
+          var ICONS = {
+            pdf: "fa-file-pdf",
+            doc: "fa-file-word",
+            docx: "fa-file-word",
+            xls: "fa-file-excel",
+            xlsx: "fa-file-excel",
+          };
+
+          list.forEach(function (r) {
+            var el = document.createElement("div");
+            el.className = "resource-row material-row";
+            el.innerHTML =
+              '<div class="material-icon-wrap">' +
+              '<div class="resource-icon ' +
+              (r.type || "pdf") +
+              '">' +
+              '<i class="fa-solid ' +
+              (ICONS[r.type] || "fa-file") +
+              '"></i>' +
+              "</div>" +
+              "</div>" +
+              '<div class="material-body">' +
+              '<div class="material-name" title="' +
+              Util.escape(r.name) +
+              '">' +
+              Util.escape(r.name) +
+              "</div>" +
+              '<div class="material-tags">' +
+              '<span class="material-tag"><i class="fa-solid fa-tag"></i> ' +
+              Util.escape(r.category) +
+              "</span>" +
+              (r.course
+                ? '<span class="material-tag"><i class="fa-solid fa-book"></i> ' +
+                  Util.escape(r.course) +
+                  "</span>"
+                : "") +
+              '<span class="material-tag"><i class="fa-regular fa-clock"></i> ' +
+              Util.relativeTime(r.uploaded) +
+              "</span>" +
+              '<span class="material-tag">' +
+              Util.escape(r.size) +
+              "</span>" +
+              "</div>" +
+              "</div>" +
+              '<div class="material-action">' +
+              '<button class="btn btn-primary btn-sm" data-download aria-label="Download ' +
+              Util.escape(r.name) +
+              '">' +
+              '<i class="fa-solid fa-download"></i>' +
+              "<span>Download</span>" +
+              "</button>" +
+              "</div>";
+
+            var btn = el.querySelector("[data-download]");
+            if (btn) {
+              btn.addEventListener("click", function (e) {
+                e.stopPropagation();
+                Toast.success(
+                  'Downloading "' + r.name + '" (simulated).',
+                  "Download started",
+                );
+              });
+            }
+
+            listEl.appendChild(el);
+          });
+
+          countEl.textContent =
+            list.length + " item" + (list.length === 1 ? "" : "s");
+        }
+
+        /* ------------------------------------------------------------------
+     Apply filters
+     ------------------------------------------------------------------ */
+        function apply() {
+          var q = searchEl.value.trim().toLowerCase();
+          var cat = catEl.value;
+          var list = scoped.slice();
+
+          if (cat)
+            list = list.filter(function (r) {
+              return r.category === cat;
+            });
+          if (q) {
+            list = list.filter(function (r) {
+              return (
+                r.name.toLowerCase().indexOf(q) !== -1 ||
+                (r.course || "").toLowerCase().indexOf(q) !== -1
+              );
+            });
+          }
+
+          render(list);
+        }
+
         searchEl.addEventListener("input", apply);
         catEl.addEventListener("change", apply);
         apply();

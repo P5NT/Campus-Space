@@ -74,6 +74,7 @@
 
     <script src="../../data/students.js"></script>
     <script src="../../data/news.js"></script>
+    <script src="../../data/faculties.js"></script>
     <script src="../../js/main.js"></script>
     <script src="../../js/validation.js"></script>
     <script src="../../js/auth.js"></script>
@@ -89,26 +90,111 @@
         initAppShell("student");
 
         const wrap = document.getElementById("ann-list");
-        DEMO_ANNOUNCEMENTS.forEach((a) => {
+        const student = DEMO_STUDENTS.find(
+          (s) => s.username === session.username,
+        );
+
+        /* ------------------------------------------------------------------
+     Visibility rule — does this announcement target this student?
+     ------------------------------------------------------------------ */
+        function announcementVisibleTo(a, student) {
+          if (!student) return true;
+          if (!a.affected) return true;
+
+          const audiences = Array.isArray(a.affected)
+            ? a.affected
+            : [a.affected];
+
+          if (audiences.indexOf("All students") !== -1) return true;
+
+          if (audiences.indexOf(student.level) !== -1) return true;
+          if (audiences.indexOf(student.level + " Level") !== -1) return true;
+
+          if (audiences.indexOf(student.faculty) !== -1) return true;
+
+          const fac =
+            typeof DEMO_FACULTIES !== "undefined"
+              ? DEMO_FACULTIES.find((f) => f.name === student.faculty)
+              : null;
+          if (fac && audiences.indexOf(fac.shortName) !== -1) return true;
+
+          if (audiences.indexOf(student.department) !== -1) return true;
+
+          if (
+            audiences.indexOf("New students") !== -1 &&
+            student.level === "100"
+          )
+            return true;
+          if (
+            audiences.indexOf("Final year students") !== -1 &&
+            student.level === "500"
+          )
+            return true;
+          if (
+            audiences.indexOf("Final year students") !== -1 &&
+            student.level === "400"
+          )
+            return true;
+
+          return false;
+        }
+
+        const visibleAnnouncements = DEMO_ANNOUNCEMENTS.filter((a) =>
+          announcementVisibleTo(a, student),
+        );
+
+        /* ------------------------------------------------------------------
+     Empty state
+     ------------------------------------------------------------------ */
+        if (!visibleAnnouncements.length) {
+          wrap.innerHTML =
+            '<div class="card"><div class="empty-state">' +
+            '<div class="empty-icon"><i class="fa-solid fa-bullhorn"></i></div>' +
+            "<h3>No announcements for you yet</h3>" +
+            "<p>You'll see announcements here once Admin publishes messages aimed at your faculty, department, level or the entire student body.</p>" +
+            "</div></div>";
+          return;
+        }
+
+        /* ------------------------------------------------------------------
+     Render each visible announcement
+     ------------------------------------------------------------------ */
+        visibleAnnouncements.forEach((a) => {
           const el = document.createElement("div");
           el.className = "announcement" + (a.important ? " is-important" : "");
+
+          const audienceText = Array.isArray(a.affected)
+            ? a.affected.join(", ")
+            : a.affected || "All students";
+
           el.innerHTML = `
-         <div class="announcement-head">
-          <span class="avatar avatar-32 avatar-fallback" style="background:var(--brand-secondary); flex-shrink:0;">SA</span>
-          <div class="announcement-head-info">
+      <div class="announcement-head">
+        <span class="avatar avatar-32 avatar-fallback" style="background:var(--brand-secondary); flex-shrink:0;">SA</span>
+        <div class="announcement-head-info">
           <div class="font-semibold" style="font-size:var(--fs-sm);">${Util.escape(a.author)}</div>
           <div class="text-xs text-muted">${Util.formatDate(a.date, { day: "numeric", month: "long", year: "numeric" })}</div>
         </div>
-  ${a.important ? '<span class="badge badge-brand announcement-important-badge">Important</span>' : ""}
-</div>
+        ${a.important ? '<span class="badge badge-brand" style="margin-left:auto; flex-shrink:0;">Important</span>' : ""}
+      </div>
+
       <h3>${Util.escape(a.title)}</h3>
       ${a.body
-        .split("\n\n")
+        .split("\\n\\n")
         .map((p) => `<p style="margin-bottom:8px;">${Util.escape(p)}</p>`)
         .join("")}
+
       <div class="announcement-foot">
-        <span><i class="fa-solid fa-users"></i> ${Util.escape(a.affected)}</span>
-      </div>`;
+        <span><i class="fa-solid fa-users"></i> ${Util.escape(audienceText)}</span>
+        ${
+          a.source
+            ? '<span style="margin-left:auto; display:inline-flex; align-items:center; gap:6px; font-weight:600; color:var(--brand-primary);"><i class="fa-solid fa-quote-left"></i> Source: ' +
+              Util.escape(a.source) +
+              "</span>"
+            : ""
+        }
+      </div>
+    `;
+
           wrap.appendChild(el);
         });
       });

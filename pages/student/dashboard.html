@@ -270,6 +270,7 @@
 
     <!-- Scripts -->
     <script src="../../data/students.js"></script>
+    <script src="../../data/pending-announcements.js"></script>
     <script src="../../data/courses.js"></script>
     <script src="../../data/news.js"></script>
     <script src="../../data/opportunities.js"></script>
@@ -429,6 +430,155 @@
           });
         }
       });
+
+      /* ============================================================
+   Leader-only: Send urgent message to Admin
+   ============================================================ */
+      (function () {
+        const session = Auth.current();
+        if (!session) return;
+
+        const student =
+          typeof DEMO_STUDENTS !== "undefined"
+            ? DEMO_STUDENTS.find((s) => s.username === session.username)
+            : null;
+        if (!student || !student.isLeader) return;
+
+        // Find the greeting area to inject the button
+        const greeting = document.querySelector(".dashboard-greeting");
+        if (!greeting) return;
+
+        // Build the action button
+        const wrap = document.createElement("div");
+        wrap.style.marginTop = "12px";
+        wrap.innerHTML =
+          '<button class="btn btn-primary" id="open-leader-message" type="button">' +
+          '<i class="fa-solid fa-bullhorn"></i> Send urgent message to Admin' +
+          "</button>";
+        greeting.appendChild(wrap);
+
+        // Find leader info for pre-filling source
+        const lInfo =
+          typeof getLeaderList === "function"
+            ? getLeaderList().find((l) => l.student.id === student.id)
+            : null;
+
+        // Build the modal (once)
+        if (!document.getElementById("leader-message-modal")) {
+          const modal = document.createElement("div");
+          modal.className = "modal-backdrop";
+          modal.id = "leader-message-modal";
+          modal.setAttribute("role", "dialog");
+          modal.setAttribute("aria-modal", "true");
+          modal.innerHTML =
+            '<div class="modal modal-lg">' +
+            '<div class="modal-head">' +
+            '<h3><i class="fa-solid fa-bullhorn" style="color:var(--brand-primary); margin-right:8px;"></i> Send urgent message to Admin</h3>' +
+            '<button class="btn-icon" data-modal-close aria-label="Close"><i class="fa-solid fa-xmark"></i></button>' +
+            "</div>" +
+            '<form id="leader-message-form" novalidate>' +
+            '<div class="modal-body">' +
+            '<p style="font-size:var(--fs-sm); color:var(--text-secondary); margin-bottom:20px;">' +
+            "Your message will be reviewed by Admin. If approved, it will be published as an official announcement with your leadership tag as the source." +
+            "</p>" +
+            '<div class="field">' +
+            '<label class="label" for="lm-subject">Subject <span class="req">*</span></label>' +
+            '<input class="input" type="text" id="lm-subject" name="subject" placeholder="e.g. Urgent: Water outage in Female Hostel B" maxlength="140">' +
+            '<div class="field-error"><i class="fa-solid fa-circle-exclamation"></i><span>Please enter a subject.</span></div>' +
+            "</div>" +
+            '<div class="field">' +
+            '<label class="label" for="lm-body">Message <span class="req">*</span></label>' +
+            '<textarea class="textarea" id="lm-body" name="body" placeholder="Write your message. Include location, time and any relevant details." style="min-height:160px;"></textarea>' +
+            '<div class="field-error"><i class="fa-solid fa-circle-exclamation"></i><span>Please write your message.</span></div>' +
+            "</div>" +
+            '<div class="field">' +
+            '<label class="label">Audience <span class="req">*</span></label>' +
+            '<select class="select" name="audience" id="lm-audience">' +
+            '<option value="All students">All students</option>' +
+            '<option value="New students">New students</option>' +
+            '<option value="Final year students">Final year students</option>' +
+            '<option value="Faculty of Engineering and Engineering Technology">Faculty of Engineering and Engineering Technology</option>' +
+            '<option value="Faculty of Computing">Faculty of Computing</option>' +
+            '<option value="Faculty of Sciences">Faculty of Sciences</option>' +
+            '<option value="Faculty of Management Sciences">Faculty of Management Sciences</option>' +
+            '<option value="Faculty of Earth Sciences">Faculty of Earth Sciences</option>' +
+            '<option value="Faculty of Nursing and Allied Sciences">Faculty of Nursing and Allied Sciences</option>' +
+            '<option value="Faculty of Agriculture, Food & Natural Resources">Faculty of Agriculture, Food & Natural Resources</option>' +
+            "</select>" +
+            '<div class="field-help">Who should this announcement reach?</div>' +
+            "</div>" +
+            "</div>" +
+            '<div class="modal-foot">' +
+            '<button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>' +
+            '<button type="submit" class="btn btn-primary" id="lm-submit">' +
+            '<i class="fa-solid fa-paper-plane"></i> Send to Admin' +
+            "</button>" +
+            "</div>" +
+            "</form>" +
+            "</div>";
+          document.body.appendChild(modal);
+
+          // Open modal
+          document
+            .getElementById("open-leader-message")
+            .addEventListener("click", function () {
+              Modal.open("leader-message-modal");
+              // Refresh custom selects inside the modal (it just got added to the DOM)
+              if (typeof initCustomSelects === "function") initCustomSelects();
+            });
+
+          // Submit handler
+          var form = document.getElementById("leader-message-form");
+          bindForm(
+            form,
+            {
+              subject: [Rules.required, Rules.minLen(5)],
+              body: [Rules.required, Rules.minLen(20)],
+            },
+            function (data) {
+              var entry = {
+                id: "PN" + Date.now(),
+                subject: data.get("subject"),
+                body: data.get("body"),
+                audience: data.get("audience"),
+                submittedAt: Date.now(),
+                submittedBy: {
+                  studentId: student.id,
+                  fullName: [
+                    student.firstName,
+                    student.otherName,
+                    student.lastName,
+                  ]
+                    .filter(Boolean)
+                    .join(" "),
+                  username: student.username,
+                  associationAcronym: lInfo
+                    ? lInfo.assoc.acronym
+                    : student.association,
+                  associationFull: lInfo
+                    ? lInfo.assoc.name
+                    : student.associationFull,
+                  position: lInfo ? lInfo.pos.name : student.position,
+                },
+                status: "pending",
+              };
+
+              if (typeof submitPendingAnnouncement === "function") {
+                submitPendingAnnouncement(entry);
+              } else {
+                // Fallback if the helper isn't loaded
+                var list = Store.get("pending_announcements", []) || [];
+                list.unshift(entry);
+                Store.set("pending_announcements", list);
+              }
+
+              Modal.close("leader-message-modal");
+              form.reset();
+              Toast.success("Message sent to Admin for review.", "Submitted");
+            },
+          );
+        }
+      })();
     </script>
   </body>
 </html>

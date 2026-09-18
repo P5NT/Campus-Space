@@ -45,6 +45,7 @@
   </head>
   <body class="has-session">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
       <aside
         class="sidebar"
@@ -57,10 +58,13 @@
           <div class="page-head">
             <div class="page-head-text">
               <h1 class="page-title">Course Catalog</h1>
-              <p class="page-subtitle">
-                Browse courses by department, level and semester.
+              <p class="page-subtitle" id="catalog-subtitle">
+                Courses you're offering this session.
               </p>
             </div>
+            <button class="btn btn-secondary" id="dl-catalog" type="button">
+              <i class="fa-solid fa-download"></i> Download PDF
+            </button>
           </div>
 
           <div class="toolbar">
@@ -76,34 +80,25 @@
             </div>
             <select
               class="select"
-              id="filter-level"
-              aria-label="Filter by level"
+              id="filter-semester"
+              aria-label="Filter by semester"
             >
-              <option value="">All levels</option>
-              <option value="100">100 Level</option>
-              <option value="200">200 Level</option>
-              <option value="300">300 Level</option>
-              <option value="400">400 Level</option>
-              <option value="500">500 Level</option>
-            </select>
-            <select
-              class="select"
-              id="filter-dept"
-              aria-label="Filter by department"
-            >
-              <option value="">All departments</option>
+              <option value="">All semesters</option>
+              <option value="First">First Semester</option>
+              <option value="Second">Second Semester</option>
             </select>
           </div>
 
           <div class="card">
             <div class="card-head">
-              <h3 id="result-count">Showing all courses</h3>
+              <h3 id="result-count">Loading…</h3>
             </div>
             <div id="course-list"></div>
           </div>
         </main>
       </div>
     </div>
+
     <div id="mobile-nav-mount"></div>
     <div class="mobile-menu-backdrop"></div>
     <aside
@@ -120,52 +115,171 @@
     <script src="../../js/auth.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
-    <script src="../../js/academics.js"></script>
-    <script src="../../js/leaders.js"></script>
+    <script src="../../js/pdf-generator.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
+      /* ==========================================================================
+   Course Catalog — shows and prints ONLY courses for the student's
+   own department and level. Filters narrow further within that set.
+   ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
         if (!session) {
           window.location.href = "../auth/login.html";
           return;
         }
         initAppShell("student");
 
-        const listEl = document.getElementById("course-list");
-        const countEl = document.getElementById("result-count");
-        const searchEl = document.getElementById("course-search");
-        const levelEl = document.getElementById("filter-level");
-        const deptEl = document.getElementById("filter-dept");
+        var student = DEMO_STUDENTS.find(function (s) {
+          return s.username === session.username;
+        });
+        var listEl = document.getElementById("course-list");
+        var countEl = document.getElementById("result-count");
+        var searchEl = document.getElementById("course-search");
+        var semesterEl = document.getElementById("filter-semester");
 
-        // Populate department options
-        const allDepts = new Set();
-        DEMO_COURSES.forEach((c) => allDepts.add(c.department));
-        Array.from(allDepts)
-          .sort()
-          .forEach((d) => {
-            const opt = document.createElement("option");
-            opt.value = d;
-            opt.textContent = d;
-            deptEl.appendChild(opt);
+        if (!student) {
+          listEl.innerHTML =
+            '<div class="empty-state">' +
+            '<div class="empty-icon"><i class="fa-solid fa-user-slash"></i></div>' +
+            "<h3>Account not found</h3>" +
+            "<p>We couldn't find your student record.</p>" +
+            "</div>";
+          countEl.textContent = "";
+          return;
+        }
+
+        /* Update subtitle with the student's own department and level */
+        var subtitleEl = document.getElementById("catalog-subtitle");
+        if (subtitleEl) {
+          subtitleEl.textContent =
+            "Courses for " +
+            student.department +
+            " · " +
+            student.level +
+            " Level";
+        }
+
+        /* Scope: department + level only */
+        var scoped = DEMO_COURSES.filter(function (c) {
+          return (
+            c.department === student.department && c.level === student.level
+          );
+        });
+
+        /* ------------------------------------------------------------------
+     Render helper
+     ------------------------------------------------------------------ */
+        function render(list) {
+          listEl.innerHTML = "";
+
+          if (!list.length) {
+            listEl.innerHTML =
+              '<div class="empty-state">' +
+              '<div class="empty-icon"><i class="fa-solid fa-book"></i></div>' +
+              "<h3>No courses available yet</h3>" +
+              "<p>" +
+              (scoped.length
+                ? "No courses match your search or filter."
+                : "Admin hasn't published courses for your department at this level yet.") +
+              "</p>" +
+              "</div>";
+            countEl.textContent = "No courses";
+            return;
+          }
+
+          list.forEach(function (c) {
+            var el = document.createElement("a");
+            el.className = "course-item";
+            el.href = "course-details.html?id=" + encodeURIComponent(c.id);
+            el.innerHTML =
+              '<span class="course-code">' +
+              Util.escape(c.code) +
+              "</span>" +
+              '<div class="course-info">' +
+              '<div class="course-title">' +
+              Util.escape(c.title) +
+              "</div>" +
+              '<div class="course-meta">' +
+              Util.escape(c.lecturer) +
+              " · " +
+              c.units +
+              " units · " +
+              Util.escape(c.semester) +
+              " Semester" +
+              "</div>" +
+              "</div>" +
+              '<i class="fa-solid fa-chevron-right" style="color:var(--text-tertiary); font-size:12px;"></i>';
+            listEl.appendChild(el);
           });
 
-        function apply() {
-          const s = searchEl.value.trim();
-          const lvl = levelEl.value;
-          const dept = deptEl.value;
-          const params = { search: s, level: lvl, department: dept };
-          renderCourseCatalog(listEl, params);
-          const count = listEl.querySelectorAll(".course-item").length;
           countEl.textContent =
-            count === 0
-              ? "No courses found"
-              : `${count} course${count === 1 ? "" : "s"}`;
+            list.length + " course" + (list.length === 1 ? "" : "s");
+        }
+
+        /* ------------------------------------------------------------------
+     Apply filters
+     ------------------------------------------------------------------ */
+        function apply() {
+          var q = searchEl.value.trim().toLowerCase();
+          var semester = semesterEl.value;
+          var list = scoped.slice();
+
+          if (semester) {
+            list = list.filter(function (c) {
+              return c.semester === semester;
+            });
+          }
+
+          if (q) {
+            list = list.filter(function (c) {
+              return (
+                c.code.toLowerCase().indexOf(q) !== -1 ||
+                c.title.toLowerCase().indexOf(q) !== -1 ||
+                c.lecturer.toLowerCase().indexOf(q) !== -1
+              );
+            });
+          }
+
+          render(list);
         }
 
         searchEl.addEventListener("input", apply);
-        levelEl.addEventListener("change", apply);
-        deptEl.addEventListener("change", apply);
+        semesterEl.addEventListener("change", apply);
         apply();
+
+        /* ------------------------------------------------------------------
+     Download the full catalog as a PDF
+     ------------------------------------------------------------------ */
+        var dlBtn = document.getElementById("dl-catalog");
+        if (dlBtn) {
+          dlBtn.addEventListener("click", function () {
+            if (!scoped.length) {
+              Toast.warning("No courses to print.", "Nothing to download");
+              return;
+            }
+
+            /* Build the files-layout data: one row per course */
+            var data = scoped.map(function (c) {
+              return {
+                name: c.code + " — " + c.title,
+                course: c.lecturer,
+                category: c.units + " unit" + (c.units === 1 ? "" : "s"),
+                size: c.semester + " Semester",
+              };
+            });
+
+            PdfGenerator.open({
+              type: "files",
+              title: "Course Catalog",
+              subtitle:
+                student.department +
+                " — " +
+                student.level +
+                " Level · First Semester 2026/2027",
+              data: data,
+            });
+          });
+        }
       });
     </script>
   </body>

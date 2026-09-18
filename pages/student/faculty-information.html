@@ -45,6 +45,7 @@
   </head>
   <body class="has-session">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
       <aside
         class="sidebar"
@@ -56,16 +57,18 @@
         <main class="app-content" id="main">
           <div class="page-head">
             <div class="page-head-text">
-              <h1 class="page-title">Faculty Information</h1>
+              <h1 class="page-title">My Faculty</h1>
               <p class="page-subtitle">
-                Faculties, departments and administrative contacts.
+                Details about the faculty your account is registered under.
               </p>
             </div>
           </div>
-          <div class="grid grid-3" id="faculties-grid"></div>
+
+          <div id="faculty-root"></div>
         </main>
       </div>
     </div>
+
     <div id="mobile-nav-mount"></div>
     <div class="mobile-menu-backdrop"></div>
     <aside
@@ -81,43 +84,138 @@
     <script src="../../js/auth.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
-    <script src="../../js/leaders.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
-        if (!session) {
-          window.location.href = "../auth/login.html";
-          return;
-        }
-        initAppShell("student");
-        const grid = document.getElementById("faculties-grid");
-        DEMO_FACULTIES.forEach((f) => {
-          const card = document.createElement("div");
-          card.className = "card card-pad";
-          card.innerHTML = `
-      <div class="cluster" style="margin-bottom:12px;">
-        <span class="qa-icon"><i class="fa-solid fa-building-columns"></i></span>
-        <span class="badge badge-marine">${Util.escape(f.shortName)}</span>
-      </div>
-      <h3 style="font-size:var(--fs-md); margin-bottom:6px;">${Util.escape(f.name)}</h3>
-      <p style="font-size:var(--fs-sm); color:var(--text-secondary); margin-bottom:16px;">${f.departments.length} department${f.departments.length === 1 ? "" : "s"}</p>
-      <button class="btn btn-secondary btn-sm btn-block" data-expand>
-        <i class="fa-solid fa-list"></i> View departments
-      </button>
-      <div class="dept-list" style="display:none; margin-top:16px; padding-top:16px; border-top:1px solid var(--border-subtle);">
-        ${f.departments.map((d) => `<div style="font-size:var(--fs-sm); color:var(--text-secondary); padding:4px 0;">${Util.escape(d.name)}</div>`).join("")}
-      </div>`;
-          const list = card.querySelector(".dept-list");
-          card.querySelector("[data-expand]").addEventListener("click", (e) => {
-            const open = list.style.display === "block";
-            list.style.display = open ? "none" : "block";
-            e.currentTarget.innerHTML = open
-              ? '<i class="fa-solid fa-list"></i> View departments'
-              : '<i class="fa-solid fa-chevron-up"></i> Hide departments';
+      /* ==========================================================================
+   Faculty Information — shows ONLY the student's own faculty.
+   ========================================================================== */
+      (function () {
+        "use strict";
+        if (window._facultyInfoInit) return;
+        window._facultyInfoInit = true;
+
+        function boot() {
+          var session = Auth.current();
+          if (!session) {
+            window.location.href = "../auth/login.html";
+            return;
+          }
+          initAppShell("student");
+
+          var student = DEMO_STUDENTS.find(function (s) {
+            return s.username === session.username;
           });
-          grid.appendChild(card);
-        });
-      });
+          var root = document.getElementById("faculty-root");
+
+          if (!student) {
+            root.innerHTML =
+              '<div class="empty-state">' +
+              '<div class="empty-icon"><i class="fa-solid fa-user-slash"></i></div>' +
+              "<h3>We couldn't find your account</h3>" +
+              "<p>Please contact Admin.</p>" +
+              "</div>";
+            return;
+          }
+
+          var faculty = DEMO_FACULTIES.find(function (f) {
+            return f.name === student.faculty;
+          });
+
+          if (!faculty) {
+            root.innerHTML =
+              '<div class="empty-state">' +
+              '<div class="empty-icon"><i class="fa-solid fa-building-columns"></i></div>' +
+              "<h3>Faculty not found</h3>" +
+              '<p>Your registered faculty "' +
+              Util.escape(student.faculty) +
+              '" is not currently listed.</p>' +
+              "</div>";
+            return;
+          }
+
+          var deptCount = faculty.departments.length;
+          var activeDepts = faculty.departments.filter(function (d) {
+            return d.active !== false;
+          });
+
+          var html = "";
+
+          /* Hero card */
+          html += '<div class="card card-pad-lg" style="margin-bottom:20px;">';
+          html +=
+            '<div class="cluster" style="align-items:flex-start; gap:20px;">';
+          html +=
+            '<div class="qa-icon" style="width:56px; height:56px; font-size:22px; flex-shrink:0;">';
+          html += '<i class="fa-solid fa-building-columns"></i>';
+          html += "</div>";
+          html += '<div style="flex:1; min-width:0;">';
+          html +=
+            '<span class="badge badge-brand" style="margin-bottom:8px;">' +
+            Util.escape(faculty.shortName) +
+            "</span>";
+          html +=
+            '<h2 style="font-size:var(--fs-2xl); font-weight:800; letter-spacing:-0.02em; margin-bottom:6px;">' +
+            Util.escape(faculty.name) +
+            "</h2>";
+          html +=
+            '<p style="color:var(--text-secondary); font-size:var(--fs-base);">';
+          html +=
+            deptCount +
+            " department" +
+            (deptCount === 1 ? "" : "s") +
+            " · " +
+            activeDepts.length +
+            " active";
+          html += "</p>";
+          html += "</div>";
+          html += "</div>";
+          html += "</div>";
+
+          /* Departments list */
+          html += '<div class="card">';
+          html += '<div class="card-head">';
+          html +=
+            '<h3><i class="fa-solid fa-diagram-project" style="color:var(--brand-primary); margin-right:8px;"></i> Departments in this Faculty</h3>';
+          html += "</div>";
+          html += '<div class="faculty-dept-list">';
+
+          activeDepts.forEach(function (d) {
+            var isMyDept = d.name === student.department;
+            html +=
+              '<div class="faculty-dept-row' +
+              (isMyDept ? " is-mine" : "") +
+              '">';
+            html += '<div class="cluster" style="gap:12px; min-width:0;">';
+            html +=
+              '<span class="faculty-dept-icon"><i class="fa-solid fa-diagram-project"></i></span>';
+            html += '<div style="min-width:0;">';
+            html +=
+              '<div class="faculty-dept-name">' +
+              Util.escape(d.name) +
+              "</div>";
+            if (isMyDept) {
+              html +=
+                '<div class="faculty-dept-note"><i class="fa-solid fa-circle-check"></i> Your department</div>';
+            }
+            html += "</div>";
+            html += "</div>";
+            if (isMyDept) {
+              html += '<span class="badge badge-brand">Current</span>';
+            }
+            html += "</div>";
+          });
+
+          html += "</div>";
+          html += "</div>";
+
+          root.innerHTML = html;
+        }
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", boot);
+        } else {
+          boot();
+        }
+      })();
     </script>
   </body>
 </html>

@@ -45,6 +45,7 @@
   </head>
   <body class="has-session">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
       <aside
         class="sidebar"
@@ -61,29 +62,32 @@
                 Your weekly lecture schedule — 2026/2027 first semester.
               </p>
             </div>
-            <button class="btn btn-secondary" id="dl-lecture">
-              <i class="fa-solid fa-download"></i> Download
+            <button class="btn btn-secondary" id="dl-lecture" type="button">
+              <i class="fa-solid fa-download"></i> Download PDF
             </button>
           </div>
 
-          <div class="timetable-wrap">
-            <table class="timetable">
-              <thead>
-                <tr>
-                  <th>Time</th>
-                  <th>Monday</th>
-                  <th>Tuesday</th>
-                  <th>Wednesday</th>
-                  <th>Thursday</th>
-                  <th>Friday</th>
-                </tr>
-              </thead>
-              <tbody id="tt-body"></tbody>
-            </table>
+          <!-- Desktop grid (visible >= 861px) -->
+          <div class="timetable-desktop">
+            <div class="timetable">
+              <div class="timetable-head">
+                <div class="timetable-cell timetable-time">Time</div>
+                <div class="timetable-cell">Monday</div>
+                <div class="timetable-cell">Tuesday</div>
+                <div class="timetable-cell">Wednesday</div>
+                <div class="timetable-cell">Thursday</div>
+                <div class="timetable-cell">Friday</div>
+              </div>
+              <div id="timetable-body"></div>
+            </div>
           </div>
+
+          <!-- Mobile stacked cards (visible <= 860px) -->
+          <div class="timetable-mobile" id="timetable-mobile"></div>
         </main>
       </div>
     </div>
+
     <div id="mobile-nav-mount"></div>
     <div class="mobile-menu-backdrop"></div>
     <aside
@@ -93,74 +97,197 @@
     ></aside>
 
     <script src="../../data/students.js"></script>
+    <script src="../../data/courses.js"></script>
     <script src="../../js/main.js"></script>
     <script src="../../js/validation.js"></script>
     <script src="../../js/auth.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
-    <script src="../../js/leaders.js"></script>
+    <script src="../../js/pdf-generator.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
-        if (!session) {
-          window.location.href = "../auth/login.html";
-          return;
+      /* ==========================================================================
+   Lecture Timetable — displays and prints the student's own weekly schedule.
+   ========================================================================== */
+      (function () {
+        "use strict";
+        if (window._lectureTTInit) return;
+        window._lectureTTInit = true;
+
+        var DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+
+        function boot() {
+          var session = Auth.current();
+          if (!session) {
+            window.location.href = "../auth/login.html";
+            return;
+          }
+          initAppShell("student");
+
+          var student = DEMO_STUDENTS.find(function (s) {
+            return s.username === session.username;
+          });
+          var timetable =
+            typeof getStudentLectureTimetable === "function"
+              ? getStudentLectureTimetable(student)
+              : null;
+
+          /* ---- Empty state ---- */
+          if (!timetable || !timetable.slots || !timetable.slots.length) {
+            document.querySelector(".timetable-desktop").innerHTML =
+              '<div class="card"><div class="empty-state">' +
+              '<div class="empty-icon"><i class="fa-solid fa-calendar-xmark"></i></div>' +
+              "<h3>No timetable available yet</h3>" +
+              "<p>The lecture timetable for your department" +
+              (student ? " (" + Util.escape(student.department) + ")" : "") +
+              (student ? " at " + Util.escape(student.level) + " Level" : "") +
+              " has not been published." +
+              "</p>" +
+              "</div></div>";
+            document.querySelector(".timetable-mobile").innerHTML = "";
+            document.getElementById("dl-lecture").disabled = true;
+            return;
+          }
+
+          var slots = timetable.slots;
+
+          /* ---- Download as PDF ---- */
+          document
+            .getElementById("dl-lecture")
+            .addEventListener("click", function () {
+              PdfGenerator.open({
+                type: "lectures",
+                title: "Lecture Timetable",
+                subtitle:
+                  student.department +
+                  " — " +
+                  student.level +
+                  " Level · First Semester 2026/2027",
+                data: {
+                  days: DAYS,
+                  slots: slots,
+                },
+              });
+            });
+
+          /* ---- Desktop grid rows ---- */
+          var body = document.getElementById("timetable-body");
+          slots.forEach(function (slot) {
+            var row = document.createElement("div");
+            row.className = "timetable-row";
+
+            var timeCell = document.createElement("div");
+            timeCell.className = "timetable-cell timetable-time";
+            timeCell.textContent = slot.time;
+            row.appendChild(timeCell);
+
+            DAYS.forEach(function (day) {
+              var cell = document.createElement("div");
+              cell.className = "timetable-cell";
+              var period = slot.periods[day];
+
+              if (!period) {
+                cell.classList.add("is-empty");
+              } else {
+                cell.innerHTML =
+                  '<div class="class-block class-block-' +
+                  period.color +
+                  '">' +
+                  "<strong>" +
+                  Util.escape(period.code) +
+                  "</strong>" +
+                  '<span><i class="fa-solid fa-location-dot"></i> ' +
+                  Util.escape(period.venue) +
+                  "</span>" +
+                  '<span><i class="fa-solid fa-user"></i> ' +
+                  Util.escape(period.lecturer) +
+                  "</span>" +
+                  "</div>";
+              }
+              row.appendChild(cell);
+            });
+
+            body.appendChild(row);
+          });
+
+          /* ---- Mobile stacked view ---- */
+          var mobileRoot = document.getElementById("timetable-mobile");
+          var today = new Date().toLocaleDateString("en-GB", {
+            weekday: "long",
+          });
+
+          DAYS.forEach(function (day) {
+            var daySlots = slots.filter(function (s) {
+              return s.periods[day];
+            });
+
+            var card = document.createElement("div");
+            card.className = "timetable-day-card";
+            if (day === today) card.classList.add("is-today");
+
+            var header =
+              '<div class="timetable-day-head">' +
+              "<h3>" +
+              day +
+              (day === today
+                ? ' <span class="badge badge-brand" style="margin-left:6px;">Today</span>'
+                : "") +
+              "</h3>" +
+              '<span class="timetable-day-count">' +
+              (daySlots.length === 0
+                ? "No lectures"
+                : daySlots.length +
+                  " lecture" +
+                  (daySlots.length === 1 ? "" : "s")) +
+              "</span>" +
+              "</div>";
+
+            var bodyHtml;
+            if (daySlots.length === 0) {
+              bodyHtml =
+                '<div class="timetable-day-empty">' +
+                '<i class="fa-regular fa-circle-check"></i>' +
+                "<span>No lectures scheduled</span>" +
+                "</div>";
+            } else {
+              bodyHtml = daySlots
+                .map(function (s) {
+                  var p = s.periods[day];
+                  return (
+                    '<div class="timetable-slot">' +
+                    '<div class="timetable-slot-time">' +
+                    Util.escape(s.time) +
+                    "</div>" +
+                    '<div class="class-block class-block-' +
+                    p.color +
+                    '">' +
+                    "<strong>" +
+                    Util.escape(p.code) +
+                    "</strong>" +
+                    '<span><i class="fa-solid fa-location-dot"></i> ' +
+                    Util.escape(p.venue) +
+                    "</span>" +
+                    '<span><i class="fa-solid fa-user"></i> ' +
+                    Util.escape(p.lecturer) +
+                    "</span>" +
+                    "</div>" +
+                    "</div>"
+                  );
+                })
+                .join("");
+            }
+
+            card.innerHTML =
+              header + '<div class="timetable-day-body">' + bodyHtml + "</div>";
+            mobileRoot.appendChild(card);
+          });
         }
-        initAppShell("student");
 
-        const slots = [
-          {
-            time: "8 – 10 AM",
-            mon: ["CSC 401", "Hall A", "Dr. Ogunlade"],
-            tue: [],
-            wed: ["CSC 403", "Hall B", "Prof. Adeleke"],
-            thu: [],
-            fri: [],
-          },
-          {
-            time: "10 – 12",
-            mon: [],
-            tue: ["CYB 301", "ICT Lab 1", "Dr. Bakare"],
-            wed: [],
-            thu: ["CSC 405", "Hall A", "Dr. Salako"],
-            fri: [],
-          },
-          {
-            time: "12 – 2 PM",
-            mon: [],
-            tue: [],
-            wed: ["CSC 401", "Hall A", "Dr. Ogunlade"],
-            thu: [],
-            fri: ["EEE 305", "Eng Hall", "Dr. Ajayi"],
-          },
-          {
-            time: "2 – 4 PM",
-            mon: ["CSC 407", "Lab 2", "Dr. Aliyu"],
-            tue: [],
-            wed: [],
-            thu: ["CSC 403", "Hall B", "Prof. Adeleke"],
-            fri: [],
-          },
-        ];
-
-        const tb = document.getElementById("tt-body");
-        function cell(c) {
-          if (!c || !c.length) return "<td></td>";
-          return `<td><div class="class-block"><strong>${Util.escape(c[0])}</strong><span>${Util.escape(c[1])} · ${Util.escape(c[2])}</span></div></td>`;
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", boot);
+        } else {
+          boot();
         }
-        slots.forEach((s) => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `<td style="font-weight:600; white-space:nowrap;">${Util.escape(s.time)}</td>${cell(s.mon)}${cell(s.tue)}${cell(s.wed)}${cell(s.thu)}${cell(s.fri)}`;
-          tb.appendChild(tr);
-        });
-
-        document.getElementById("dl-lecture").addEventListener("click", () => {
-          Toast.success(
-            "Downloading lecture timetable PDF (simulated).",
-            "Download started",
-          );
-        });
-      });
+      })();
     </script>
   </body>
 </html>

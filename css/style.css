@@ -2614,6 +2614,7 @@ p {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
+  flex-wrap: wrap;
   margin-top: var(--sp-4);
   font-size: var(--fs-xs);
   color: var(--text-tertiary);
@@ -6580,4 +6581,816 @@ p {
 
 .cselect-list {
   transform-origin: top center;
+}
+
+/* ==========================================================================
+   LECTURE TIMETABLE
+   Desktop: grid-based table.  Mobile: stacked cards per day.
+   ========================================================================== */
+
+/* ---- Desktop wrapper ---- */
+.timetable-desktop {
+  display: block;
+}
+.timetable-mobile {
+  display: none;
+}
+
+/* ---- Grid table ---- */
+.timetable {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.timetable-head,
+.timetable-row {
+  display: grid;
+  grid-template-columns: 140px repeat(5, minmax(0, 1fr));
+}
+
+.timetable-head {
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.timetable-head .timetable-cell {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.timetable-row {
+  border-bottom: 1px solid var(--border-subtle);
+}
+.timetable-row:last-child {
+  border-bottom: 0;
+}
+.timetable-row:hover {
+  background: var(--bg-subtle);
+}
+
+.timetable-cell {
+  padding: 14px;
+  min-height: 88px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+  border-right: 1px solid var(--border-subtle);
+  min-width: 0;
+}
+.timetable-cell:last-child {
+  border-right: 0;
+}
+
+/* Time column */
+.timetable-time {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--bg-subtle);
+  text-align: left;
+  justify-content: center;
+  align-items: flex-start;
+  white-space: nowrap;
+}
+
+.timetable-cell.is-empty::after {
+  content: "";
+}
+
+/* ---- Class block ---- */
+.class-block {
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--brand-primary);
+  background: var(--brand-primary-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 11.5px;
+  min-width: 0;
+}
+.class-block strong {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--brand-primary);
+  display: block;
+  margin-bottom: 2px;
+}
+.class-block span {
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.class-block span i {
+  font-size: 9.5px;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+/* Color variants */
+.class-block-marine {
+  background: var(--brand-secondary-soft);
+  border-left-color: var(--brand-secondary);
+}
+.class-block-marine strong {
+  color: var(--brand-secondary);
+}
+
+.class-block-success {
+  background: var(--success-soft);
+  border-left-color: var(--success);
+}
+.class-block-success strong {
+  color: var(--success);
+}
+
+.class-block-warning {
+  background: var(--warning-soft);
+  border-left-color: var(--warning);
+}
+.class-block-warning strong {
+  color: var(--warning);
+}
+
+/* ==========================================================================
+   Mobile: stacked cards per day
+   ========================================================================== */
+.timetable-day-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.timetable-day-card.is-today {
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 3px var(--brand-primary-ring);
+}
+
+.timetable-day-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.timetable-day-head h3 {
+  font-size: var(--fs-base);
+  font-weight: 700;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.timetable-day-count {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.timetable-day-body {
+  padding: 14px 18px;
+  display: grid;
+  gap: 12px;
+}
+
+.timetable-slot {
+  display: grid;
+  gap: 6px;
+}
+.timetable-slot-time {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.timetable-day-empty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 0;
+  color: var(--text-tertiary);
+  font-size: var(--fs-sm);
+}
+.timetable-day-empty i {
+  font-size: 16px;
+  color: var(--success);
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+/* 1024px — narrower time column */
+@media (max-width: 1024px) {
+  .timetable-head,
+  .timetable-row {
+    grid-template-columns: 110px repeat(5, minmax(0, 1fr));
+  }
+  .timetable-cell {
+    padding: 10px;
+    min-height: 80px;
+  }
+  .class-block {
+    font-size: 11px;
+    padding: 6px 8px;
+  }
+  .class-block strong {
+    font-size: 12px;
+  }
+}
+
+/* 861px — switch to mobile stacked cards */
+@media (max-width: 860px) {
+  .timetable-desktop {
+    display: none;
+  }
+  .timetable-mobile {
+    display: block;
+  }
+
+  .timetable-mobile .timetable-day-body {
+    padding: 14px 16px;
+  }
+}
+
+/* 480px — tighter still */
+@media (max-width: 480px) {
+  .timetable-day-head {
+    padding: 12px 14px;
+  }
+  .timetable-day-body {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+  .timetable-day-head h3 {
+    font-size: var(--fs-sm);
+  }
+  .class-block {
+    font-size: 11.5px;
+  }
+  .class-block strong {
+    font-size: 13px;
+  }
+}
+
+/* ==========================================================================
+   EXAM TIMETABLE
+   Desktop: 4-column table.  Mobile: dated cards with countdown.
+   ========================================================================== */
+
+.exam-desktop {
+  display: block;
+}
+.exam-mobile {
+  display: none;
+}
+
+/* ---- Desktop table ---- */
+.exam-table {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.exam-head,
+.exam-row {
+  display: grid;
+  grid-template-columns: 200px 190px minmax(0, 1fr) 200px;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+}
+
+.exam-head {
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  padding: 14px 20px;
+}
+
+.exam-row {
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 120ms ease;
+}
+.exam-row:last-child {
+  border-bottom: 0;
+}
+.exam-row:hover {
+  background: var(--bg-subtle);
+}
+
+/* Date cell */
+.exam-date {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.exam-date-main {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Time cell */
+.exam-time {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+}
+.exam-time i {
+  color: var(--text-tertiary);
+  font-size: 13px;
+}
+
+/* Course cell */
+.exam-course {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.exam-course-code {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--brand-secondary);
+  letter-spacing: 0.02em;
+}
+.exam-course-title {
+  font-size: var(--fs-sm);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Venue cell */
+.exam-venue {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+}
+.exam-venue i {
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+/* ==========================================================================
+   Mobile: exam cards
+   ========================================================================== */
+.exam-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: 12px;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+.exam-card.is-soon {
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 3px var(--brand-primary-ring);
+}
+
+.exam-card-head {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.exam-card-date {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--brand-secondary) 0%, #001f31 100%);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.exam-card-day {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+}
+.exam-card-month {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin-top: 3px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.exam-card-meta {
+  min-width: 0;
+}
+.exam-card-weekday {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 3px;
+}
+.exam-card-course {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.exam-card-countdown {
+  flex-shrink: 0;
+}
+
+.exam-card-body {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bg-subtle);
+}
+.exam-card-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+}
+.exam-card-info i {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+/* 1024px — narrow the columns */
+@media (max-width: 1024px) {
+  .exam-head,
+  .exam-row {
+    grid-template-columns: 170px 150px minmax(0, 1fr) 150px;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+}
+
+/* 860px — switch to card layout */
+@media (max-width: 860px) {
+  .exam-desktop {
+    display: none;
+  }
+  .exam-mobile {
+    display: block;
+  }
+}
+
+/* 480px — tighter still */
+@media (max-width: 480px) {
+  .exam-card-head {
+    grid-template-columns: 52px 1fr;
+    grid-template-areas:
+      "date meta"
+      "count count";
+    gap: 10px;
+  }
+  .exam-card-date {
+    grid-area: date;
+    width: 52px;
+    height: 52px;
+  }
+  .exam-card-meta {
+    grid-area: meta;
+  }
+  .exam-card-countdown {
+    grid-area: count;
+    justify-self: start;
+    margin-top: 4px;
+  }
+  .exam-card-day {
+    font-size: 20px;
+  }
+  .exam-card-course {
+    font-size: 13px;
+  }
+}
+
+/* ==========================================================================
+   FACULTY / DEPARTMENT INFO
+   ========================================================================== */
+
+.faculty-dept-list {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.faculty-dept-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 120ms ease;
+}
+.faculty-dept-row:last-child {
+  border-bottom: 0;
+}
+.faculty-dept-row:hover {
+  background: var(--bg-subtle);
+}
+
+.faculty-dept-row.is-mine {
+  background: var(--brand-primary-soft);
+}
+.faculty-dept-row.is-mine:hover {
+  background: #f2dede;
+}
+
+.faculty-dept-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.faculty-dept-row.is-mine .faculty-dept-icon {
+  background: var(--brand-primary);
+  color: #fff;
+}
+
+.faculty-dept-name {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.faculty-dept-note {
+  font-size: 11.5px;
+  color: var(--brand-primary);
+  font-weight: 600;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.faculty-dept-note i {
+  font-size: 10px;
+}
+
+/* Department info page — same visual language */
+.dept-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  padding: 20px;
+}
+.dept-info-block {
+  padding: 16px;
+  border-radius: var(--radius-md);
+  background: var(--bg-subtle);
+}
+.dept-info-block .label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+  margin-bottom: 6px;
+}
+.dept-info-block .value {
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ==========================================================================
+   ANNOUNCEMENTS — audience multi-select picker (Admin)
+   ========================================================================== */
+
+.audience-picker {
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 12px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  display: grid;
+  gap: 8px;
+}
+
+.audience-group {
+  padding-top: 10px;
+  margin-top: 6px;
+  border-top: 1px solid var(--border-subtle);
+  display: grid;
+  gap: 6px;
+}
+.audience-group:first-of-type {
+  border-top: 0;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.audience-group-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 2px;
+}
+
+.audience-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--fs-sm);
+  color: var(--text-primary);
+  transition: background 100ms ease;
+}
+.audience-option:hover {
+  background: var(--bg-subtle);
+}
+.audience-option input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--brand-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.audience-option:has(input:checked) {
+  background: var(--brand-primary-soft);
+  color: var(--brand-primary);
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   COURSE MATERIALS — responsive resource rows
+   ========================================================================== */
+
+.material-row {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 120ms ease;
+}
+.material-row:last-child {
+  border-bottom: 0;
+}
+.material-row:hover {
+  background: var(--bg-subtle);
+}
+
+.material-icon-wrap {
+  flex-shrink: 0;
+}
+
+.material-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.material-name {
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.35;
+  /* Allow two lines on desktop, ellipsis beyond that */
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.material-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+
+.material-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.material-tag i {
+  font-size: 10px;
+  opacity: 0.75;
+}
+
+.material-action {
+  flex-shrink: 0;
+}
+
+/* ---------- Mobile — resource becomes a stacked card ---------- */
+@media (max-width: 640px) {
+  .material-row {
+    grid-template-columns: 48px 1fr;
+    grid-template-areas:
+      "icon body"
+      "action action";
+    row-gap: 12px;
+    padding: 16px;
+  }
+  .material-icon-wrap {
+    grid-area: icon;
+  }
+  .material-body {
+    grid-area: body;
+  }
+  .material-action {
+    grid-area: action;
+    /* Full-width download button on mobile */
+    display: flex;
+    width: 100%;
+  }
+  .material-action .btn {
+    width: 100%;
+    justify-content: center;
+    padding: 11px 16px;
+  }
+  .material-name {
+    font-size: 14px;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
+  .material-tags {
+    font-size: 11.5px;
+    gap: 4px 10px;
+  }
+}
+
+/* ---------- Very narrow (<420px) — tighter still ---------- */
+@media (max-width: 420px) {
+  .material-row {
+    padding: 14px;
+    row-gap: 10px;
+  }
+  .material-name {
+    font-size: 13.5px;
+  }
+  .material-tag {
+    font-size: 11px;
+  }
+  .material-action .btn {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
 }

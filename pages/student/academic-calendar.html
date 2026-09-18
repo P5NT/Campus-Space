@@ -45,6 +45,7 @@
   </head>
   <body class="has-session">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
       <aside
         class="sidebar"
@@ -61,7 +62,11 @@
                 Key dates for the 2026/2027 academic session.
               </p>
             </div>
-            <button class="btn btn-secondary" id="download-calendar">
+            <button
+              class="btn btn-primary"
+              id="download-calendar"
+              type="button"
+            >
               <i class="fa-solid fa-download"></i> Download PDF
             </button>
           </div>
@@ -136,6 +141,7 @@
         </main>
       </div>
     </div>
+
     <div id="mobile-nav-mount"></div>
     <div class="mobile-menu-backdrop"></div>
     <aside
@@ -150,21 +156,66 @@
     <script src="../../js/auth.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
+    <script src="../../js/pdf-generator.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
         if (!session) {
           window.location.href = "../auth/login.html";
           return;
         }
         initAppShell("student");
-        document
+
+        var btn = document
           .getElementById("download-calendar")
-          .addEventListener("click", () => {
-            Toast.success(
-              "Downloading academic calendar PDF (simulated).",
-              "Download started",
-            );
+          .addEventListener("click", function () {
+            PdfGenerator.open({
+              type: "calendar",
+              title: "Academic Calendar",
+              subtitle: "First Semester - 2026/2027 Academic Session",
+              data: [
+                {
+                  date: "2 January 2026",
+                  title: "Resumption & Registration Begins",
+                  desc: "Returning students report to campus. Course registration opens.",
+                },
+                {
+                  date: "13 January 2026",
+                  title: "Late Registration Begins",
+                  desc: "A late registration fee applies from this date.",
+                },
+                {
+                  date: "20 January 2026",
+                  title: "Lectures Commence",
+                  desc: "First semester lectures begin across all faculties.",
+                },
+                {
+                  date: "26 January 2026",
+                  title: "Course Registration Deadline",
+                  desc: "No registration accepted beyond this date.",
+                },
+                {
+                  date: "14-18 April 2026",
+                  title: "Revision Week",
+                  desc: "Lectures end. Students prepare for examinations.",
+                },
+                {
+                  date: "20 April 2026",
+                  title: "First Semester Examinations Begin",
+                  desc: "Examination timetable published in advance.",
+                },
+                {
+                  date: "8 May 2026",
+                  title: "First Semester Ends",
+                  desc: "End of first semester.",
+                },
+                {
+                  date: "18 May 2026",
+                  title: "Second Semester Begins",
+                  desc: "Second semester lectures commence.",
+                },
+              ],
+            });
           });
       });
     </script>

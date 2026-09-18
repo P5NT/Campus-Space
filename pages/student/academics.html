@@ -45,6 +45,7 @@
   </head>
   <body class="has-session">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
       <aside
         class="sidebar"
@@ -139,7 +140,7 @@
                 </div>
               </section>
 
-              <!-- Calculator -->
+              <!-- Calculators -->
               <section>
                 <h2 class="section-title">Academic tools</h2>
                 <p class="section-desc">
@@ -191,7 +192,7 @@
                 <div class="card-body" id="faculty-info"></div>
               </div>
 
-              <!-- Course reps -->
+              <!-- Course representatives for the student's own courses -->
               <div class="card">
                 <div class="card-head"><h3>Course Representatives</h3></div>
                 <div id="course-reps"></div>
@@ -199,8 +200,9 @@
                   <a
                     href="course-representatives.html"
                     class="btn btn-ghost btn-sm"
-                    >View all <i class="fa-solid fa-arrow-right"></i
-                  ></a>
+                  >
+                    View all <i class="fa-solid fa-arrow-right"></i>
+                  </a>
                 </div>
               </div>
 
@@ -230,6 +232,7 @@
         </main>
       </div>
     </div>
+
     <div id="mobile-nav-mount"></div>
     <div class="mobile-menu-backdrop"></div>
     <aside
@@ -246,53 +249,102 @@
     <script src="../../js/auth.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
-    <script src="../../js/academics.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
+      /* ==========================================================================
+   Academics hub — quick links, faculty info card, course reps preview.
+   ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
         if (!session) {
           window.location.href = "../auth/login.html";
           return;
         }
         initAppShell("student");
 
-        const student =
-          DEMO_STUDENTS.find((s) => s.username === session.username) || {};
-        const facBody = document.getElementById("faculty-info");
-        facBody.innerHTML = `
-    <div class="stack">
-      <div>
-        <div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Faculty</div>
-        <div class="font-semibold">${Util.escape(student.faculty || "—")}</div>
-      </div>
-      <div>
-        <div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Department</div>
-        <div class="font-semibold">${Util.escape(student.department || "—")}</div>
-      </div>
-      <div>
-        <div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Level</div>
-        <div class="font-semibold">${Util.escape(student.level || "—")} Level</div>
-      </div>
-      <div class="cluster">
-        <a href="faculty-information.html" class="btn btn-ghost btn-sm">Faculty info</a>
-        <a href="department-information.html" class="btn btn-ghost btn-sm">Department info</a>
-      </div>
-    </div>`;
+        var student =
+          DEMO_STUDENTS.find(function (s) {
+            return s.username === session.username;
+          }) || {};
 
-        const repsWrap = document.getElementById("course-reps");
-        DEMO_COURSES.slice(0, 3).forEach((c) => {
-          const el = document.createElement("div");
-          el.className = "resource-row";
-          el.style.padding = "12px 20px";
-          el.innerHTML = `
-      <span class="avatar avatar-32 avatar-fallback">${Util.initials(c.rep)}</span>
-      <div class="resource-info">
-        <div class="resource-name">${Util.escape(c.rep)}</div>
-        <div class="resource-meta"><span>${Util.escape(c.code)}</span></div>
-      </div>
-      <button class="btn-icon" aria-label="Contact representative"><i class="fa-solid fa-phone"></i></button>`;
-          repsWrap.appendChild(el);
+        /* ---- Faculty & Department info card ---- */
+        var facBody = document.getElementById("faculty-info");
+        facBody.innerHTML =
+          '<div class="stack">' +
+          "<div>" +
+          '<div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Faculty</div>' +
+          '<div class="font-semibold">' +
+          Util.escape(student.faculty || "—") +
+          "</div>" +
+          "</div>" +
+          "<div>" +
+          '<div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Department</div>' +
+          '<div class="font-semibold">' +
+          Util.escape(student.department || "—") +
+          "</div>" +
+          "</div>" +
+          "<div>" +
+          '<div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Level</div>' +
+          '<div class="font-semibold">' +
+          Util.escape(student.level || "—") +
+          " Level</div>" +
+          "</div>" +
+          '<div class="cluster">' +
+          '<a href="faculty-information.html" class="btn btn-ghost btn-sm">Faculty info</a>' +
+          '<a href="department-information.html" class="btn btn-ghost btn-sm">Department info</a>' +
+          "</div>" +
+          "</div>";
+
+        /* ---- Course reps: only for courses in the student's own department + level ---- */
+        var repsWrap = document.getElementById("course-reps");
+
+        /* Get the student's own courses */
+        var myCourses = DEMO_COURSES.filter(function (c) {
+          return (
+            c.department === student.department && c.level === student.level
+          );
         });
+
+        /* Build a unique list of reps from those courses */
+        var reps = [];
+        var seenReps = {};
+        myCourses.forEach(function (c) {
+          if (!c.rep || seenReps[c.rep]) return;
+          seenReps[c.rep] = true;
+          reps.push({ name: c.rep, course: c.code });
+        });
+
+        if (!reps.length) {
+          repsWrap.innerHTML =
+            '<div class="empty-state" style="padding:24px 16px;">' +
+            '<div class="empty-icon" style="width:48px; height:48px; font-size:18px; margin-bottom:12px;">' +
+            '<i class="fa-solid fa-user-graduate"></i>' +
+            "</div>" +
+            '<h3 style="font-size:var(--fs-sm);">No reps listed yet</h3>' +
+            '<p style="font-size:var(--fs-xs);">Course representatives for your department at this level haven\'t been assigned.</p>' +
+            "</div>";
+        } else {
+          reps.slice(0, 3).forEach(function (r) {
+            var el = document.createElement("div");
+            el.className = "resource-row";
+            el.style.padding = "12px 20px";
+            el.innerHTML =
+              '<span class="avatar avatar-32 avatar-fallback">' +
+              Util.initials(r.name) +
+              "</span>" +
+              '<div class="resource-info">' +
+              '<div class="resource-name">' +
+              Util.escape(r.name) +
+              "</div>" +
+              '<div class="resource-meta"><span>' +
+              Util.escape(r.course) +
+              "</span></div>" +
+              "</div>" +
+              '<button class="btn-icon" aria-label="Contact representative">' +
+              '<i class="fa-solid fa-phone"></i>' +
+              "</button>";
+            repsWrap.appendChild(el);
+          });
+        }
       });
     </script>
   </body>

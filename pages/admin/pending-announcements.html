@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pending Announcements — Admin — Campus Space</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="../../assets/favicon/favicon.ico"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../../assets/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="../../assets/favicon/favicon-16x16.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="../../assets/favicon/apple-touch-icon.png"
+    />
+    <link rel="manifest" href="../../assets/favicon/site.webmanifest" />
+    <meta name="theme-color" content="#B33A3A" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="../../css/style.css" />
+  </head>
+  <body class="has-session admin-body">
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <div class="app-shell">
+      <aside
+        class="sidebar admin-sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
+      <div class="app-main">
+        <header class="app-header" id="app-header"></header>
+        <main class="app-content" id="main">
+          <div class="page-head">
+            <div class="page-head-text">
+              <h1 class="page-title">Pending Announcements</h1>
+              <p class="page-subtitle">
+                Review messages submitted by student leaders. Approve to publish
+                as official announcements with a source tag.
+              </p>
+            </div>
+          </div>
+
+          <div class="filter-bar">
+            <button class="chip is-active" data-status="pending">
+              Pending
+            </button>
+            <button class="chip" data-status="all">All</button>
+          </div>
+
+          <div id="pending-list" class="stack"></div>
+        </main>
+      </div>
+    </div>
+
+    <div class="mobile-menu-backdrop"></div>
+    <aside
+      class="mobile-menu"
+      id="mobile-menu-mount"
+      aria-label="Mobile menu"
+    ></aside>
+
+    <script src="../../data/students.js"></script>
+    <script src="../../data/associations.js"></script>
+    <script src="../../data/news.js"></script>
+    <script src="../../data/pending-announcements.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/navigation.js"></script>
+    <script src="../../js/notifications.js"></script>
+    <script src="../../js/leaders.js"></script>
+    <script>
+      /* ==========================================================================
+   Admin — review pending announcements from leaders.
+   ========================================================================== */
+      (function () {
+        "use strict";
+        if (window._pendingAnnInit) return;
+        window._pendingAnnInit = true;
+
+        function boot() {
+          var session = Auth.current();
+          if (
+            !session ||
+            (session.role !== "admin" && session.role !== "super_admin")
+          ) {
+            window.location.href = "../auth/login.html";
+            return;
+          }
+          initAppShell("admin");
+
+          var listEl = document.getElementById("pending-list");
+          var filter = "pending";
+
+          function render() {
+            var all =
+              typeof getPendingAnnouncements === "function"
+                ? getPendingAnnouncements()
+                : Store.get("pending_announcements", []) || [];
+
+            var items = all.filter(function (x) {
+              if (filter === "all") return true;
+              return x.status === filter;
+            });
+
+            listEl.innerHTML = "";
+
+            if (!items.length) {
+              listEl.innerHTML =
+                '<div class="card"><div class="empty-state">' +
+                '<div class="empty-icon"><i class="fa-solid fa-inbox"></i></div>' +
+                "<h3>" +
+                (filter === "pending"
+                  ? "No pending submissions"
+                  : "Nothing here") +
+                "</h3>" +
+                "<p>Messages submitted by leaders will appear here for review.</p>" +
+                "</div></div>";
+              return;
+            }
+
+            items.forEach(function (item) {
+              var card = document.createElement("div");
+              card.className = "card card-pad";
+              card.style.marginBottom = "16px";
+              card.innerHTML =
+                '<div class="cluster-between" style="margin-bottom:12px;">' +
+                '<div class="cluster">' +
+                '<span class="badge badge-brand"><i class="fa-solid fa-hourglass-half"></i> ' +
+                Util.escape(item.status) +
+                "</span>" +
+                '<span class="badge badge-marine">' +
+                Util.escape(item.audience) +
+                "</span>" +
+                "</div>" +
+                '<span class="text-xs text-muted">' +
+                Util.relativeTime(item.submittedAt) +
+                "</span>" +
+                "</div>" +
+                '<h3 style="font-size:var(--fs-lg); margin-bottom:8px;">' +
+                Util.escape(item.subject) +
+                "</h3>" +
+                '<div style="font-size:var(--fs-sm); color:var(--text-secondary); line-height:1.65; white-space:pre-wrap; margin-bottom:16px;">' +
+                Util.escape(item.body) +
+                "</div>" +
+                '<div style="padding-top:12px; border-top:1px solid var(--border-subtle); display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap;">' +
+                '<div style="display:flex; gap:10px; align-items:center; min-width:0;">' +
+                '<span class="avatar avatar-32 avatar-fallback">' +
+                Util.initials(item.submittedBy.fullName) +
+                "</span>" +
+                '<div style="min-width:0;">' +
+                '<div style="font-size:var(--fs-sm); font-weight:600;">' +
+                Util.escape(item.submittedBy.fullName) +
+                "</div>" +
+                '<div class="text-xs text-muted">' +
+                Util.escape(item.submittedBy.associationAcronym) +
+                " — " +
+                Util.escape(item.submittedBy.position) +
+                "</div>" +
+                "</div>" +
+                "</div>" +
+                '<div class="cluster">' +
+                '<button class="btn btn-secondary btn-sm" data-action="reject"><i class="fa-solid fa-xmark"></i> Reject</button>' +
+                '<button class="btn btn-primary btn-sm" data-action="publish"><i class="fa-solid fa-check"></i> Publish</button>' +
+                "</div>" +
+                "</div>";
+
+              card
+                .querySelector('[data-action="publish"]')
+                .addEventListener("click", function () {
+                  publishItem(item);
+                });
+              card
+                .querySelector('[data-action="reject"]')
+                .addEventListener("click", function () {
+                  Confirmation.confirm({
+                    title: "Reject this submission?",
+                    message:
+                      "The message will be discarded and the leader will not be notified in this demo.",
+                    confirmLabel: "Reject",
+                    variant: "danger",
+                  }).then(function (ok) {
+                    if (!ok) return;
+                    if (typeof removePendingAnnouncement === "function") {
+                      removePendingAnnouncement(item.id);
+                    }
+                    Toast.info("Submission rejected.", "Rejected");
+                    render();
+                  });
+                });
+
+              listEl.appendChild(card);
+            });
+          }
+
+          function publishItem(item) {
+            /* Build the announcement and add it to DEMO_ANNOUNCEMENTS */
+            var sourceTag =
+              item.submittedBy.associationAcronym +
+              " \u2014 " +
+              item.submittedBy.position;
+            var published = {
+              id: "ann-" + Date.now(),
+              title: item.subject,
+              author: "Space Admin",
+              date: new Date().toISOString().slice(0, 10),
+              important: true,
+              body: item.body,
+              affected: item.audience,
+              source: sourceTag,
+            };
+
+            if (typeof DEMO_ANNOUNCEMENTS !== "undefined") {
+              DEMO_ANNOUNCEMENTS.unshift(published);
+            }
+
+            /* Mark as published and remove from pending list */
+            if (typeof removePendingAnnouncement === "function") {
+              removePendingAnnouncement(item.id);
+            }
+
+            Toast.success(
+              "Announcement published with source tag.",
+              "Published",
+            );
+            render();
+          }
+
+          document.querySelectorAll("[data-status]").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+              document.querySelectorAll("[data-status]").forEach(function (b) {
+                b.classList.remove("is-active");
+              });
+              btn.classList.add("is-active");
+              filter = btn.getAttribute("data-status");
+              render();
+            });
+          });
+
+          render();
+        }
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", boot);
+        } else {
+          boot();
+        }
+      })();
+    </script>
+  </body>
+</html>

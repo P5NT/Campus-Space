@@ -156,6 +156,22 @@ const ADMIN_NAV = [
       },
     ],
   },
+  {
+    group: "Operations",
+    items: [
+      { href: "complaints.html", icon: "fa-file-shield", label: "Complaints" },
+      {
+        href: "pending-announcements.html",
+        icon: "fa-inbox",
+        label: "Pending Announcements",
+      }, // ← new
+      {
+        href: "emergency-contacts.html",
+        icon: "fa-shield-heart",
+        label: "Emergency Contacts",
+      },
+    ],
+  },
 ];
 
 /* -------------------------------------------------------------------------

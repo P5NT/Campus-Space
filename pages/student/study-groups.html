@@ -45,6 +45,7 @@
   </head>
   <body class="has-session">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
       <aside
         class="sidebar"
@@ -57,15 +58,19 @@
           <div class="page-head">
             <div class="page-head-text">
               <h1 class="page-title">Study Groups</h1>
-              <p class="page-subtitle">Study together, prepare better.</p>
+              <p class="page-subtitle" id="sg-subtitle">
+                Study together, prepare better.
+              </p>
             </div>
             <button
               class="btn btn-primary"
               data-modal-open="create-group-modal"
+              type="button"
             >
               <i class="fa-solid fa-plus"></i> Create group
             </button>
           </div>
+
           <div class="grid grid-3" id="groups-grid"></div>
         </main>
       </div>
@@ -104,22 +109,24 @@
                 ><span>Please enter a group name.</span>
               </div>
             </div>
+
             <div class="field">
               <label class="label" for="cg-course"
                 >Course <span class="req">*</span></label
               >
-              <input
-                class="input"
-                type="text"
-                id="cg-course"
-                name="course"
-                placeholder="e.g. CSC 401"
-              />
+              <select class="select" id="cg-course" name="course">
+                <option value="">Select a course</option>
+              </select>
+              <div class="field-help">
+                You can only create groups for courses in your own department
+                and level.
+              </div>
               <div class="field-error">
                 <i class="fa-solid fa-circle-exclamation"></i
-                ><span>Please enter a course.</span>
+                ><span>Please select a course.</span>
               </div>
             </div>
+
             <div class="field">
               <label class="label" for="cg-desc">Short description</label>
               <textarea
@@ -149,121 +156,297 @@
     ></aside>
 
     <script src="../../data/students.js"></script>
+    <script src="../../data/courses.js"></script>
     <script src="../../js/main.js"></script>
     <script src="../../js/validation.js"></script>
     <script src="../../js/auth.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
-    <script src="../../js/leaders.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
+      /* ==========================================================================
+   Study Groups — students see and create groups only for their own
+   department + level. Groups are scoped like the course catalog and
+   course materials pages.
+   ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
         if (!session) {
           window.location.href = "../auth/login.html";
           return;
         }
         initAppShell("student");
 
-        const groups = [
+        var student = DEMO_STUDENTS.find(function (s) {
+          return s.username === session.username;
+        });
+        if (!student) {
+          return;
+        }
+
+        /* ------------------------------------------------------------------
+     Subtitle — reflect the student's own department and level
+     ------------------------------------------------------------------ */
+        var sub = document.getElementById("sg-subtitle");
+        if (sub) {
+          sub.textContent =
+            "Study groups for " +
+            student.department +
+            " · " +
+            student.level +
+            " Level";
+        }
+
+        /* ------------------------------------------------------------------
+     Seed groups — scoped by department + level
+     ------------------------------------------------------------------ */
+        var SEED_GROUPS = [
+          /* Computer Science 400 */
           {
             name: "CSC 401 Study Circle",
             course: "CSC 401",
+            department: "Computer Science",
+            level: "400",
             members: 6,
             location: "Library — Group Room B",
             time: "Tue & Thu · 6pm",
           },
           {
-            name: "EEE 305 Tutorial Group",
-            course: "EEE 305",
-            members: 4,
-            location: "Engineering Block C",
-            time: "Mon · 5pm",
-          },
-          {
-            name: "BCH 201 Revision Squad",
-            course: "BCH 201",
-            members: 8,
-            location: "Science Library",
-            time: "Sat · 10am",
-          },
-          {
-            name: "ACC 401 Problem Solving",
-            course: "ACC 401",
-            members: 5,
-            location: "Management Building",
-            time: "Wed · 4pm",
-          },
-          {
-            name: "CYB 301 Hands-on Group",
-            course: "CYB 301",
-            members: 3,
-            location: "ICT Lab 2",
-            time: "Fri · 3pm",
-          },
-          {
             name: "Compiler Construction Mentoring",
             course: "CSC 403",
+            department: "Computer Science",
+            level: "400",
             members: 7,
             location: "Faculty Auditorium",
             time: "Sun · 2pm",
           },
+
+          /* Cyber Security 200 */
+          {
+            name: "CYB 201 Foundations",
+            course: "CYB 201",
+            department: "Cyber Security",
+            level: "200",
+            members: 5,
+            location: "ICT Lab 3",
+            time: "Wed · 4pm",
+          },
+
+          /* Electrical and Electronics Engineering 300 */
+          {
+            name: "EEE 305 Tutorial Group",
+            course: "EEE 305",
+            department: "Electrical and Electronics Engineering",
+            level: "300",
+            members: 4,
+            location: "Engineering Block C",
+            time: "Mon · 5pm",
+          },
+
+          /* Biochemistry 200 */
+          {
+            name: "BCH 201 Revision Squad",
+            course: "BCH 201",
+            department: "Biochemistry",
+            level: "200",
+            members: 8,
+            location: "Science Library",
+            time: "Sat · 10am",
+          },
+
+          /* Accounting 400 */
+          {
+            name: "ACC 401 Problem Solving",
+            course: "ACC 401",
+            department: "Accounting",
+            level: "400",
+            members: 5,
+            location: "Management Building",
+            time: "Wed · 4pm",
+          },
+
+          /* Nursing Science 500 */
+          {
+            name: "NSC 501 Clinical Prep",
+            course: "NSC 501",
+            department: "Nursing Science",
+            level: "500",
+            members: 6,
+            location: "Nursing Hall — Room 2",
+            time: "Tue · 6pm",
+          },
         ];
 
-        const grid = document.getElementById("groups-grid");
+        /* Load any custom groups the student has created (persisted) */
+        var customGroups = Store.get("study_groups_custom", []) || [];
+
+        /* Combine seeds + custom, then scope to the student */
+        var allGroups = SEED_GROUPS.concat(customGroups);
+        var groups = allGroups.filter(function (g) {
+          return (
+            g.department === student.department && g.level === student.level
+          );
+        });
+
+        /* Track joined groups (in-memory for demo) */
+        var joined = {};
+
+        /* ------------------------------------------------------------------
+     Render
+     ------------------------------------------------------------------ */
+        var grid = document.getElementById("groups-grid");
+
         function render() {
           grid.innerHTML = "";
-          groups.forEach((g) => {
-            const card = document.createElement("div");
+
+          if (!groups.length) {
+            grid.innerHTML =
+              '<div class="card" style="grid-column: 1 / -1;">' +
+              '<div class="empty-state">' +
+              '<div class="empty-icon"><i class="fa-solid fa-users"></i></div>' +
+              "<h3>No study groups yet</h3>" +
+              "<p>No one has started a study group for " +
+              Util.escape(student.department) +
+              " at " +
+              Util.escape(student.level) +
+              " Level yet. Be the first.</p>" +
+              '<button class="btn btn-primary" data-modal-open="create-group-modal" type="button">' +
+              '<i class="fa-solid fa-plus"></i> Create the first group' +
+              "</button>" +
+              "</div>" +
+              "</div>";
+            return;
+          }
+
+          groups.forEach(function (g) {
+            var card = document.createElement("div");
             card.className = "card card-pad";
-            card.innerHTML = `
-        <div class="cluster" style="margin-bottom:12px;">
-          <span class="qa-icon marine"><i class="fa-solid fa-users"></i></span>
-          <span class="badge badge-marine">${Util.escape(g.course)}</span>
-        </div>
-        <h3 style="font-size:var(--fs-md); margin-bottom:6px;">${Util.escape(g.name)}</h3>
-        <div class="stack" style="font-size:var(--fs-xs); color:var(--text-tertiary); gap:6px; margin-bottom:16px;">
-          <div><i class="fa-solid fa-location-dot"></i> ${Util.escape(g.location)}</div>
-          <div><i class="fa-regular fa-clock"></i> ${Util.escape(g.time)}</div>
-          <div><i class="fa-solid fa-user-group"></i> ${g.members} member${g.members === 1 ? "" : "s"}</div>
-        </div>
-        <button class="btn btn-secondary btn-sm btn-block" data-join>
-          <i class="fa-solid fa-arrow-right-to-bracket"></i> Join group
-        </button>`;
-            card.querySelector("[data-join]").addEventListener("click", (e) => {
-              e.currentTarget.outerHTML =
-                '<span class="badge badge-success" style="display:flex; justify-content:center;"><i class="fa-solid fa-circle-check"></i> Joined</span>';
-              Toast.success(
-                'You joined "' + g.name + '" (simulated).',
-                "Joined",
-              );
-            });
+
+            var isJoined = joined[g.name];
+            var joinBtnHtml = isJoined
+              ? '<span class="badge badge-success" style="display:flex; justify-content:center; padding:8px 12px;"><i class="fa-solid fa-circle-check"></i> Joined</span>'
+              : '<button class="btn btn-secondary btn-sm btn-block" data-join><i class="fa-solid fa-arrow-right-to-bracket"></i> Join group</button>';
+
+            card.innerHTML =
+              '<div class="cluster" style="margin-bottom:12px;">' +
+              '<span class="qa-icon marine"><i class="fa-solid fa-users"></i></span>' +
+              '<span class="badge badge-marine">' +
+              Util.escape(g.course) +
+              "</span>" +
+              "</div>" +
+              '<h3 style="font-size:var(--fs-md); margin-bottom:6px;">' +
+              Util.escape(g.name) +
+              "</h3>" +
+              '<div class="stack" style="font-size:var(--fs-xs); color:var(--text-tertiary); gap:6px; margin-bottom:16px;">' +
+              '<div><i class="fa-solid fa-location-dot"></i> ' +
+              Util.escape(g.location) +
+              "</div>" +
+              '<div><i class="fa-regular fa-clock"></i> ' +
+              Util.escape(g.time) +
+              "</div>" +
+              '<div><i class="fa-solid fa-user-group"></i> ' +
+              g.members +
+              " member" +
+              (g.members === 1 ? "" : "s") +
+              "</div>" +
+              "</div>" +
+              joinBtnHtml;
+
+            var joinBtn = card.querySelector("[data-join]");
+            if (joinBtn) {
+              joinBtn.addEventListener("click", function () {
+                joined[g.name] = true;
+                g.members += 1;
+                render();
+                Toast.success(
+                  'You joined "' + g.name + '" (simulated).',
+                  "Joined",
+                );
+              });
+            }
+
             grid.appendChild(card);
           });
-        }
-        render();
 
-        // Create group form
-        const createForm = document.getElementById("create-group-form");
-        bindForm(
-          createForm,
-          {
-            name: [Rules.required],
-            course: [Rules.required],
-          },
-          (data) => {
-            groups.unshift({
-              name: data.get("name"),
-              course: data.get("course"),
-              members: 1,
-              location: "TBD",
-              time: "To be scheduled",
+          /* Rebind any "create first group" buttons that appear in the empty state */
+          document
+            .querySelectorAll('[data-modal-open="create-group-modal"]')
+            .forEach(function (btn) {
+              if (btn.dataset.bound === "true") return;
+              btn.dataset.bound = "true";
             });
-            render();
-            Modal.close("create-group-modal");
-            createForm.reset();
-            Toast.success("Study group created (simulated).", "Group created");
-          },
-        );
+        }
+
+        /* ------------------------------------------------------------------
+     Populate the course dropdown with the student's own courses
+     ------------------------------------------------------------------ */
+        var courseSelect = document.getElementById("cg-course");
+        if (courseSelect) {
+          var myCourses = DEMO_COURSES.filter(function (c) {
+            return (
+              c.department === student.department && c.level === student.level
+            );
+          });
+
+          if (myCourses.length) {
+            myCourses.forEach(function (c) {
+              var opt = document.createElement("option");
+              opt.value = c.code;
+              opt.textContent = c.code + " — " + c.title;
+              courseSelect.appendChild(opt);
+            });
+          } else {
+            var emptyOpt = document.createElement("option");
+            emptyOpt.value = "";
+            emptyOpt.disabled = true;
+            emptyOpt.textContent =
+              "No courses for your department and level yet";
+            courseSelect.appendChild(emptyOpt);
+          }
+        }
+
+        /* ------------------------------------------------------------------
+     Create group form
+     ------------------------------------------------------------------ */
+        var createForm = document.getElementById("create-group-form");
+        if (createForm) {
+          bindForm(
+            createForm,
+            {
+              name: [Rules.required, Rules.minLen(3)],
+              course: [Rules.required],
+            },
+            function (data) {
+              var newGroup = {
+                name: data.get("name"),
+                course: data.get("course"),
+                department: student.department,
+                level: student.level,
+                members: 1,
+                location: "TBD",
+                time: "To be scheduled",
+                createdBy: student.username,
+                createdAt: Date.now(),
+              };
+
+              /* Persist to localStorage so it survives reload */
+              var stored = Store.get("study_groups_custom", []) || [];
+              stored.unshift(newGroup);
+              Store.set("study_groups_custom", stored);
+
+              /* Add to the visible list */
+              groups.unshift(newGroup);
+              joined[newGroup.name] = true; /* Creator is auto-joined */
+              render();
+
+              Modal.close("create-group-modal");
+              createForm.reset();
+              Toast.success("Study group created.", "Group created");
+            },
+          );
+        }
+
+        /* Initial render */
+        render();
       });
     </script>
   </body>

@@ -45,6 +45,7 @@
   </head>
   <body class="has-session">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
       <aside
         class="sidebar"
@@ -61,30 +62,31 @@
                 First semester 2026/2027 examination schedule.
               </p>
             </div>
-            <button class="btn btn-secondary" id="dl-exam">
-              <i class="fa-solid fa-download"></i> Download
+            <button class="btn btn-secondary" id="dl-exam" type="button">
+              <i class="fa-solid fa-download"></i> Download PDF
             </button>
           </div>
 
+          <!-- Notice -->
           <div
             class="card"
-            style="margin-bottom: 24px; border-left: 4px solid var(--danger)"
+            style="margin-bottom: 20px; border-left: 4px solid var(--danger)"
           >
             <div class="card-body">
-              <div class="cluster">
+              <div class="cluster" style="gap: 14px; align-items: flex-start">
                 <i
                   class="fa-solid fa-circle-info"
-                  style="color: var(--danger); font-size: 20px"
+                  style="color: var(--danger); font-size: 22px; margin-top: 2px"
                 ></i>
                 <div>
-                  <div class="font-semibold">
+                  <div class="font-semibold" style="font-size: var(--fs-base)">
                     Examinations begin 20 April 2026
                   </div>
                   <p
                     style="
                       font-size: var(--fs-sm);
                       color: var(--text-secondary);
-                      margin-top: 2px;
+                      margin-top: 4px;
                     "
                   >
                     Please arrive 30 minutes before each exam. Bring your
@@ -95,24 +97,25 @@
             </div>
           </div>
 
-          <div class="table-wrap">
-            <div class="table-scroll">
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Time</th>
-                    <th>Course</th>
-                    <th>Venue</th>
-                  </tr>
-                </thead>
-                <tbody id="exam-rows"></tbody>
-              </table>
+          <!-- Desktop table (>= 861px) -->
+          <div class="exam-desktop">
+            <div class="exam-table">
+              <div class="exam-head">
+                <div>Date</div>
+                <div>Time</div>
+                <div>Course</div>
+                <div>Venue</div>
+              </div>
+              <div id="exam-body"></div>
             </div>
           </div>
+
+          <!-- Mobile card list (<= 860px) -->
+          <div class="exam-mobile" id="exam-mobile"></div>
         </main>
       </div>
     </div>
+
     <div id="mobile-nav-mount"></div>
     <div class="mobile-menu-backdrop"></div>
     <aside
@@ -128,72 +131,232 @@
     <script src="../../js/auth.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
-    <script src="../../js/leaders.js"></script>
+    <script src="../../js/pdf-generator.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
-        if (!session) {
-          window.location.href = "../auth/login.html";
-          return;
-        }
-        initAppShell("student");
+      /* ==========================================================================
+   Exam Timetable — displays and prints the student's own exam schedule.
+   ========================================================================== */
+      (function () {
+        "use strict";
+        if (window._examTTInit) return;
+        window._examTTInit = true;
 
-        const rows = [
-          {
-            date: "20 Apr 2026",
-            time: "9:00 AM – 12:00 PM",
-            course: "CSC 401 — Software Engineering",
-            venue: "Main Hall A",
-          },
-          {
-            date: "21 Apr 2026",
-            time: "9:00 AM – 12:00 PM",
-            course: "CSC 403 — Compiler Construction",
-            venue: "Main Hall B",
-          },
-          {
-            date: "23 Apr 2026",
-            time: "1:00 PM – 4:00 PM",
-            course: "CYB 301 — Network Security",
-            venue: "ICT Centre Lab 1",
-          },
-          {
-            date: "25 Apr 2026",
-            time: "9:00 AM – 12:00 PM",
-            course: "EEE 305 — Signals and Systems",
-            venue: "Engineering Hall",
-          },
-          {
-            date: "28 Apr 2026",
-            time: "1:00 PM – 4:00 PM",
-            course: "BCH 201 — General Biochemistry I",
-            venue: "Science Hall C",
-          },
-          {
-            date: "30 Apr 2026",
-            time: "9:00 AM – 12:00 PM",
-            course: "ACC 401 — Advanced Financial Accounting",
-            venue: "Management Hall",
-          },
+        var MONTHS_SHORT = [
+          "JAN",
+          "FEB",
+          "MAR",
+          "APR",
+          "MAY",
+          "JUN",
+          "JUL",
+          "AUG",
+          "SEP",
+          "OCT",
+          "NOV",
+          "DEC",
         ];
-        const tb = document.getElementById("exam-rows");
-        rows.forEach((r) => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-      <td data-label="Date"><strong>${Util.escape(r.date)}</strong></td>
-      <td data-label="Time">${Util.escape(r.time)}</td>
-      <td data-label="Course">${Util.escape(r.course)}</td>
-      <td data-label="Venue">${Util.escape(r.venue)}</td>`;
-          tb.appendChild(tr);
-        });
 
-        document.getElementById("dl-exam").addEventListener("click", () => {
-          Toast.success(
-            "Downloading exam timetable PDF (simulated).",
-            "Download started",
-          );
-        });
-      });
+        function formatDay(dateStr) {
+          return new Date(dateStr).toLocaleDateString("en-GB", {
+            weekday: "short",
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          });
+        }
+
+        function formatDayLong(dateStr) {
+          var d = new Date(dateStr);
+          return {
+            day: d.getDate(),
+            month: d
+              .toLocaleDateString("en-GB", { month: "short" })
+              .toUpperCase(),
+            weekday: d.toLocaleDateString("en-GB", { weekday: "long" }),
+          };
+        }
+
+        function daysUntil(dateStr) {
+          var now = new Date();
+          now.setHours(0, 0, 0, 0);
+          var target = new Date(dateStr);
+          target.setHours(0, 0, 0, 0);
+          return Math.round((target - now) / (1000 * 60 * 60 * 24));
+        }
+
+        function boot() {
+          var session = Auth.current();
+          if (!session) {
+            window.location.href = "../auth/login.html";
+            return;
+          }
+          initAppShell("student");
+
+          var student = DEMO_STUDENTS.find(function (s) {
+            return s.username === session.username;
+          });
+          var timetable =
+            typeof getStudentExamTimetable === "function"
+              ? getStudentExamTimetable(student)
+              : null;
+
+          /* ---- Empty state ---- */
+          if (!timetable || !timetable.exams || !timetable.exams.length) {
+            document.querySelector(".exam-desktop").innerHTML =
+              '<div class="card"><div class="empty-state">' +
+              '<div class="empty-icon"><i class="fa-solid fa-calendar-xmark"></i></div>' +
+              "<h3>No exam timetable available yet</h3>" +
+              "<p>The examination timetable for your department and level has not been published.</p>" +
+              "</div></div>";
+            document.querySelector(".exam-mobile").innerHTML = "";
+            document.getElementById("dl-exam").disabled = true;
+            return;
+          }
+
+          var exams = timetable.exams;
+
+          /* ---- Download as PDF ---- */
+          document
+            .getElementById("dl-exam")
+            .addEventListener("click", function () {
+              var data = exams.map(function (e) {
+                var d = new Date(e.date);
+                return {
+                  day: String(d.getDate()).padStart(2, "0"),
+                  month: MONTHS_SHORT[d.getMonth()],
+                  course: e.course,
+                  title: e.title,
+                  time: e.time,
+                  venue: e.venue,
+                };
+              });
+
+              PdfGenerator.open({
+                type: "exams",
+                title: "Exam Timetable",
+                subtitle:
+                  student.department +
+                  " — " +
+                  student.level +
+                  " Level · First Semester 2026/2027",
+                data: data,
+              });
+            });
+
+          /* ---- Desktop table rows ---- */
+          var body = document.getElementById("exam-body");
+          exams.forEach(function (e) {
+            var row = document.createElement("div");
+            row.className = "exam-row";
+
+            var days = daysUntil(e.date);
+            var dayBadge = "";
+            if (days === 0) {
+              dayBadge =
+                '<span class="badge badge-brand" style="margin-left:6px;">Today</span>';
+            } else if (days > 0 && days <= 7) {
+              dayBadge =
+                '<span class="badge badge-warning" style="margin-left:6px;">In ' +
+                days +
+                "d</span>";
+            }
+
+            row.innerHTML =
+              '<div class="exam-date">' +
+              '<span class="exam-date-main">' +
+              formatDay(e.date) +
+              "</span>" +
+              dayBadge +
+              "</div>" +
+              '<div class="exam-time">' +
+              '<i class="fa-regular fa-clock"></i> ' +
+              Util.escape(e.time) +
+              "</div>" +
+              '<div class="exam-course">' +
+              '<span class="exam-course-code">' +
+              Util.escape(e.course) +
+              "</span>" +
+              '<span class="exam-course-title">' +
+              Util.escape(e.title) +
+              "</span>" +
+              "</div>" +
+              '<div class="exam-venue">' +
+              '<i class="fa-solid fa-location-dot"></i> ' +
+              Util.escape(e.venue) +
+              "</div>";
+
+            body.appendChild(row);
+          });
+
+          /* ---- Mobile cards ---- */
+          var mobile = document.getElementById("exam-mobile");
+          exams.forEach(function (e) {
+            var d = formatDayLong(e.date);
+            var days = daysUntil(e.date);
+
+            var countdown = "";
+            if (days === 0) {
+              countdown = '<span class="badge badge-brand">Today</span>';
+            } else if (days > 0) {
+              countdown =
+                '<span class="badge badge-neutral">' +
+                days +
+                " day" +
+                (days === 1 ? "" : "s") +
+                " to go</span>";
+            } else {
+              countdown = '<span class="badge badge-neutral">Past</span>';
+            }
+
+            var card = document.createElement("div");
+            card.className = "exam-card";
+            if (days >= 0 && days <= 3) card.classList.add("is-soon");
+
+            card.innerHTML =
+              '<div class="exam-card-head">' +
+              '<div class="exam-card-date">' +
+              '<div class="exam-card-day">' +
+              d.day +
+              "</div>" +
+              '<div class="exam-card-month">' +
+              d.month +
+              "</div>" +
+              "</div>" +
+              '<div class="exam-card-meta">' +
+              '<div class="exam-card-weekday">' +
+              d.weekday +
+              "</div>" +
+              '<div class="exam-card-course">' +
+              Util.escape(e.course) +
+              " — " +
+              Util.escape(e.title) +
+              "</div>" +
+              "</div>" +
+              '<div class="exam-card-countdown">' +
+              countdown +
+              "</div>" +
+              "</div>" +
+              '<div class="exam-card-body">' +
+              '<div class="exam-card-info">' +
+              '<i class="fa-regular fa-clock"></i> ' +
+              Util.escape(e.time) +
+              "</div>" +
+              '<div class="exam-card-info">' +
+              '<i class="fa-solid fa-location-dot"></i> ' +
+              Util.escape(e.venue) +
+              "</div>" +
+              "</div>";
+
+            mobile.appendChild(card);
+          });
+        }
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", boot);
+        } else {
+          boot();
+        }
+      })();
     </script>
   </body>
 </html>
