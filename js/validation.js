@@ -80,7 +80,8 @@ function bindForm(formEl, config, onSubmit) {
     input.addEventListener("blur", run);
     input.addEventListener("change", run);
 
-    if (input.value) run();
+    // Validate pre-filled values immediately (skip checkboxes — they start unchecked)
+    if (input.value && input.type !== "checkbox") run();
   });
 
   // --- Submit handling -----------------------------------------------------

@@ -224,6 +224,38 @@ function initRegisterPage() {
   const strengthEl = form.querySelector(".pw-strength");
   initPasswordFeedback(pw, { reqsEl, strengthEl });
 
+  /* Manual guard for the mandatory agreement checkbox.
+     Runs at capture phase so it blocks the submit before anything else. */
+  const agreeInput = form.querySelector('[name="agree"]');
+  const agreeField = agreeInput ? agreeInput.closest(".field") : null;
+
+  function refreshAgreeState() {
+    if (!agreeField) return;
+    agreeField.classList.toggle("is-invalid", !agreeInput.checked);
+  }
+
+  if (agreeInput) {
+    agreeInput.addEventListener("change", refreshAgreeState);
+
+    form.addEventListener(
+      "submit",
+      function (e) {
+        if (!agreeInput.checked) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          refreshAgreeState();
+          if (agreeField)
+            agreeField.scrollIntoView({ behavior: "smooth", block: "center" });
+          Toast.error(
+            "Please agree to the Terms and Privacy Policy to continue.",
+            "Agreement required",
+          );
+        }
+      },
+      true,
+    );
+  }
+
   bindForm(
     form,
     {
@@ -238,6 +270,7 @@ function initRegisterPage() {
       matric: [Rules.required, Rules.matric],
       password: [Rules.required, Rules.password],
       confirm: [Rules.required, Rules.match(pw)],
+      agree: [(v) => v === true],
     },
     (data) => {
       const pending = {
