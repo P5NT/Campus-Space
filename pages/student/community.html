@@ -45,6 +45,7 @@
   </head>
   <body class="has-session">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
       <aside
         class="sidebar"
@@ -79,24 +80,57 @@
                     placeholder="Share something with the campus community…"
                     aria-label="Post text"
                   ></textarea>
+
+                  <!-- Image preview (hidden until an image is attached) -->
+                  <div
+                    id="composer-image-preview"
+                    style="display: none; margin-top: 10px; position: relative"
+                  >
+                    <img
+                      id="composer-image-thumb"
+                      alt=""
+                      style="
+                        max-width: 100%;
+                        max-height: 220px;
+                        border-radius: 10px;
+                        border: 1px solid var(--border-subtle);
+                        display: block;
+                      "
+                    />
+                    <button
+                      type="button"
+                      class="btn-icon"
+                      id="composer-image-remove"
+                      aria-label="Remove image"
+                      style="
+                        position: absolute;
+                        top: 6px;
+                        right: 6px;
+                        background: rgba(0, 0, 0, 0.6);
+                        color: #fff;
+                      "
+                    >
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+                  </div>
+
                   <div class="composer-foot">
                     <div class="composer-tools">
                       <button
                         type="button"
                         class="btn-icon"
+                        id="composer-image-btn"
                         aria-label="Add image"
                         title="Add image"
                       >
                         <i class="fa-regular fa-image"></i>
                       </button>
-                      <button
-                        type="button"
-                        class="btn-icon"
-                        aria-label="Attach file"
-                        title="Attach file"
-                      >
-                        <i class="fa-solid fa-paperclip"></i>
-                      </button>
+                      <input
+                        type="file"
+                        id="composer-image-input"
+                        accept="image/*"
+                        hidden
+                      />
                     </div>
                     <button class="btn btn-primary btn-sm" type="submit">
                       <i class="fa-solid fa-paper-plane"></i> Post
@@ -208,66 +242,164 @@
     ></aside>
 
     <script src="../../data/students.js"></script>
+    <script src="../../data/associations.js"></script>
     <script src="../../js/main.js"></script>
     <script src="../../js/validation.js"></script>
     <script src="../../js/auth.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
-    <script src="../../js/community.js"></script>
     <script src="../../js/leaders.js"></script>
+    <script src="../../js/community.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
+      /* ==========================================================================
+   Community page — composer + feed interactions.
+   ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
         if (!session) {
           window.location.href = "../auth/login.html";
           return;
         }
         initAppShell("student");
 
-        document.getElementById("composer-avatar").textContent = Util.initials(
-          session.name || session.username,
-        );
+        /* ---- Composer avatar (uses uploaded picture if present) ---- */
+        var avatarEl = document.getElementById("composer-avatar");
+        var avatarUrl = typeof Avatar !== "undefined" ? Avatar.get() : "";
+        var initials = Util.initials(session.name || session.username);
 
-        const feed = document.getElementById("community-feed");
-        let filter = "all";
+        if (avatarUrl) {
+          var img = document.createElement("img");
+          img.src = avatarUrl;
+          img.alt = "";
+          img.className = "avatar avatar-40";
+          img.id = "composer-avatar";
+          avatarEl.replaceWith(img);
+        } else {
+          avatarEl.textContent = initials;
+        }
+
+        /* ---- Image attach ---- */
+        var imageBtn = document.getElementById("composer-image-btn");
+        var imageInput = document.getElementById("composer-image-input");
+        var previewWrap = document.getElementById("composer-image-preview");
+        var previewThumb = document.getElementById("composer-image-thumb");
+        var previewRemove = document.getElementById("composer-image-remove");
+
+        var attachedImageData = "";
+
+        if (imageBtn && imageInput) {
+          imageBtn.addEventListener("click", function () {
+            imageInput.click();
+          });
+
+          imageInput.addEventListener("change", function (e) {
+            var file = e.target.files && e.target.files[0];
+            if (!file) return;
+
+            if (!file.type.startsWith("image/")) {
+              Toast.error("Please choose an image file.", "Invalid file");
+              imageInput.value = "";
+              return;
+            }
+            if (file.size > 3 * 1024 * 1024) {
+              Toast.error(
+                "Please choose an image smaller than 3 MB.",
+                "File too large",
+              );
+              imageInput.value = "";
+              return;
+            }
+
+            var reader = new FileReader();
+            reader.onload = function (ev) {
+              attachedImageData = ev.target.result;
+              previewThumb.src = attachedImageData;
+              previewWrap.style.display = "block";
+            };
+            reader.onerror = function () {
+              Toast.error("Could not read that file.", "Upload failed");
+            };
+            reader.readAsDataURL(file);
+          });
+        }
+
+        if (previewRemove) {
+          previewRemove.addEventListener("click", function () {
+            attachedImageData = "";
+            previewThumb.src = "";
+            previewWrap.style.display = "none";
+            if (imageInput) imageInput.value = "";
+          });
+        }
+
+        /* ---- Feed ---- */
+        var feed = document.getElementById("community-feed");
+        var filter = "all";
 
         function renderFeed() {
           feed.innerHTML = "";
-          let posts = Community.all();
-          if (filter === "leaders") posts = posts.filter((p) => p.isLeader);
-          else if (filter === "admin") posts = posts.filter((p) => p.isAdmin);
+          var posts = Community.all();
+          if (filter === "leaders")
+            posts = posts.filter(function (p) {
+              return p.isLeader;
+            });
+          else if (filter === "admin")
+            posts = posts.filter(function (p) {
+              return p.isAdmin;
+            });
           else if (filter === "students")
-            posts = posts.filter((p) => !p.isLeader && !p.isAdmin);
+            posts = posts.filter(function (p) {
+              return !p.isLeader && !p.isAdmin;
+            });
+
           if (!posts.length) {
-            feed.innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="fa-regular fa-comments"></i></div><h3>No posts in this filter</h3><p>Try a different filter or be the first to post.</p></div>`;
+            feed.innerHTML =
+              '<div class="empty-state">' +
+              '<div class="empty-icon"><i class="fa-regular fa-comments"></i></div>' +
+              "<h3>No posts in this filter</h3>" +
+              "<p>Try a different filter or be the first to post.</p>" +
+              "</div>";
             return;
           }
-          posts.forEach((p) => feed.appendChild(renderPost(p)));
+          posts.forEach(function (p) {
+            feed.appendChild(renderPost(p));
+          });
         }
 
-        document.querySelectorAll("[data-filter]").forEach((btn) => {
-          btn.addEventListener("click", () => {
-            document
-              .querySelectorAll("[data-filter]")
-              .forEach((b) => b.classList.remove("is-active"));
+        document.querySelectorAll("[data-filter]").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            document.querySelectorAll("[data-filter]").forEach(function (b) {
+              b.classList.remove("is-active");
+            });
             btn.classList.add("is-active");
             filter = btn.getAttribute("data-filter");
             renderFeed();
           });
         });
 
-        const composer = document.getElementById("composer");
-        composer.addEventListener("submit", (e) => {
+        /* ---- Submit ---- */
+        var composer = document.getElementById("composer");
+        composer.addEventListener("submit", function (e) {
           e.preventDefault();
-          const text = composer.querySelector("textarea").value.trim();
-          if (!text) {
-            Toast.warning("Write something before posting.", "Empty post");
+          var text = composer.querySelector("textarea").value.trim();
+          if (!text && !attachedImageData) {
+            Toast.warning(
+              "Write something or attach an image before posting.",
+              "Empty post",
+            );
             return;
           }
-          Community.add(text, session);
+          Community.add(text, session, { image: attachedImageData });
+
+          /* Reset composer */
           composer.reset();
+          attachedImageData = "";
+          previewThumb.src = "";
+          previewWrap.style.display = "none";
+          if (imageInput) imageInput.value = "";
+
           renderFeed();
-          Toast.success("Post published (simulated).", "Posted");
+          Toast.success("Post published.", "Posted");
         });
 
         renderFeed();

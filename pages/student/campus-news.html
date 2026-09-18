@@ -45,6 +45,7 @@
   </head>
   <body class="has-session">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
       <aside
         class="sidebar"
@@ -63,16 +64,31 @@
             </div>
           </div>
 
-          <div class="filter-bar">
-            <button class="chip is-active" data-cat="all">All</button>
-            <button class="chip" data-cat="Campus">Campus</button>
-            <button class="chip" data-cat="Academics">Academics</button>
+          <div class="toolbar">
+            <div class="input-wrap">
+              <i class="fa-solid fa-magnifying-glass input-icon"></i>
+              <input
+                class="input"
+                type="search"
+                id="news-search"
+                placeholder="Search news…"
+                aria-label="Search news"
+              />
+            </div>
           </div>
+
+          <div
+            class="filter-bar"
+            id="news-categories"
+            role="tablist"
+            aria-label="News categories"
+          ></div>
 
           <div class="grid grid-3" id="news-grid"></div>
         </main>
       </div>
     </div>
+
     <div id="mobile-nav-mount"></div>
     <div class="mobile-menu-backdrop"></div>
     <aside
@@ -89,55 +105,152 @@
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
+      /* ==========================================================================
+   Campus News — editorial listing with category filter and search.
+   Missing images are handled gracefully (media block is removed).
+   ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
         if (!session) {
           window.location.href = "../auth/login.html";
           return;
         }
         initAppShell("student");
 
-        const grid = document.getElementById("news-grid");
-        let filter = "all";
+        var grid = document.getElementById("news-grid");
+        var searchEl = document.getElementById("news-search");
+        var categoriesWrap = document.getElementById("news-categories");
 
+        var filterCategory = "all";
+        var searchQuery = "";
+
+        /* ---- Build the category list from the actual data ---- */
+        var categories = ["all"];
+        DEMO_NEWS.forEach(function (n) {
+          if (n.category && categories.indexOf(n.category) === -1) {
+            categories.push(n.category);
+          }
+        });
+
+        function buildCategoryChips() {
+          categoriesWrap.innerHTML = "";
+          categories.forEach(function (cat) {
+            var btn = document.createElement("button");
+            btn.className =
+              "chip" + (cat === filterCategory ? " is-active" : "");
+            btn.setAttribute("data-cat", cat);
+            btn.setAttribute("role", "tab");
+            btn.textContent = cat === "all" ? "All" : cat;
+            btn.addEventListener("click", function () {
+              filterCategory = cat;
+              buildCategoryChips();
+              render();
+            });
+            categoriesWrap.appendChild(btn);
+          });
+        }
+
+        /* ---- Render the news grid ---- */
         function render() {
           grid.innerHTML = "";
-          let list = DEMO_NEWS.slice();
-          if (filter !== "all")
-            list = list.filter((n) => n.category === filter);
+
+          var list = DEMO_NEWS.slice();
+
+          if (filterCategory !== "all") {
+            list = list.filter(function (n) {
+              return n.category === filterCategory;
+            });
+          }
+
+          if (searchQuery) {
+            var q = searchQuery.toLowerCase();
+            list = list.filter(function (n) {
+              return (
+                n.title.toLowerCase().indexOf(q) !== -1 ||
+                n.excerpt.toLowerCase().indexOf(q) !== -1 ||
+                (n.author || "").toLowerCase().indexOf(q) !== -1
+              );
+            });
+          }
+
           if (!list.length) {
             grid.innerHTML =
-              '<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon"><i class="fa-regular fa-newspaper"></i></div><h3>No news in this category</h3></div>';
+              '<div class="card" style="grid-column: 1 / -1;">' +
+              '<div class="empty-state">' +
+              '<div class="empty-icon"><i class="fa-regular fa-newspaper"></i></div>' +
+              "<h3>No matching articles</h3>" +
+              "<p>" +
+              (searchQuery
+                ? 'No articles match "' +
+                  Util.escape(searchQuery) +
+                  '". Try a different search.'
+                : "There are no published articles in this category yet.") +
+              "</p>" +
+              '<button class="btn btn-secondary" id="news-reset" type="button">' +
+              '<i class="fa-solid fa-rotate-left"></i> Show all news' +
+              "</button>" +
+              "</div>" +
+              "</div>";
+
+            var resetBtn = document.getElementById("news-reset");
+            if (resetBtn) {
+              resetBtn.addEventListener("click", function () {
+                filterCategory = "all";
+                searchQuery = "";
+                searchEl.value = "";
+                buildCategoryChips();
+                render();
+              });
+            }
             return;
           }
-          list.forEach((n) => {
-            const card = document.createElement("a");
+
+          list.forEach(function (n) {
+            var card = document.createElement("a");
             card.href = "news-details.html?id=" + n.id;
             card.className = "news-card";
-            card.innerHTML = `
-        <img src="${n.image}" alt="" class="card-media" onerror="this.style.display='none'">
-        <div class="news-card-body">
-          <span class="badge badge-brand">${Util.escape(n.category)}</span>
-          <h3>${Util.escape(n.title)}</h3>
-          <p>${Util.escape(n.excerpt)}</p>
-          <div class="news-card-meta">
-            <span><i class="fa-solid fa-user"></i> ${Util.escape(n.author)}</span>
-            <span><i class="fa-regular fa-clock"></i> ${Util.relativeTime(n.date)}</span>
-          </div>
-        </div>`;
+
+            /* Build the media block. If the image fails to load, the whole
+         block is hidden so the card doesn't show a big empty space. */
+            var mediaHtml =
+              '<div class="news-card-media">' +
+              '<img src="' +
+              Util.escape(n.image) +
+              '" alt="" onerror="this.parentElement.style.display=\'none\'">' +
+              "</div>";
+
+            card.innerHTML =
+              mediaHtml +
+              '<div class="news-card-body">' +
+              '<span class="badge badge-brand">' +
+              Util.escape(n.category) +
+              "</span>" +
+              "<h3>" +
+              Util.escape(n.title) +
+              "</h3>" +
+              "<p>" +
+              Util.escape(n.excerpt) +
+              "</p>" +
+              '<div class="news-card-meta">' +
+              '<span><i class="fa-solid fa-user"></i> ' +
+              Util.escape(n.author) +
+              "</span>" +
+              '<span><i class="fa-regular fa-clock"></i> ' +
+              Util.relativeTime(n.date) +
+              "</span>" +
+              "</div>" +
+              "</div>";
+
             grid.appendChild(card);
           });
         }
-        document.querySelectorAll("[data-cat]").forEach((btn) => {
-          btn.addEventListener("click", () => {
-            document
-              .querySelectorAll("[data-cat]")
-              .forEach((b) => b.classList.remove("is-active"));
-            btn.classList.add("is-active");
-            filter = btn.getAttribute("data-cat");
-            render();
-          });
+
+        searchEl.addEventListener("input", function () {
+          searchQuery = searchEl.value.trim();
+          render();
         });
+
+        buildCategoryChips();
         render();
       });
     </script>

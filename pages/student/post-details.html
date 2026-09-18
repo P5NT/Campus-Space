@@ -45,6 +45,7 @@
   </head>
   <body class="has-session">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
       <aside
         class="sidebar"
@@ -63,6 +64,7 @@
         </main>
       </div>
     </div>
+
     <div id="mobile-nav-mount"></div>
     <div class="mobile-menu-backdrop"></div>
     <aside
@@ -72,167 +74,290 @@
     ></aside>
 
     <script src="../../data/students.js"></script>
+    <script src="../../data/associations.js"></script>
     <script src="../../js/main.js"></script>
     <script src="../../js/validation.js"></script>
     <script src="../../js/auth.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
-    <script src="../../js/community.js"></script>
     <script src="../../js/leaders.js"></script>
+    <script src="../../js/community.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
+      /* ==========================================================================
+   Post details — reads the post and its comments from the Community store,
+   keeps them in sync with the feed, and persists new comments + likes.
+   ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
         if (!session) {
           window.location.href = "../auth/login.html";
           return;
         }
         initAppShell("student");
 
-        const id = new URLSearchParams(location.search).get("id");
-        const post =
-          Community.all().find((p) => p.id === id) || Community.all()[0];
-        const wrap = document.getElementById("post-detail");
+        var id = new URLSearchParams(location.search).get("id");
+        var allPosts = Community.all();
+        var post =
+          allPosts.find(function (p) {
+            return p.id === id;
+          }) || allPosts[0];
 
-        const tagHtml =
-          post.tag === "ADMIN"
-            ? '<span class="tag-admin"><i class="fa-solid fa-shield-halved"></i> Admin</span>'
-            : post.tag
-              ? `<span class="tag-leader">${Util.escape(post.tag)}</span>`
-              : "";
+        if (!post) {
+          document.getElementById("post-detail").innerHTML =
+            '<div class="empty-state">' +
+            '<div class="empty-icon"><i class="fa-regular fa-comments"></i></div>' +
+            "<h3>Post not found</h3>" +
+            "<p>This post may have been deleted.</p>" +
+            '<a class="btn btn-secondary" href="community.html">Back to community</a>' +
+            "</div>";
+          return;
+        }
 
-        wrap.innerHTML = `
-    <article class="card" style="margin-bottom:20px;">
-      <div class="card-body">
-        <div class="post-head">
-          <span class="avatar avatar-48 avatar-fallback">${post.initials}</span>
-          <div class="post-author">
-            <div class="post-author-name">${Util.escape(post.author)} ${tagHtml}</div>
-            <div class="post-author-handle">@${Util.escape(post.handle)} · ${Util.relativeTime(post.time)}</div>
-          </div>
-        </div>
-        <div class="post-body" style="font-size:var(--fs-md);">${Util.escape(post.text)}</div>
-        <div class="post-actions" style="border-top:none; padding-top:12px;">
-          <button class="post-action" id="detail-like">
-            <i class="fa-regular fa-heart"></i> <span>${post.likes}</span>
-          </button>
-          <button class="post-action"><i class="fa-regular fa-comment"></i> <span>${post.replies}</span></button>
-          <button class="post-action" id="detail-share"><i class="fa-solid fa-share-nodes"></i> Share</button>
-        </div>
-      </div>
-    </article>
+        /* Ensure the comments array exists (older posts may not have it) */
+        if (!Array.isArray(post.comments)) post.comments = [];
 
-    <div class="card">
-      <div class="card-head">
-        <h3>Comments (${post.replies})</h3>
-      </div>
-      <div class="card-body" id="comments-wrap"></div>
-      <div class="card-foot">
-        <form id="comment-form" class="cluster" style="gap:12px; align-items:flex-end;">
-          <div class="field" style="flex:1; margin:0;">
-            <input class="input" type="text" name="comment" placeholder="Write a comment…" aria-label="Comment">
-          </div>
-          <button class="btn btn-primary" type="submit"><i class="fa-solid fa-paper-plane"></i> Reply</button>
-        </form>
-      </div>
-    </div>
-  `;
+        var wrap = document.getElementById("post-detail");
 
-        // Comments
-        const comments = [
-          {
-            name: "Ibrahim Suleiman",
-            handle: "ibrahim",
-            tag: "",
-            time: Date.now() - 1800000,
-            text: "Thanks for the reminder. I will check the materials section.",
-          },
-          {
-            name: "Grace Oladipo",
-            handle: "grace",
-            tag: "",
-            time: Date.now() - 3600000,
-            text: "Very helpful. Any chance we can also get a revision session?",
-          },
-          {
-            name: "Chiamaka Okafor",
-            handle: "chiamaka",
-            tag: "NESA",
-            time: Date.now() - 5400000,
-            text: "I will organise a session on Saturday morning. I will post the details.",
-          },
-        ];
-        const commentsWrap = document.getElementById("comments-wrap");
+        /* ---- Helpers ---- */
+        function tagHtmlFor(tag) {
+          if (tag === "ADMIN") {
+            return '<span class="tag-admin"><i class="fa-solid fa-shield-halved"></i> Admin</span>';
+          }
+          if (tag) {
+            return '<span class="tag-leader">' + Util.escape(tag) + "</span>";
+          }
+          return "";
+        }
+
+        function commentCount() {
+          return Community.countComments(post);
+        }
+
+        /* ---- Initial layout ---- */
+        function renderShell() {
+          var likeCount = post.likes || 0;
+          var likedClass = post.liked ? " is-liked" : "";
+          var heartIcon = post.liked ? "fa-solid" : "fa-regular";
+          var imageHtml = post.image
+            ? '<div class="post-media" style="margin-top:12px;"><img src="' +
+              post.image +
+              '" alt="" style="width:100%; border-radius:10px;"></div>'
+            : "";
+
+          wrap.innerHTML =
+            '<article class="card" style="margin-bottom:20px;">' +
+            '<div class="card-body">' +
+            '<div class="post-head">' +
+            '<span class="avatar avatar-48 avatar-fallback">' +
+            Util.escape(post.initials) +
+            "</span>" +
+            '<div class="post-author">' +
+            '<div class="post-author-name">' +
+            Util.escape(post.author) +
+            " " +
+            tagHtmlFor(post.tag) +
+            "</div>" +
+            '<div class="post-author-handle">@' +
+            Util.escape(post.handle) +
+            " · " +
+            Util.relativeTime(post.time) +
+            "</div>" +
+            "</div>" +
+            "</div>" +
+            (post.text
+              ? '<div class="post-body" style="font-size:var(--fs-md);">' +
+                Util.escape(post.text) +
+                "</div>"
+              : "") +
+            imageHtml +
+            '<div class="post-actions" style="border-top:none; padding-top:12px;">' +
+            '<button class="post-action' +
+            likedClass +
+            '" id="detail-like" aria-label="Like post">' +
+            '<i class="' +
+            heartIcon +
+            ' fa-heart"></i>' +
+            "<span>" +
+            likeCount +
+            "</span>" +
+            "</button>" +
+            '<span class="post-action" aria-label="Comments">' +
+            '<i class="fa-regular fa-comment"></i>' +
+            '<span id="detail-comment-count">' +
+            commentCount() +
+            "</span>" +
+            "</span>" +
+            '<button class="post-action" id="detail-share" aria-label="Share post">' +
+            '<i class="fa-solid fa-share-nodes"></i>' +
+            "<span>Share</span>" +
+            "</button>" +
+            "</div>" +
+            "</div>" +
+            "</article>" +
+            '<div class="card">' +
+            '<div class="card-head">' +
+            '<h3>Comments (<span id="comments-header-count">' +
+            commentCount() +
+            "</span>)</h3>" +
+            "</div>" +
+            '<div class="card-body" id="comments-wrap"></div>' +
+            '<div class="card-foot">' +
+            '<form id="comment-form" class="cluster" style="gap:12px; align-items:flex-end;">' +
+            '<div class="field" style="flex:1; margin:0;">' +
+            '<input class="input" type="text" name="comment" placeholder="Write a comment…" aria-label="Comment">' +
+            "</div>" +
+            '<button class="btn btn-primary" type="submit">' +
+            '<i class="fa-solid fa-paper-plane"></i> Reply' +
+            "</button>" +
+            "</form>" +
+            "</div>" +
+            "</div>";
+
+          wireActions();
+          renderComments();
+        }
+
+        /* ---- Render comments ---- */
         function renderComments() {
+          var commentsWrap = document.getElementById("comments-wrap");
           commentsWrap.innerHTML = "";
-          if (!comments.length) {
+
+          if (!post.comments.length) {
             commentsWrap.innerHTML =
               '<div style="text-align:center; color:var(--text-tertiary); padding:24px 0;">No comments yet. Be the first to reply.</div>';
             return;
           }
-          comments.forEach((c) => {
-            const el = document.createElement("div");
+
+          post.comments.forEach(function (c) {
+            var el = document.createElement("div");
             el.className = "comment";
-            const ctag =
-              c.tag === "ADMIN"
-                ? '<span class="tag-admin">ADMIN</span>'
-                : c.tag
-                  ? `<span class="tag-leader">${Util.escape(c.tag)}</span>`
-                  : "";
-            el.innerHTML = `
-        <span class="avatar avatar-32 avatar-fallback">${Util.initials(c.name)}</span>
-        <div class="comment-body">
-          <div class="comment-meta">
-            <span class="name">${Util.escape(c.name)}</span>
-            <span class="handle">@${Util.escape(c.handle)}</span>
-            ${ctag}
-            <span class="handle" style="margin-left:auto;">${Util.relativeTime(c.time)}</span>
-          </div>
-          <div class="comment-text">${Util.escape(c.text)}</div>
-        </div>`;
+            el.innerHTML =
+              '<span class="avatar avatar-32 avatar-fallback">' +
+              Util.initials(c.author || c.name) +
+              "</span>" +
+              '<div class="comment-body">' +
+              '<div class="comment-meta">' +
+              '<span class="name">' +
+              Util.escape(c.author || c.name) +
+              "</span>" +
+              '<span class="handle">@' +
+              Util.escape(c.handle) +
+              "</span>" +
+              tagHtmlFor(c.tag) +
+              '<span class="handle" style="margin-left:auto;">' +
+              Util.relativeTime(c.time) +
+              "</span>" +
+              "</div>" +
+              '<div class="comment-text">' +
+              Util.escape(c.text) +
+              "</div>" +
+              "</div>";
             commentsWrap.appendChild(el);
           });
         }
-        renderComments();
 
-        document
-          .getElementById("comment-form")
-          .addEventListener("submit", (e) => {
-            e.preventDefault();
-            const input = e.target.querySelector('[name="comment"]');
-            const text = input.value.trim();
-            if (!text) return;
-            comments.push({
-              name: session.name || session.username,
-              handle: session.username,
-              tag: "",
-              time: Date.now(),
-              text,
+        /* ---- Wire up like, share, and comment form ---- */
+        function wireActions() {
+          /* Like */
+          var likeBtn = document.getElementById("detail-like");
+          if (likeBtn) {
+            likeBtn.addEventListener("click", function () {
+              Community.toggleLike(post.id);
+              var updated = Community.all().find(function (p) {
+                return p.id === post.id;
+              });
+              if (!updated) return;
+              post.liked = updated.liked;
+              post.likes = updated.likes;
+              var icon = likeBtn.querySelector("i");
+              var span = likeBtn.querySelector("span");
+              likeBtn.classList.toggle("is-liked", updated.liked);
+              icon.className =
+                (updated.liked ? "fa-solid" : "fa-regular") + " fa-heart";
+              span.textContent = updated.likes;
             });
-            input.value = "";
-            renderComments();
-            Toast.success("Comment posted (simulated).", "Posted");
-          });
+          }
 
-        document
-          .getElementById("detail-like")
-          .addEventListener("click", (e) => {
-            const icon = e.currentTarget.querySelector("i");
-            const span = e.currentTarget.querySelector("span");
-            const liked = icon.classList.contains("fa-solid");
-            icon.className = liked
-              ? "fa-regular fa-heart"
-              : "fa-solid fa-heart";
-            span.textContent = liked
-              ? parseInt(span.textContent, 10) - 1
-              : parseInt(span.textContent, 10) + 1;
-            e.currentTarget.classList.toggle("is-liked");
-          });
+          /* Share — copies the post URL */
+          var shareBtn = document.getElementById("detail-share");
+          if (shareBtn) {
+            shareBtn.addEventListener("click", function () {
+              var url = new URL(
+                "post-details.html?id=" + encodeURIComponent(post.id),
+                location.href,
+              ).href;
+              var done = function () {
+                Toast.success("Post link copied to clipboard.", "Copied");
+              };
+              var failed = function () {
+                Toast.info("Copy failed. The link is: " + url, "Copy manually");
+              };
 
-        document
-          .getElementById("detail-share")
-          .addEventListener("click", () => {
-            Toast.success("Post link copied (simulated).", "Copied");
-          });
+              if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(done).catch(failed);
+              } else {
+                var ta = document.createElement("textarea");
+                ta.value = url;
+                ta.style.position = "fixed";
+                ta.style.left = "-9999px";
+                document.body.appendChild(ta);
+                ta.select();
+                try {
+                  document.execCommand("copy");
+                  done();
+                } catch (e) {
+                  failed();
+                }
+                document.body.removeChild(ta);
+              }
+            });
+          }
+
+          /* Comment form */
+          var form = document.getElementById("comment-form");
+          if (form) {
+            form.addEventListener("submit", function (e) {
+              e.preventDefault();
+              var input = form.querySelector('[name="comment"]');
+              var text = input.value.trim();
+              if (!text) return;
+
+              /* Build the new comment */
+              var newComment = {
+                id: "c" + Date.now(),
+                author: session.name || session.username,
+                handle: session.username,
+                tag: "",
+                time: Date.now(),
+                text: text,
+              };
+
+              /* Push to the post's comments array and persist */
+              post.comments.push(newComment);
+              var stored = Community.all();
+              var target = stored.find(function (p) {
+                return p.id === post.id;
+              });
+              if (target) {
+                target.comments = post.comments;
+                Community.save(stored);
+              }
+
+              input.value = "";
+              renderComments();
+
+              /* Update both count displays */
+              var hdr = document.getElementById("comments-header-count");
+              var badge = document.getElementById("detail-comment-count");
+              if (hdr) hdr.textContent = commentCount();
+              if (badge) badge.textContent = commentCount();
+
+              Toast.success("Comment posted.", "Posted");
+            });
+          }
+        }
+
+        renderShell();
       });
     </script>
   </body>

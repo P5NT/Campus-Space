@@ -1,7 +1,12 @@
 /* ==========================================================================
    CAMPUS SPACE — auth.js
-   Frontend authentication simulation: login, register, verification,
-   password reset, session handling.
+   Frontend authentication simulation:
+     - Login (student / admin / super admin)
+     - Registration (with faculty → department cascade)
+     - Email verification (registration + password reset modes)
+     - Forgot password (email → code → verify → reset)
+     - Password reset (only after verification)
+     - Session handling, logout, role-based redirect
    ========================================================================== */
 "use strict";
 
@@ -45,13 +50,14 @@ const Auth = {
   },
 };
 
-/* -------------------------------------------------------------------------
-   Login
-   ------------------------------------------------------------------------- */
+/* ==========================================================================
+   LOGIN
+   ========================================================================== */
 function initLoginPage() {
   const form = document.getElementById("login-form");
   if (!form) return;
 
+  /* Session-expired notice */
   if (new URLSearchParams(location.search).get("expired") === "1") {
     const notice = document.getElementById("expired-notice");
     if (notice) notice.style.display = "block";
@@ -155,16 +161,16 @@ function initLoginPage() {
   );
 }
 
-/* -------------------------------------------------------------------------
-   Register
-   ------------------------------------------------------------------------- */
+/* ==========================================================================
+   REGISTER
+   ========================================================================== */
 function initRegisterPage() {
   const form = document.getElementById("register-form");
   if (!form) return;
 
   if (typeof DEMO_FACULTIES === "undefined") {
     console.warn(
-      "[auth.js] DEMO_FACULTIES is not loaded — the faculty dropdown will be empty. Ensure data/faculties.js is included on this page.",
+      "[auth.js] DEMO_FACULTIES is not loaded — the faculty dropdown will be empty.",
     );
     return;
   }
@@ -172,6 +178,7 @@ function initRegisterPage() {
   const facultySelect = form.querySelector('[name="faculty"]');
   const deptSelect = form.querySelector('[name="department"]');
 
+  /* Populate faculty dropdown */
   DEMO_FACULTIES.forEach((f) => {
     const opt = document.createElement("option");
     opt.value = f.name;
@@ -179,6 +186,7 @@ function initRegisterPage() {
     facultySelect.appendChild(opt);
   });
 
+  /* Department depends on faculty */
   facultySelect.addEventListener("change", () => {
     deptSelect.innerHTML = '<option value="">Select department</option>';
     const fac = DEMO_FACULTIES.find((f) => f.name === facultySelect.value);
@@ -192,6 +200,7 @@ function initRegisterPage() {
     }
   });
 
+  /* Live password feedback */
   const pw = form.querySelector('[name="password"]');
   const reqsEl = form.querySelector(".pw-reqs");
   const strengthEl = form.querySelector(".pw-strength");
@@ -225,11 +234,13 @@ function initRegisterPage() {
         password: data.get("password"),
         code: String(Math.floor(1000 + Math.random() * 9000)),
       };
+
       Store.set("pending_registration", pending);
       Toast.info(
         "A 4-digit verification code has been sent to your email (simulated).",
         "Check your email",
       );
+
       setTimeout(() => {
         window.location.href = "email-verification.html";
       }, 900);
@@ -237,35 +248,74 @@ function initRegisterPage() {
   );
 }
 
-/* -------------------------------------------------------------------------
-   Email verification
-   ------------------------------------------------------------------------- */
+/* ==========================================================================
+   EMAIL VERIFICATION
+   Handles two modes:
+     - Registration: no query param
+     - Password reset: ?mode=reset
+   ========================================================================== */
 function initEmailVerificationPage() {
   const container = document.getElementById("otp-container");
   if (!container) return;
 
-  const pending = Store.get("pending_registration");
+  const params = new URLSearchParams(location.search);
+  const mode = params.get("mode"); /* null or "reset" */
+
+  const pending =
+    mode === "reset"
+      ? Store.get("pending_password_reset")
+      : Store.get("pending_registration");
+
+  /* No pending record for this mode → bounce back */
   if (!pending) {
-    window.location.href = "register.html";
+    window.location.href =
+      mode === "reset" ? "forgot-password.html" : "register.html";
     return;
   }
 
-  initOtpInputs(container);
+  /* Reset mode: swap the copy */
+  if (mode === "reset") {
+    const titleEl = document.getElementById("verify-title");
+    const subtitleEl = document.getElementById("verify-subtitle");
+    const asideTitle = document.getElementById("aside-title");
+    const asideCopy = document.getElementById("aside-copy");
 
+    if (titleEl) titleEl.textContent = "Enter verification code";
+    if (subtitleEl) {
+      subtitleEl.textContent =
+        "We sent a 4-digit code to " +
+        (pending.email || "your email") +
+        ". Enter it to reset your password.";
+    }
+    if (asideTitle) asideTitle.textContent = "Verify your identity.";
+    if (asideCopy) {
+      asideCopy.textContent =
+        "Enter the 4-digit code we just sent to your email to continue resetting your password.";
+    }
+  }
+
+  /* OTP inputs + demo hint */
+  initOtpInputs(container);
   const hint = document.getElementById("otp-hint");
   if (hint) hint.textContent = pending.code;
 
+  /* Submit */
   const form = document.getElementById("verify-form");
   form.addEventListener("submit", (e) => {
     e.preventDefault();
+
     const entered = getOtpValue(container);
     const btn = document.getElementById("verify-submit");
-    btn.classList.add("is-loading");
-    btn.disabled = true;
+    if (btn) {
+      btn.classList.add("is-loading");
+      btn.disabled = true;
+    }
 
     setTimeout(() => {
-      btn.classList.remove("is-loading");
-      btn.disabled = false;
+      if (btn) {
+        btn.classList.remove("is-loading");
+        btn.disabled = false;
+      }
 
       if (entered !== pending.code) {
         Toast.error(
@@ -275,31 +325,47 @@ function initEmailVerificationPage() {
         return;
       }
 
-      Toast.success(
-        "Account verified. A welcome email has been sent (simulated).",
-        "Welcome to Campus Space",
-      );
-      Auth.save({
-        id: "STU-" + Date.now(),
-        username: pending.username,
-        firstName: pending.firstName,
-        lastName: pending.lastName,
-        role: "student",
-        avatar: "",
-      });
-      Store.remove("pending_registration");
-      setTimeout(() => {
-        window.location.href = "../student/dashboard.html";
-      }, 900);
+      if (mode === "reset") {
+        /* Mark the reset request as verified, then move to the reset form */
+        pending.verified = true;
+        pending.verifiedAt = Date.now();
+        Store.set("pending_password_reset", pending);
+
+        Toast.success("Email verified. Choose your new password.", "Verified");
+        setTimeout(() => {
+          window.location.href = "reset-password.html";
+        }, 700);
+      } else {
+        /* Registration: create session and go to dashboard */
+        Toast.success(
+          "Account verified. A welcome email has been sent (simulated).",
+          "Welcome to Campus Space",
+        );
+        Auth.save({
+          id: "STU-" + Date.now(),
+          username: pending.username,
+          firstName: pending.firstName,
+          lastName: pending.lastName,
+          role: "student",
+          avatar: "",
+        });
+        Store.remove("pending_registration");
+        setTimeout(() => {
+          window.location.href = "../student/dashboard.html";
+        }, 700);
+      }
     }, 600);
   });
 
+  /* Resend */
   const resend = document.getElementById("otp-resend");
   if (resend) {
     resend.addEventListener("click", (e) => {
       e.preventDefault();
       pending.code = String(Math.floor(1000 + Math.random() * 9000));
-      Store.set("pending_registration", pending);
+      if (mode === "reset") Store.set("pending_password_reset", pending);
+      else Store.set("pending_registration", pending);
+
       if (hint) hint.textContent = pending.code;
       Toast.info(
         "A new verification code has been sent (simulated).",
@@ -309,31 +375,81 @@ function initEmailVerificationPage() {
   }
 }
 
-/* -------------------------------------------------------------------------
-   Forgot password
-   ------------------------------------------------------------------------- */
+/* ==========================================================================
+   FORGOT PASSWORD
+   ========================================================================== */
 function initForgotPasswordPage() {
   const form = document.getElementById("forgot-form");
   if (!form) return;
 
   bindForm(form, { email: [Rules.required, Rules.email] }, (data) => {
-    Store.set("reset_email", data.get("email"));
-    Toast.success(
-      "A password reset link has been sent to your email (simulated).",
-      "Check your inbox",
-    );
+    const email = String(data.get("email")).trim();
+
+    const btn = document.getElementById("forgot-submit");
+    if (btn) {
+      btn.classList.add("is-loading");
+      btn.disabled = true;
+    }
+
     setTimeout(() => {
-      window.location.href = "reset-password.html";
-    }, 900);
+      /* Generate and store the code */
+      const code = String(Math.floor(1000 + Math.random() * 9000));
+
+      Store.set("pending_password_reset", {
+        email: email,
+        code: code,
+        requestedAt: Date.now(),
+        verified: false,
+      });
+
+      if (btn) {
+        btn.classList.remove("is-loading");
+        btn.disabled = false;
+      }
+
+      Toast.info(
+        "A 4-digit code has been sent to " + email + " (simulated).",
+        "Check your email",
+      );
+
+      /* Route to the shared verification page in reset mode */
+      setTimeout(() => {
+        window.location.href = "email-verification.html?mode=reset";
+      }, 700);
+    }, 700);
   });
 }
 
-/* -------------------------------------------------------------------------
-   Reset password
-   ------------------------------------------------------------------------- */
+/* ==========================================================================
+   RESET PASSWORD
+   Only accessible after email verification.
+   ========================================================================== */
 function initResetPasswordPage() {
   const form = document.getElementById("reset-form");
   if (!form) return;
+
+  /* Verify that a pending reset record was marked as verified */
+  const pending = Store.get("pending_password_reset");
+  if (!pending || !pending.verified) {
+    Toast.warning(
+      "Please verify your email before setting a new password.",
+      "Verification required",
+    );
+    window.location.href = "forgot-password.html";
+    return;
+  }
+
+  /* Guard against an old verification sitting around for too long */
+  const MAX_AGE = 15 * 60 * 1000; /* 15 minutes */
+  if (pending.verifiedAt && Date.now() - pending.verifiedAt > MAX_AGE) {
+    Store.remove("pending_password_reset");
+    Toast.warning(
+      "Your verification session expired. Please start again.",
+      "Session expired",
+    );
+    window.location.href = "forgot-password.html";
+    return;
+  }
 
   const pw = form.querySelector('[name="password"]');
   const reqsEl = form.querySelector(".pw-reqs");
@@ -347,25 +463,29 @@ function initResetPasswordPage() {
       confirm: [Rules.required, Rules.match(pw)],
     },
     () => {
+      /* Clear the pending record — the password is now (simulated) updated */
+      Store.remove("pending_password_reset");
+
       Toast.success(
         "Your password has been reset. You can now sign in.",
         "Password updated",
       );
       setTimeout(() => {
         window.location.href = "reset-success.html";
-      }, 900);
+      }, 800);
     },
   );
 }
 
-/* -------------------------------------------------------------------------
-   Logout
-   ------------------------------------------------------------------------- */
+/* ==========================================================================
+   LOGOUT
+   ========================================================================== */
 function initLogoutButtons() {
   document.addEventListener("click", async (e) => {
     const btn = e.target.closest("[data-logout]");
     if (!btn) return;
     e.preventDefault();
+
     const ok = await Confirmation.confirm({
       title: "Sign out of Campus Space?",
       message: "You will need to sign in again to continue.",
@@ -378,9 +498,9 @@ function initLogoutButtons() {
   });
 }
 
-/* -------------------------------------------------------------------------
-   Guard
-   ------------------------------------------------------------------------- */
+/* ==========================================================================
+   PAGE GUARD
+   ========================================================================== */
 function guardPage(requiredRole) {
   const session = Auth.current();
   const base = window.location.pathname.includes("/pages/") ? "../../" : "";
@@ -403,9 +523,9 @@ function guardPage(requiredRole) {
   return true;
 }
 
-/* -------------------------------------------------------------------------
-   Page init
-   ------------------------------------------------------------------------- */
+/* ==========================================================================
+   PAGE INIT
+   ========================================================================== */
 document.addEventListener("DOMContentLoaded", () => {
   initLoginPage();
   initRegisterPage();

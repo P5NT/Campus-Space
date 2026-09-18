@@ -165,6 +165,62 @@
     <script src="../../js/notifications.js"></script>
     <script src="../../js/leaders.js"></script>
     <script src="../../js/profile.js"></script>
+    <script src="../../js/community.js"></script>
+    <script src="../../js/community.js"></script>
+    <script>
+      /* ==========================================================================
+   Profile — display the signed-in student's own community posts.
+   ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
+        if (!session) return;
+
+        var root = document.getElementById("profile-root");
+        if (!root) return;
+
+        /* Give the profile renderer a tick to finish, then attach */
+        setTimeout(function () {
+          var mine = Community.all().filter(function (p) {
+            return p.handle === session.username;
+          });
+
+          var section = document.createElement("div");
+          section.style.marginTop = "32px";
+
+          var header =
+            '<div class="cluster-between" style="margin-bottom:16px;">' +
+            "<div>" +
+            '<h2 class="section-title" style="margin:0;">Your Posts</h2>' +
+            '<p class="section-desc" style="margin:4px 0 0;">Posts you have shared with the campus community.</p>' +
+            "</div>" +
+            '<a href="community.html" class="btn btn-secondary btn-sm">' +
+            '<i class="fa-solid fa-plus"></i> New post' +
+            "</a>" +
+            "</div>";
+
+          if (!mine.length) {
+            section.innerHTML =
+              header +
+              '<div class="card"><div class="empty-state">' +
+              '<div class="empty-icon"><i class="fa-regular fa-comments"></i></div>' +
+              "<h3>No posts yet</h3>" +
+              "<p>When you share something with the community, it will appear here.</p>" +
+              '<a class="btn btn-primary" href="community.html">' +
+              '<i class="fa-solid fa-plus"></i> Create your first post' +
+              "</a>" +
+              "</div></div>";
+          } else {
+            section.innerHTML = header + '<div id="my-posts-feed"></div>';
+            var feed = section.querySelector("#my-posts-feed");
+            mine.forEach(function (p) {
+              feed.appendChild(renderPost(p));
+            });
+          }
+
+          root.appendChild(section);
+        }, 150);
+      });
+    </script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
         const session = Auth.current();

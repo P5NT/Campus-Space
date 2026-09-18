@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Password Reset — Campus Space</title>
+    <title>Password Reset Successful — Campus Space</title>
     <link
       rel="icon"
       type="image/x-icon"
@@ -45,20 +45,50 @@
   </head>
   <body>
     <div class="status-page">
+      <!-- Brand mark -->
+      <img
+        src="../../assets/icons/brand-icon.svg"
+        alt=""
+        width="48"
+        height="48"
+        style="margin-bottom: 20px"
+      />
+
+      <!-- Success icon -->
       <div
         class="status-icon"
         style="background: var(--success-soft); color: var(--success)"
       >
         <i class="fa-solid fa-circle-check"></i>
       </div>
+
       <h1>Password reset successful</h1>
       <p>
         Your password has been updated. You can now sign in with your new
         password.
       </p>
-      <a href="login.html" class="btn btn-primary btn-lg">
-        <i class="fa-solid fa-right-to-bracket"></i> Sign in
-      </a>
+
+      <div class="cluster" style="justify-content: center">
+        <a href="login.html" class="btn btn-primary btn-lg">
+          <i class="fa-solid fa-right-to-bracket"></i> Sign in
+        </a>
+        <a href="../student/help-support.html" class="btn btn-secondary btn-lg">
+          <i class="fa-solid fa-circle-question"></i> Need help?
+        </a>
+      </div>
+
+      <!-- Small security note -->
+      <p
+        style="
+          font-size: var(--fs-xs);
+          color: var(--text-tertiary);
+          margin-top: 32px;
+          max-width: 420px;
+        "
+      >
+        For security, if you didn't request this change, please contact Campus
+        Space support immediately.
+      </p>
     </div>
     <script src="../../js/main.js"></script>
   </body>

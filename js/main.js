@@ -257,6 +257,8 @@ function initDropdowns() {
 
 /* -------------------------------------------------------------------------
    Theme handling
+   Applies the light/dark theme, syncs the icon AND the toggle's on/off
+   state, and persists the choice in localStorage.
    ------------------------------------------------------------------------- */
 const Theme = (() => {
   function apply(theme) {
@@ -264,30 +266,39 @@ const Theme = (() => {
       document.documentElement.setAttribute("data-theme", "dark");
     else document.documentElement.removeAttribute("data-theme");
     Store.set("theme", theme);
-    document.querySelectorAll("[data-theme-toggle]").forEach((btn) => {
-      const icon = btn.querySelector("i");
-      if (icon)
-        icon.className =
-          theme === "dark" ? "fa-solid fa-sun" : "fa-solid fa-moon";
+
+    var isDark = theme === "dark";
+
+    document.querySelectorAll("[data-theme-toggle]").forEach(function (btn) {
+      /* Update the icon */
+      var icon = btn.querySelector("i");
+      if (icon) {
+        icon.className = isDark ? "fa-solid fa-sun" : "fa-solid fa-moon";
+      }
+      /* Update the toggle's visual state */
+      btn.setAttribute("aria-checked", isDark ? "true" : "false");
     });
   }
+
   function init() {
-    const saved = Store.get("theme", null);
-    const prefersDark =
+    var saved = Store.get("theme", null);
+    var prefersDark =
       window.matchMedia &&
       window.matchMedia("(prefers-color-scheme: dark)").matches;
     apply(saved || (prefersDark ? "dark" : "light"));
-    document.addEventListener("click", (e) => {
-      const btn = e.target.closest("[data-theme-toggle]");
+
+    document.addEventListener("click", function (e) {
+      var btn = e.target.closest("[data-theme-toggle]");
       if (!btn) return;
-      const current =
+      var current =
         document.documentElement.getAttribute("data-theme") === "dark"
           ? "dark"
           : "light";
       apply(current === "dark" ? "light" : "dark");
     });
   }
-  return { init, apply };
+
+  return { init: init, apply: apply };
 })();
 
 /* -------------------------------------------------------------------------

@@ -58,7 +58,7 @@
       <div class="app-main">
         <header class="app-header" id="app-header"></header>
 
-        <main class="app-content" id="main" id="settings-root">
+        <main class="app-content" id="main">
           <div class="page-head">
             <div class="page-head-text">
               <h1 class="page-title">Settings</h1>
@@ -257,127 +257,24 @@
                       </p>
                     </div>
                   </div>
-                  <div class="card-body">
-                    <form id="change-password-form" novalidate>
-                      <div class="field">
-                        <label class="label" for="currentPassword"
-                          >Current password <span class="req">*</span></label
-                        >
-                        <div class="input-wrap">
-                          <i class="fa-solid fa-lock input-icon"></i>
-                          <input
-                            class="input"
-                            type="password"
-                            id="currentPassword"
-                            name="currentPassword"
-                            autocomplete="current-password"
-                            placeholder="Enter your current password"
-                            style="padding-right: 44px"
-                          />
-                          <button
-                            type="button"
-                            class="input-suffix"
-                            data-toggle-password="currentPassword"
-                            aria-label="Show password"
-                          >
-                            <i class="fa-solid fa-eye"></i>
-                          </button>
-                        </div>
-                        <div class="field-error">
-                          <i class="fa-solid fa-circle-exclamation"></i
-                          ><span>Please enter your current password.</span>
-                        </div>
+                  <div class="card-body" style="padding-top: 0">
+                    <div class="setting-row">
+                      <div class="setting-row-info">
+                        <h4>Password</h4>
+                        <p>
+                          Change the password you use to sign in to Campus
+                          Space.
+                        </p>
                       </div>
-
-                      <div class="field">
-                        <label class="label" for="newPassword"
-                          >New password <span class="req">*</span></label
-                        >
-                        <div class="input-wrap">
-                          <i class="fa-solid fa-lock input-icon"></i>
-                          <input
-                            class="input"
-                            type="password"
-                            id="newPassword"
-                            name="newPassword"
-                            autocomplete="new-password"
-                            placeholder="Create a new password"
-                            style="padding-right: 44px"
-                          />
-                          <button
-                            type="button"
-                            class="input-suffix"
-                            data-toggle-password="newPassword"
-                            aria-label="Show password"
-                          >
-                            <i class="fa-solid fa-eye"></i>
-                          </button>
-                        </div>
-                        <div class="pw-strength" data-level="0">
-                          <span></span><span></span><span></span><span></span>
-                        </div>
-                        <ul class="pw-reqs">
-                          <li data-req="length">
-                            <i class="fa-solid fa-xmark"></i> At least 8
-                            characters
-                          </li>
-                          <li data-req="upper">
-                            <i class="fa-solid fa-xmark"></i> One uppercase
-                            letter
-                          </li>
-                          <li data-req="lower">
-                            <i class="fa-solid fa-xmark"></i> One lowercase
-                            letter
-                          </li>
-                          <li data-req="number">
-                            <i class="fa-solid fa-xmark"></i> One number
-                          </li>
-                          <li data-req="special">
-                            <i class="fa-solid fa-xmark"></i> One special
-                            character
-                          </li>
-                        </ul>
-                        <div class="field-error">
-                          <i class="fa-solid fa-circle-exclamation"></i
-                          ><span>Password does not meet the requirements.</span>
-                        </div>
-                      </div>
-
-                      <div class="field">
-                        <label class="label" for="confirmPassword"
-                          >Confirm new password
-                          <span class="req">*</span></label
-                        >
-                        <div class="input-wrap">
-                          <i class="fa-solid fa-lock input-icon"></i>
-                          <input
-                            class="input"
-                            type="password"
-                            id="confirmPassword"
-                            name="confirmPassword"
-                            autocomplete="new-password"
-                            placeholder="Re-enter new password"
-                            style="padding-right: 44px"
-                          />
-                          <button
-                            type="button"
-                            class="input-suffix"
-                            data-toggle-password="confirmPassword"
-                            aria-label="Show password"
-                          >
-                            <i class="fa-solid fa-eye"></i>
-                          </button>
-                        </div>
-                        <div class="field-error">
-                          <i class="fa-solid fa-circle-exclamation"></i
-                          ><span>Passwords do not match.</span>
-                        </div>
-                      </div>
-
-                      <button type="submit" class="btn btn-primary">
-                        <i class="fa-solid fa-check"></i> Update password
+                      <button
+                        type="button"
+                        class="btn btn-secondary"
+                        id="open-change-password"
+                        data-modal-open="change-password-modal"
+                      >
+                        <i class="fa-solid fa-key"></i> Change password
                       </button>
-                    </form>
+                    </div>
                   </div>
                 </div>
               </section>
@@ -459,6 +356,296 @@
       aria-label="Mobile menu"
     ></aside>
 
+    <!-- =====================================================================
+     Change Password modal — 3-step flow
+     Step 1: Verify identity (current password OR forgot-password path)
+     Step 2: Enter 4-digit code sent to email
+     Step 3: Set new password
+     ===================================================================== -->
+    <div
+      class="modal-backdrop"
+      id="change-password-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="cp-title"
+    >
+      <div class="modal">
+        <div class="modal-head">
+          <h3 id="cp-title">Change password</h3>
+          <button class="btn-icon" data-modal-close aria-label="Close">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <!-- Progress indicator -->
+        <div class="cp-steps" id="cp-steps">
+          <div class="cp-step is-active" data-step="1">
+            <span class="cp-step-num">1</span>
+            <span class="cp-step-label">Verify identity</span>
+          </div>
+          <div class="cp-step" data-step="2">
+            <span class="cp-step-num">2</span>
+            <span class="cp-step-label">Enter code</span>
+          </div>
+          <div class="cp-step" data-step="3">
+            <span class="cp-step-num">3</span>
+            <span class="cp-step-label">New password</span>
+          </div>
+        </div>
+
+        <!-- Step 1 — Verify identity -->
+        <form id="cp-step-1" class="cp-step-form" novalidate>
+          <div class="modal-body">
+            <p class="cp-step-desc">
+              Confirm it's you. Enter your current password, or verify by email
+              if you've forgotten it.
+            </p>
+
+            <div class="field">
+              <label class="label" for="cp-current"
+                >Current password <span class="req">*</span></label
+              >
+              <div class="input-wrap">
+                <i class="fa-solid fa-lock input-icon"></i>
+                <input
+                  class="input"
+                  type="password"
+                  id="cp-current"
+                  name="currentPassword"
+                  autocomplete="current-password"
+                  placeholder="Enter your current password"
+                  style="padding-right: 44px"
+                />
+                <button
+                  type="button"
+                  class="input-suffix"
+                  data-toggle-password="cp-current"
+                  aria-label="Show password"
+                >
+                  <i class="fa-solid fa-eye"></i>
+                </button>
+              </div>
+              <div class="field-error">
+                <i class="fa-solid fa-circle-exclamation"></i
+                ><span>Please enter your current password.</span>
+              </div>
+            </div>
+
+            <!-- Alternative path for users who forgot their password -->
+            <div class="cp-forgot-row">
+              <div class="cp-forgot-divider"><span>or</span></div>
+              <button
+                type="button"
+                class="btn btn-ghost btn-block"
+                id="cp-forgot-password"
+              >
+                <i class="fa-solid fa-envelope-circle-check"></i>
+                Forgot your password? Verify by email instead
+              </button>
+            </div>
+          </div>
+          <div class="modal-foot">
+            <button type="button" class="btn btn-secondary" data-modal-close>
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fa-solid fa-paper-plane"></i> Send verification code
+            </button>
+          </div>
+        </form>
+
+        <!-- Step 2 — Verification code -->
+        <form id="cp-step-2" class="cp-step-form" novalidate hidden>
+          <div class="modal-body">
+            <p class="cp-step-desc">
+              We've sent a 4-digit verification code to
+              <strong id="cp-email-mask">your email</strong>. Enter it below to
+              continue.
+            </p>
+
+            <div
+              class="demo-box"
+              style="
+                background: var(--info-soft);
+                border-color: rgba(44, 111, 168, 0.25);
+              "
+            >
+              <h5 style="color: var(--info)">
+                <i class="fa-solid fa-circle-info"></i> Demo: your code
+              </h5>
+              <div class="row">
+                <span>Use this code:</span> <code id="cp-otp-hint">----</code>
+              </div>
+            </div>
+
+            <div
+              class="otp-inputs"
+              id="cp-otp-container"
+              role="group"
+              aria-label="Verification code"
+            >
+              <input
+                class="otp-input"
+                type="text"
+                inputmode="numeric"
+                maxlength="1"
+                aria-label="Digit 1"
+              />
+              <input
+                class="otp-input"
+                type="text"
+                inputmode="numeric"
+                maxlength="1"
+                aria-label="Digit 2"
+              />
+              <input
+                class="otp-input"
+                type="text"
+                inputmode="numeric"
+                maxlength="1"
+                aria-label="Digit 3"
+              />
+              <input
+                class="otp-input"
+                type="text"
+                inputmode="numeric"
+                maxlength="1"
+                aria-label="Digit 4"
+              />
+            </div>
+            <div
+              class="field-error"
+              id="cp-otp-error"
+              style="justify-content: center"
+            >
+              <i class="fa-solid fa-circle-exclamation"></i
+              ><span>The code you entered is incorrect.</span>
+            </div>
+
+            <p
+              style="
+                text-align: center;
+                font-size: var(--fs-xs);
+                color: var(--text-tertiary);
+                margin-top: 12px;
+              "
+            >
+              Didn't get it?
+              <a
+                href="#"
+                id="cp-otp-resend"
+                style="color: var(--brand-primary); font-weight: 600"
+                >Resend code</a
+              >
+            </p>
+          </div>
+          <div class="modal-foot">
+            <button type="button" class="btn btn-ghost" id="cp-back-to-1">
+              <i class="fa-solid fa-arrow-left"></i> Back
+            </button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fa-solid fa-check"></i> Verify code
+            </button>
+          </div>
+        </form>
+
+        <!-- Step 3 — New password -->
+        <form id="cp-step-3" class="cp-step-form" novalidate hidden>
+          <div class="modal-body">
+            <p class="cp-step-desc">Create a new password for your account.</p>
+
+            <div class="field">
+              <label class="label" for="cp-new"
+                >New password <span class="req">*</span></label
+              >
+              <div class="input-wrap">
+                <i class="fa-solid fa-lock input-icon"></i>
+                <input
+                  class="input"
+                  type="password"
+                  id="cp-new"
+                  name="newPassword"
+                  autocomplete="new-password"
+                  placeholder="Create a new password"
+                  style="padding-right: 44px"
+                />
+                <button
+                  type="button"
+                  class="input-suffix"
+                  data-toggle-password="cp-new"
+                  aria-label="Show password"
+                >
+                  <i class="fa-solid fa-eye"></i>
+                </button>
+              </div>
+              <div class="pw-strength" data-level="0">
+                <span></span><span></span><span></span><span></span>
+              </div>
+              <ul class="pw-reqs">
+                <li data-req="length">
+                  <i class="fa-solid fa-xmark"></i> At least 8 characters
+                </li>
+                <li data-req="upper">
+                  <i class="fa-solid fa-xmark"></i> One uppercase letter
+                </li>
+                <li data-req="lower">
+                  <i class="fa-solid fa-xmark"></i> One lowercase letter
+                </li>
+                <li data-req="number">
+                  <i class="fa-solid fa-xmark"></i> One number
+                </li>
+                <li data-req="special">
+                  <i class="fa-solid fa-xmark"></i> One special character
+                </li>
+              </ul>
+              <div class="field-error">
+                <i class="fa-solid fa-circle-exclamation"></i
+                ><span>Password does not meet the requirements.</span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="label" for="cp-confirm"
+                >Confirm new password <span class="req">*</span></label
+              >
+              <div class="input-wrap">
+                <i class="fa-solid fa-lock input-icon"></i>
+                <input
+                  class="input"
+                  type="password"
+                  id="cp-confirm"
+                  name="confirmPassword"
+                  autocomplete="new-password"
+                  placeholder="Re-enter new password"
+                  style="padding-right: 44px"
+                />
+                <button
+                  type="button"
+                  class="input-suffix"
+                  data-toggle-password="cp-confirm"
+                  aria-label="Show password"
+                >
+                  <i class="fa-solid fa-eye"></i>
+                </button>
+              </div>
+              <div class="field-error">
+                <i class="fa-solid fa-circle-exclamation"></i
+                ><span>Passwords do not match.</span>
+              </div>
+            </div>
+          </div>
+          <div class="modal-foot">
+            <button type="button" class="btn btn-ghost" id="cp-back-to-2">
+              <i class="fa-solid fa-arrow-left"></i> Back
+            </button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fa-solid fa-check"></i> Update password
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <script src="../../data/students.js"></script>
     <script src="../../js/main.js"></script>
     <script src="../../js/validation.js"></script>
@@ -466,92 +653,98 @@
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
     <script src="../../js/settings.js"></script>
-    <script src="../../js/leaders.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
+      /* ==========================================================================
+   Settings page — account summary, nav scroll, phone override.
+   (Password flow logic lives in js/settings.js.)
+   ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
         if (!session) {
           window.location.href = "../auth/login.html";
           return;
         }
         initAppShell("student");
 
-        // Account details summary
-        const body = document.getElementById("settings-account-body");
-        const student =
-          DEMO_STUDENTS.find((s) => s.username === session.username) || {};
-        body.innerHTML = `
-    <div class="setting-row" style="border-top:0;">
-      <div class="setting-row-info">
-        <h4>Username</h4>
-        <p>@${Util.escape(session.username)}</p>
-      </div>
-      <span class="badge badge-neutral">Fixed</span>
-    </div>
-    <div class="setting-row">
-      <div class="setting-row-info">
-        <h4>Full name</h4>
-        <p>${Util.escape(session.name || "—")}</p>
-      </div>
-      <a href="profile.html" class="btn btn-ghost btn-sm">Edit profile <i class="fa-solid fa-arrow-right"></i></a>
-    </div>
-    <div class="setting-row">
-      <div class="setting-row-info">
-        <h4>Faculty &amp; Department</h4>
-        <p>${Util.escape(student.faculty || "—")} · ${Util.escape(student.department || "—")}</p>
-      </div>
-      <span class="badge badge-neutral">Admin managed</span>
-    </div>
-    <div class="setting-row">
-      <div class="setting-row-info">
-        <h4>Level</h4>
-        <p>${Util.escape(student.level || "—")} Level</p>
-      </div>
-      <span class="badge badge-neutral">Admin managed</span>
-    </div>
-    <div class="setting-row">
-      <div class="setting-row-info">
-        <h4>Matric number</h4>
-        <p>${Util.escape(student.matric || "—")}</p>
-      </div>
-      <span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Verified</span>
-    </div>`;
+        /* ---- Account summary ---- */
+        var body = document.getElementById("settings-account-body");
+        var student =
+          DEMO_STUDENTS.find(function (s) {
+            return s.username === session.username;
+          }) || {};
 
-        // Settings nav scroll + active state
-        document.querySelectorAll(".settings-nav-item").forEach((btn) => {
-          btn.addEventListener("click", () => {
-            const target = document.getElementById(
+        body.innerHTML =
+          '<div class="setting-row" style="border-top:0;">' +
+          '<div class="setting-row-info">' +
+          "<h4>Username</h4>" +
+          "<p>@" +
+          Util.escape(session.username) +
+          "</p>" +
+          "</div>" +
+          '<span class="badge badge-neutral">Fixed</span>' +
+          "</div>" +
+          '<div class="setting-row">' +
+          '<div class="setting-row-info">' +
+          "<h4>Full name</h4>" +
+          "<p>" +
+          Util.escape(session.name || "—") +
+          "</p>" +
+          "</div>" +
+          '<a href="profile.html" class="btn btn-ghost btn-sm">Edit profile <i class="fa-solid fa-arrow-right"></i></a>' +
+          "</div>" +
+          '<div class="setting-row">' +
+          '<div class="setting-row-info">' +
+          "<h4>Faculty &amp; Department</h4>" +
+          "<p>" +
+          Util.escape(student.faculty || "—") +
+          " · " +
+          Util.escape(student.department || "—") +
+          "</p>" +
+          "</div>" +
+          '<span class="badge badge-neutral">Admin managed</span>' +
+          "</div>" +
+          '<div class="setting-row">' +
+          '<div class="setting-row-info">' +
+          "<h4>Level</h4>" +
+          "<p>" +
+          Util.escape(student.level || "—") +
+          " Level</p>" +
+          "</div>" +
+          '<span class="badge badge-neutral">Admin managed</span>' +
+          "</div>" +
+          '<div class="setting-row">' +
+          '<div class="setting-row-info">' +
+          "<h4>Matric number</h4>" +
+          "<p>" +
+          Util.escape(student.matric || "—") +
+          "</p>" +
+          "</div>" +
+          '<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Verified</span>' +
+          "</div>";
+
+        /* ---- Settings nav scroll + active state ---- */
+        document.querySelectorAll(".settings-nav-item").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            var target = document.getElementById(
               btn.getAttribute("data-target"),
             );
             if (target)
               target.scrollIntoView({ behavior: "smooth", block: "start" });
             document
               .querySelectorAll(".settings-nav-item")
-              .forEach((b) => b.classList.remove("is-active"));
+              .forEach(function (b) {
+                b.classList.remove("is-active");
+              });
             btn.classList.add("is-active");
           });
         });
-      });
 
-      /* Phone visibility — respects leader override */
-      (function () {
-        var session = Auth.current();
-        if (!session) return;
-        var student =
-          typeof DEMO_STUDENTS !== "undefined"
-            ? DEMO_STUDENTS.find(function (s) {
-                return s.username === session.username;
-              })
-            : null;
-        if (!student) return;
-
+        /* ---- Phone visibility — respects leader override ---- */
         var isLeader = student.isLeader === true;
-
         var toggle = document.getElementById("phone-visibility-toggle");
         var desc = document.getElementById("phone-visibility-desc");
 
         if (isLeader) {
-          // Leaders must always display their phone — disable the toggle
           if (toggle) {
             toggle.setAttribute("aria-checked", "true");
             toggle.setAttribute("disabled", "true");
@@ -566,16 +759,13 @@
             desc.innerHTML =
               "You are a verified student leader — your phone number is always visible on your profile. This is required for your leadership role.";
           }
-        } else {
-          // Regular student — reflect their actual phoneVisible setting
-          if (toggle) {
-            toggle.setAttribute(
-              "aria-checked",
-              student.phoneVisible === true ? "true" : "false",
-            );
-          }
+        } else if (toggle) {
+          toggle.setAttribute(
+            "aria-checked",
+            student.phoneVisible === true ? "true" : "false",
+          );
         }
-      })();
+      });
     </script>
   </body>
 </html>

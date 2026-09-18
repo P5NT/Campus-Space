@@ -45,6 +45,7 @@
   </head>
   <body class="has-session">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
       <aside
         class="sidebar"
@@ -59,10 +60,12 @@
               <i class="fa-solid fa-arrow-left"></i> Back to opportunities
             </a>
           </div>
+
           <div id="opp-detail"></div>
         </main>
       </div>
     </div>
+
     <div id="mobile-nav-mount"></div>
     <div class="mobile-menu-backdrop"></div>
     <aside
@@ -78,102 +81,226 @@
     <script src="../../js/auth.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
-    <script src="../../js/leaders.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
+      /* ==========================================================================
+   Opportunity details — hero, description, requirements, apply + save.
+   ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
         if (!session) {
           window.location.href = "../auth/login.html";
           return;
         }
         initAppShell("student");
 
-        const id = new URLSearchParams(location.search).get("id");
-        const o =
-          DEMO_OPPORTUNITIES.find((x) => x.id === id) || DEMO_OPPORTUNITIES[0];
-        const days = Math.ceil((new Date(o.deadline) - Date.now()) / 86400000);
-        const wrap = document.getElementById("opp-detail");
+        var id = new URLSearchParams(location.search).get("id");
+        var wrap = document.getElementById("opp-detail");
 
-        wrap.innerHTML = `
-    <div class="card card-pad-lg" style="margin-bottom:24px;">
-      <div class="cluster" style="margin-bottom:16px;">
-        <span class="badge badge-marine">${Util.escape(o.category)}</span>
-        <span class="badge badge-neutral"><i class="fa-solid fa-location-dot"></i> ${Util.escape(o.location)}</span>
-      </div>
-      <h1 class="page-title" style="font-size:var(--fs-2xl); margin-bottom:8px;">${Util.escape(o.title)}</h1>
-      <p style="font-size:var(--fs-md); color:var(--brand-secondary); font-weight:600;">${Util.escape(o.organization)}</p>
-
-      <div class="grid grid-3" style="margin-top:24px; gap:16px;">
-        <div>
-          <div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Deadline</div>
-          <div class="font-semibold">${Util.formatDate(o.deadline, { day: "numeric", month: "long", year: "numeric" })}</div>
-          <div class="text-xs text-muted" style="margin-top:2px;">${days < 0 ? "Expired" : days === 0 ? "Due today" : days + " days remaining"}</div>
-        </div>
-        <div>
-          <div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Category</div>
-          <div class="font-semibold">${Util.escape(o.category)}</div>
-        </div>
-        <div>
-          <div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Location</div>
-          <div class="font-semibold">${Util.escape(o.location)}</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="grid" style="grid-template-columns:minmax(0,1fr) 320px; gap:24px; align-items:start;">
-      <div>
-        <div class="card card-pad">
-          <h2 style="font-size:var(--fs-lg); margin-bottom:12px;">About this opportunity</h2>
-          <p style="line-height:1.75; color:var(--text-secondary);">${Util.escape(o.description)}</p>
-        </div>
-
-        <div class="card card-pad" style="margin-top:16px;">
-          <h2 style="font-size:var(--fs-lg); margin-bottom:12px;">Requirements</h2>
-          <ul style="display:grid; gap:10px; padding-left:0; list-style:none;">
-            ${o.requirements.map((r) => `<li style="display:flex; gap:10px; align-items:flex-start; font-size:var(--fs-sm); color:var(--text-secondary);"><i class="fa-solid fa-circle-check" style="color:var(--success); margin-top:4px;"></i> ${Util.escape(r)}</li>`).join("")}
-          </ul>
-        </div>
-      </div>
-
-      <aside>
-        <div class="card card-pad">
-          <h3 style="font-size:var(--fs-md); margin-bottom:8px;">Ready to apply?</h3>
-          <p style="font-size:var(--fs-sm); color:var(--text-secondary); margin-bottom:16px;">Open the official application page for full instructions.</p>
-          <a href="${o.applyUrl}" target="_blank" rel="noopener" class="btn btn-primary btn-block" data-external>
-            Apply now <i class="fa-solid fa-arrow-up-right-from-square"></i>
-          </a>
-          <button class="btn btn-secondary btn-block" style="margin-top:8px;" id="save-opp">
-            <i class="fa-regular fa-bookmark"></i> Save for later
-          </button>
-        </div>
-      </aside>
-    </div>
-  `;
-
-        document.getElementById("save-opp").addEventListener("click", (e) => {
-          const saved = Store.get("saved_opportunities", []);
-          if (!saved.includes(o.id)) {
-            saved.push(o.id);
-            Store.set("saved_opportunities", saved);
-            e.currentTarget.innerHTML =
-              '<i class="fa-solid fa-bookmark"></i> Saved';
-            Toast.success("Opportunity saved.", "Saved");
-          } else {
-            Toast.info("Already in your saved list.", "Saved");
-          }
+        var o = DEMO_OPPORTUNITIES.find(function (x) {
+          return x.id === id;
         });
 
-        document
-          .querySelector("[data-external]")
-          .addEventListener("click", (e) => {
-            if (o.applyUrl === "#") {
-              e.preventDefault();
-              Toast.info(
-                "This opportunity opens externally in the live product.",
-                "External link",
-              );
+        /* ---- Not found ---- */
+        if (!o) {
+          wrap.innerHTML =
+            '<div class="empty-state">' +
+            '<div class="empty-icon"><i class="fa-solid fa-briefcase"></i></div>' +
+            "<h3>Opportunity not found</h3>" +
+            "<p>This listing may have been removed or the link is incorrect.</p>" +
+            '<a class="btn btn-primary" href="opportunities.html">Browse all opportunities</a>' +
+            "</div>";
+          return;
+        }
+
+        /* ---- Compute deadline urgency ---- */
+        var now = new Date();
+        now.setHours(0, 0, 0, 0);
+        var dl = new Date(o.deadline);
+        dl.setHours(0, 0, 0, 0);
+        var days = Math.round((dl - now) / 86400000);
+
+        var urgencyBadge = "";
+        if (days < 0) {
+          urgencyBadge =
+            '<span class="badge badge-danger"><i class="fa-solid fa-circle-xmark"></i> Deadline passed</span>';
+        } else if (days === 0) {
+          urgencyBadge =
+            '<span class="badge badge-danger"><i class="fa-solid fa-fire"></i> Due today</span>';
+        } else if (days <= 7) {
+          urgencyBadge =
+            '<span class="badge badge-warning"><i class="fa-solid fa-clock"></i> ' +
+            days +
+            " day" +
+            (days === 1 ? "" : "s") +
+            " left</span>";
+        } else {
+          urgencyBadge =
+            '<span class="badge badge-neutral"><i class="fa-regular fa-clock"></i> ' +
+            days +
+            " days left</span>";
+        }
+
+        /* ---- Is the apply URL valid? ---- */
+        var hasValidUrl =
+          o.applyUrl && o.applyUrl !== "#" && /^https?:/i.test(o.applyUrl);
+
+        /* ---- Already saved? ---- */
+        var saved = Store.get("saved_opportunities", []) || [];
+        var isSaved = saved.indexOf(o.id) !== -1;
+
+        /* ---- Build content ---- */
+        var requirementsHtml = (o.requirements || [])
+          .map(function (r) {
+            return (
+              '<li class="opp-req-item">' +
+              '<i class="fa-solid fa-circle-check"></i>' +
+              "<span>" +
+              Util.escape(r) +
+              "</span>" +
+              "</li>"
+            );
+          })
+          .join("");
+
+        var applyBtnHtml = hasValidUrl
+          ? '<a href="' +
+            Util.escape(o.applyUrl) +
+            '" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-block" id="apply-btn">' +
+            'Apply now <i class="fa-solid fa-arrow-up-right-from-square"></i>' +
+            "</a>"
+          : '<button type="button" class="btn btn-secondary btn-block" id="apply-btn" disabled>' +
+            "Application link not available" +
+            "</button>";
+
+        wrap.innerHTML =
+          '<div class="card card-pad-lg" style="margin-bottom:24px;">' +
+          '<div class="cluster" style="margin-bottom:16px; gap:8px;">' +
+          '<span class="badge badge-marine"><i class="fa-solid fa-tag"></i> ' +
+          Util.escape(o.category) +
+          "</span>" +
+          urgencyBadge +
+          "</div>" +
+          '<h1 class="page-title" style="font-size:var(--fs-2xl); margin-bottom:8px;">' +
+          Util.escape(o.title) +
+          "</h1>" +
+          '<p style="font-size:var(--fs-md); color:var(--brand-secondary); font-weight:600; margin-bottom:20px;">' +
+          Util.escape(o.organization) +
+          "</p>" +
+          '<div class="grid grid-3" style="gap:16px;">' +
+          "<div>" +
+          '<div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Deadline</div>' +
+          '<div class="font-semibold">' +
+          Util.formatDate(o.deadline, {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          }) +
+          "</div>" +
+          "</div>" +
+          "<div>" +
+          '<div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Location</div>' +
+          '<div class="font-semibold">' +
+          Util.escape(o.location) +
+          "</div>" +
+          "</div>" +
+          "<div>" +
+          '<div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Organization</div>' +
+          '<div class="font-semibold">' +
+          Util.escape(o.organization) +
+          "</div>" +
+          "</div>" +
+          "</div>" +
+          "</div>" +
+          '<div class="opp-detail-grid">' +
+          '<div class="opp-detail-main">' +
+          '<div class="card card-pad">' +
+          '<h2 style="font-size:var(--fs-lg); margin-bottom:12px;">About this opportunity</h2>' +
+          '<p style="line-height:1.75; color:var(--text-secondary);">' +
+          Util.escape(o.description) +
+          "</p>" +
+          "</div>" +
+          '<div class="card card-pad" style="margin-top:16px;">' +
+          '<h2 style="font-size:var(--fs-lg); margin-bottom:12px;">Requirements</h2>' +
+          '<ul class="opp-req-list">' +
+          requirementsHtml +
+          "</ul>" +
+          "</div>" +
+          "</div>" +
+          '<aside class="opp-detail-side">' +
+          '<div class="card card-pad">' +
+          '<h3 style="font-size:var(--fs-md); margin-bottom:8px;">Ready to apply?</h3>' +
+          '<p style="font-size:var(--fs-sm); color:var(--text-secondary); margin-bottom:16px;">' +
+          (hasValidUrl
+            ? "Open the official application page for full instructions."
+            : "The application link for this opportunity has not been published yet.") +
+          "</p>" +
+          applyBtnHtml +
+          '<button class="btn ' +
+          (isSaved ? "btn-soft" : "btn-secondary") +
+          ' btn-block" style="margin-top:8px;" id="save-opp" type="button">' +
+          (isSaved
+            ? '<i class="fa-solid fa-bookmark"></i> Saved'
+            : '<i class="fa-regular fa-bookmark"></i> Save for later') +
+          "</button>" +
+          "</div>" +
+          '<div class="card card-pad" style="margin-top:16px;">' +
+          '<h4 style="font-size:var(--fs-sm); font-weight:700; margin-bottom:8px;">Deadline</h4>' +
+          '<div style="font-size:var(--fs-base); font-weight:600; margin-bottom:4px;">' +
+          Util.formatDate(o.deadline, {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          }) +
+          "</div>" +
+          '<div style="font-size:var(--fs-xs); color:var(--text-tertiary);">' +
+          (days < 0
+            ? "The application window has closed."
+            : days === 0
+              ? "Applications close today."
+              : days + " day" + (days === 1 ? "" : "s") + " remaining.") +
+          "</div>" +
+          "</div>" +
+          "</aside>" +
+          "</div>";
+
+        /* ---- Save / unsave toggle ---- */
+        var saveBtn = document.getElementById("save-opp");
+        if (saveBtn) {
+          saveBtn.addEventListener("click", function () {
+            var list = Store.get("saved_opportunities", []) || [];
+            var alreadySaved = list.indexOf(o.id) !== -1;
+
+            if (alreadySaved) {
+              list = list.filter(function (x) {
+                return x !== o.id;
+              });
+              Store.set("saved_opportunities", list);
+              saveBtn.className = "btn btn-secondary btn-block";
+              saveBtn.style.marginTop = "8px";
+              saveBtn.innerHTML =
+                '<i class="fa-regular fa-bookmark"></i> Save for later';
+              Toast.info("Removed from your saved list.", "Unsaved");
+            } else {
+              list.push(o.id);
+              Store.set("saved_opportunities", list);
+              saveBtn.className = "btn btn-soft btn-block";
+              saveBtn.style.marginTop = "8px";
+              saveBtn.innerHTML = '<i class="fa-solid fa-bookmark"></i> Saved';
+              Toast.success("Opportunity saved.", "Saved");
             }
           });
+        }
+
+        /* ---- External link feedback ---- */
+        var applyBtn = document.getElementById("apply-btn");
+        if (applyBtn && applyBtn.tagName === "A") {
+          applyBtn.addEventListener("click", function () {
+            Toast.info(
+              "Opening the official application page in a new tab.",
+              "External link",
+            );
+          });
+        }
       });
     </script>
   </body>

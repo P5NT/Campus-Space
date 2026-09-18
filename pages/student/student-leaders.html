@@ -45,6 +45,7 @@
   </head>
   <body class="has-session">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
       <aside
         class="sidebar"
@@ -70,7 +71,7 @@
                 class="input"
                 type="search"
                 id="leader-search"
-                placeholder="Search by name or position…"
+                placeholder="Search by name, position or association…"
                 aria-label="Search leaders"
               />
             </div>
@@ -83,10 +84,25 @@
             </select>
           </div>
 
+          <div class="cluster-between" style="margin-bottom: 16px">
+            <p class="section-desc" style="margin: 0" id="leader-count">
+              Loading…
+            </p>
+            <button
+              class="btn btn-ghost btn-sm"
+              id="clear-filters"
+              type="button"
+              style="display: none"
+            >
+              <i class="fa-solid fa-rotate-left"></i> Clear filters
+            </button>
+          </div>
+
           <div class="grid grid-3" id="leaders-grid"></div>
         </main>
       </div>
     </div>
+
     <div id="mobile-nav-mount"></div>
     <div class="mobile-menu-backdrop"></div>
     <aside
@@ -104,49 +120,116 @@
     <script src="../../js/notifications.js"></script>
     <script src="../../js/leaders.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
+      /* ==========================================================================
+   Student Leaders — shows verified leaders only.
+   The association dropdown is populated from DEMO_ASSOCIATIONS (active only),
+   so anything Admin adds appears here automatically.
+   ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
         if (!session) {
           window.location.href = "../auth/login.html";
           return;
         }
         initAppShell("student");
 
-        const grid = document.getElementById("leaders-grid");
-        const search = document.getElementById("leader-search");
-        const assocFilter = document.getElementById("leader-assoc");
+        var grid = document.getElementById("leaders-grid");
+        var searchEl = document.getElementById("leader-search");
+        var assocEl = document.getElementById("leader-assoc");
+        var countEl = document.getElementById("leader-count");
+        var clearBtn = document.getElementById("clear-filters");
 
-        DEMO_ASSOCIATIONS.forEach((a) => {
-          const opt = document.createElement("option");
-          opt.value = a.id;
-          opt.textContent = a.acronym + " — " + a.name;
-          assocFilter.appendChild(opt);
+        /* ---- Populate the association dropdown from active associations ---- */
+        var activeAssociations = (DEMO_ASSOCIATIONS || []).filter(function (a) {
+          return a.active !== false;
         });
 
+        activeAssociations.forEach(function (a) {
+          var opt = document.createElement("option");
+          opt.value = a.id;
+          opt.textContent = a.acronym + " — " + a.name;
+          assocEl.appendChild(opt);
+        });
+
+        /* ---- Render ---- */
+        var searchDebounce;
         function apply() {
-          let list = getLeaderList();
-          const q = search.value.trim().toLowerCase();
-          const aid = assocFilter.value;
-          if (q)
-            list = list.filter(
-              (l) =>
-                (l.student.firstName + " " + l.student.lastName)
-                  .toLowerCase()
-                  .includes(q) ||
-                l.pos.name.toLowerCase().includes(q) ||
-                l.assoc.name.toLowerCase().includes(q),
-            );
-          if (aid) list = list.filter((l) => l.assoc.id === aid);
+          var list = getLeaderList();
+          var q = searchEl.value.trim().toLowerCase();
+          var aid = assocEl.value;
+
+          if (q) {
+            list = list.filter(function (l) {
+              var name = (
+                l.student.firstName +
+                " " +
+                (l.student.otherName || "") +
+                " " +
+                l.student.lastName
+              ).toLowerCase();
+              return (
+                name.indexOf(q) !== -1 ||
+                l.student.username.toLowerCase().indexOf(q) !== -1 ||
+                l.pos.name.toLowerCase().indexOf(q) !== -1 ||
+                l.assoc.name.toLowerCase().indexOf(q) !== -1 ||
+                l.assoc.acronym.toLowerCase().indexOf(q) !== -1
+              );
+            });
+          }
+
+          if (aid) {
+            list = list.filter(function (l) {
+              return l.assoc.id === aid;
+            });
+          }
+
           grid.innerHTML = "";
+
           if (!list.length) {
             grid.innerHTML =
-              '<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon"><i class="fa-solid fa-user-tie"></i></div><h3>No leaders found</h3><p>Try a different search or filter.</p></div>';
+              '<div class="card" style="grid-column: 1 / -1;">' +
+              '<div class="empty-state">' +
+              '<div class="empty-icon"><i class="fa-solid fa-user-tie"></i></div>' +
+              "<h3>No leaders match your search</h3>" +
+              "<p>Try a different name, position or association.</p>" +
+              '<button class="btn btn-secondary" id="reset-from-empty" type="button">' +
+              '<i class="fa-solid fa-rotate-left"></i> Reset filters' +
+              "</button>" +
+              "</div>" +
+              "</div>";
+
+            var resetBtn = document.getElementById("reset-from-empty");
+            if (resetBtn) resetBtn.addEventListener("click", clearFilters);
+
+            countEl.textContent = "No leaders found";
+            clearBtn.style.display = q || aid ? "inline-flex" : "none";
             return;
           }
-          list.forEach((l) => grid.appendChild(renderLeaderCard(l)));
+
+          list.forEach(function (l) {
+            grid.appendChild(renderLeaderCard(l));
+          });
+
+          countEl.textContent =
+            list.length + " leader" + (list.length === 1 ? "" : "s");
+          clearBtn.style.display = q || aid ? "inline-flex" : "none";
         }
-        search.addEventListener("input", apply);
-        assocFilter.addEventListener("change", apply);
+
+        function clearFilters() {
+          searchEl.value = "";
+          assocEl.value = "";
+          apply();
+        }
+
+        searchEl.addEventListener("input", function () {
+          clearTimeout(searchDebounce);
+          searchDebounce = setTimeout(apply, 120);
+        });
+
+        assocEl.addEventListener("change", apply);
+        clearBtn.addEventListener("click", clearFilters);
+
+        /* Initial render */
         apply();
       });
     </script>
