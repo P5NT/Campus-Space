@@ -1170,174 +1170,178 @@ function initSearchButtons() {
    and mobile-friendly interaction.
    ========================================================================== */
 function initCustomSelects() {
-  document.querySelectorAll("select.select").forEach(function (nativeSelect) {
-    if (nativeSelect.dataset.customized === "true") return;
-    nativeSelect.dataset.customized = "true";
+  document
+    .querySelectorAll("select.select:not([data-native])")
+    .forEach(function (nativeSelect) {
+      if (nativeSelect.dataset.customized === "true") return;
+      nativeSelect.dataset.customized = "true";
 
-    // Build the visual wrapper
-    var wrapper = document.createElement("div");
-    wrapper.className = "cselect";
+      // Build the visual wrapper
+      var wrapper = document.createElement("div");
+      wrapper.className = "cselect";
 
-    // Trigger button
-    var trigger = document.createElement("button");
-    trigger.type = "button";
-    trigger.className = "cselect-trigger";
-    trigger.setAttribute("aria-haspopup", "listbox");
-    trigger.setAttribute("aria-expanded", "false");
-    if (nativeSelect.id) {
-      // Associate the label with the trigger for accessibility
-      trigger.id = nativeSelect.id + "-trigger";
-      var lbl = document.querySelector('label[for="' + nativeSelect.id + '"]');
-      if (lbl) lbl.setAttribute("for", trigger.id);
-    }
-
-    var triggerText = document.createElement("span");
-    triggerText.className = "cselect-text";
-
-    var triggerIcon = document.createElement("i");
-    triggerIcon.className = "fa-solid fa-chevron-down cselect-icon";
-
-    trigger.appendChild(triggerText);
-    trigger.appendChild(triggerIcon);
-
-    // The custom list
-    var list = document.createElement("div");
-    list.className = "cselect-list";
-    list.setAttribute("role", "listbox");
-
-    // Copy options
-    var options = Array.prototype.slice.call(nativeSelect.options);
-    options.forEach(function (opt, idx) {
-      var item = document.createElement("div");
-      item.className = "cselect-option";
-      item.setAttribute("role", "option");
-      item.setAttribute("data-value", opt.value);
-      item.tabIndex = -1;
-      item.textContent = opt.textContent;
-      if (opt.selected || nativeSelect.value === opt.value) {
-        item.classList.add("is-selected");
-      }
-      list.appendChild(item);
-    });
-
-    // Assemble the wrapper
-    wrapper.appendChild(trigger);
-    wrapper.appendChild(list);
-
-    // Insert wrapper right after the native select, then hide the select
-    nativeSelect.parentNode.insertBefore(wrapper, nativeSelect.nextSibling);
-    nativeSelect.classList.add("cselect-native");
-
-    // ---- Sync helper: reflects the current value into the trigger text ----
-    function updateTriggerText() {
-      var sel = nativeSelect.options[nativeSelect.selectedIndex];
-      triggerText.textContent = sel ? sel.textContent : "";
-      list.querySelectorAll(".cselect-option").forEach(function (el) {
-        el.classList.toggle(
-          "is-selected",
-          el.getAttribute("data-value") === nativeSelect.value,
-        );
-      });
-    }
-    updateTriggerText();
-
-    // ---- Open / close ----
-    function open() {
-      // Close any other open cselects
-      document.querySelectorAll(".cselect.is-open").forEach(function (other) {
-        if (other !== wrapper) other.classList.remove("is-open");
-      });
-      wrapper.classList.add("is-open");
-      trigger.setAttribute("aria-expanded", "true");
-      // Scroll the selected item into view
-      var sel = list.querySelector(".cselect-option.is-selected");
-      if (sel) sel.scrollIntoView({ block: "nearest" });
-    }
-    function close() {
-      wrapper.classList.remove("is-open");
+      // Trigger button
+      var trigger = document.createElement("button");
+      trigger.type = "button";
+      trigger.className = "cselect-trigger";
+      trigger.setAttribute("aria-haspopup", "listbox");
       trigger.setAttribute("aria-expanded", "false");
-    }
-    function toggle() {
-      if (wrapper.classList.contains("is-open")) close();
-      else open();
-    }
+      if (nativeSelect.id) {
+        // Associate the label with the trigger for accessibility
+        trigger.id = nativeSelect.id + "-trigger";
+        var lbl = document.querySelector(
+          'label[for="' + nativeSelect.id + '"]',
+        );
+        if (lbl) lbl.setAttribute("for", trigger.id);
+      }
 
-    trigger.addEventListener("click", function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      toggle();
-    });
+      var triggerText = document.createElement("span");
+      triggerText.className = "cselect-text";
 
-    // Option selection
-    list.addEventListener("click", function (e) {
-      var opt = e.target.closest(".cselect-option");
-      if (!opt) return;
-      e.preventDefault();
-      e.stopPropagation();
-      nativeSelect.value = opt.getAttribute("data-value");
-      // Fire change event so listeners on the native select still work
-      nativeSelect.dispatchEvent(new Event("change", { bubbles: true }));
-      updateTriggerText();
-      close();
-      trigger.focus();
-    });
+      var triggerIcon = document.createElement("i");
+      triggerIcon.className = "fa-solid fa-chevron-down cselect-icon";
 
-    // Keyboard support
-    wrapper.addEventListener("keydown", function (e) {
-      var isOpen = wrapper.classList.contains("is-open");
-      var currentIdx = options.findIndex(function (o) {
-        return o.value === nativeSelect.value;
+      trigger.appendChild(triggerText);
+      trigger.appendChild(triggerIcon);
+
+      // The custom list
+      var list = document.createElement("div");
+      list.className = "cselect-list";
+      list.setAttribute("role", "listbox");
+
+      // Copy options
+      var options = Array.prototype.slice.call(nativeSelect.options);
+      options.forEach(function (opt, idx) {
+        var item = document.createElement("div");
+        item.className = "cselect-option";
+        item.setAttribute("role", "option");
+        item.setAttribute("data-value", opt.value);
+        item.tabIndex = -1;
+        item.textContent = opt.textContent;
+        if (opt.selected || nativeSelect.value === opt.value) {
+          item.classList.add("is-selected");
+        }
+        list.appendChild(item);
       });
 
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        if (!isOpen) {
-          open();
-          return;
-        }
-        var next = Math.min(currentIdx + 1, options.length - 1);
-        nativeSelect.selectedIndex = next;
-        updateTriggerText();
-        nativeSelect.dispatchEvent(new Event("change", { bubbles: true }));
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        if (!isOpen) {
-          open();
-          return;
-        }
-        var prev = Math.max(currentIdx - 1, 0);
-        nativeSelect.selectedIndex = prev;
-        updateTriggerText();
-        nativeSelect.dispatchEvent(new Event("change", { bubbles: true }));
-      } else if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        if (!isOpen) open();
-        else {
-          var sel = list.querySelector(".cselect-option.is-selected");
-          if (sel) sel.click();
-        }
-      } else if (e.key === "Escape") {
-        e.preventDefault();
-        close();
-      } else if (e.key === "Home") {
-        e.preventDefault();
-        nativeSelect.selectedIndex = 0;
-        updateTriggerText();
-      } else if (e.key === "End") {
-        e.preventDefault();
-        nativeSelect.selectedIndex = options.length - 1;
-        updateTriggerText();
+      // Assemble the wrapper
+      wrapper.appendChild(trigger);
+      wrapper.appendChild(list);
+
+      // Insert wrapper right after the native select, then hide the select
+      nativeSelect.parentNode.insertBefore(wrapper, nativeSelect.nextSibling);
+      nativeSelect.classList.add("cselect-native");
+
+      // ---- Sync helper: reflects the current value into the trigger text ----
+      function updateTriggerText() {
+        var sel = nativeSelect.options[nativeSelect.selectedIndex];
+        triggerText.textContent = sel ? sel.textContent : "";
+        list.querySelectorAll(".cselect-option").forEach(function (el) {
+          el.classList.toggle(
+            "is-selected",
+            el.getAttribute("data-value") === nativeSelect.value,
+          );
+        });
       }
-    });
+      updateTriggerText();
 
-    // External updates to nativeSelect.value reflect back
-    nativeSelect.addEventListener("change", updateTriggerText);
+      // ---- Open / close ----
+      function open() {
+        // Close any other open cselects
+        document.querySelectorAll(".cselect.is-open").forEach(function (other) {
+          if (other !== wrapper) other.classList.remove("is-open");
+        });
+        wrapper.classList.add("is-open");
+        trigger.setAttribute("aria-expanded", "true");
+        // Scroll the selected item into view
+        var sel = list.querySelector(".cselect-option.is-selected");
+        if (sel) sel.scrollIntoView({ block: "nearest" });
+      }
+      function close() {
+        wrapper.classList.remove("is-open");
+        trigger.setAttribute("aria-expanded", "false");
+      }
+      function toggle() {
+        if (wrapper.classList.contains("is-open")) close();
+        else open();
+      }
 
-    // Click outside closes
-    document.addEventListener("click", function (e) {
-      if (!wrapper.contains(e.target)) close();
+      trigger.addEventListener("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        toggle();
+      });
+
+      // Option selection
+      list.addEventListener("click", function (e) {
+        var opt = e.target.closest(".cselect-option");
+        if (!opt) return;
+        e.preventDefault();
+        e.stopPropagation();
+        nativeSelect.value = opt.getAttribute("data-value");
+        // Fire change event so listeners on the native select still work
+        nativeSelect.dispatchEvent(new Event("change", { bubbles: true }));
+        updateTriggerText();
+        close();
+        trigger.focus({ preventScroll: true });
+      });
+
+      // Keyboard support
+      wrapper.addEventListener("keydown", function (e) {
+        var isOpen = wrapper.classList.contains("is-open");
+        var currentIdx = options.findIndex(function (o) {
+          return o.value === nativeSelect.value;
+        });
+
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          if (!isOpen) {
+            open();
+            return;
+          }
+          var next = Math.min(currentIdx + 1, options.length - 1);
+          nativeSelect.selectedIndex = next;
+          updateTriggerText();
+          nativeSelect.dispatchEvent(new Event("change", { bubbles: true }));
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          if (!isOpen) {
+            open();
+            return;
+          }
+          var prev = Math.max(currentIdx - 1, 0);
+          nativeSelect.selectedIndex = prev;
+          updateTriggerText();
+          nativeSelect.dispatchEvent(new Event("change", { bubbles: true }));
+        } else if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          if (!isOpen) open();
+          else {
+            var sel = list.querySelector(".cselect-option.is-selected");
+            if (sel) sel.click();
+          }
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          close();
+        } else if (e.key === "Home") {
+          e.preventDefault();
+          nativeSelect.selectedIndex = 0;
+          updateTriggerText();
+        } else if (e.key === "End") {
+          e.preventDefault();
+          nativeSelect.selectedIndex = options.length - 1;
+          updateTriggerText();
+        }
+      });
+
+      // External updates to nativeSelect.value reflect back
+      nativeSelect.addEventListener("change", updateTriggerText);
+
+      // Click outside closes
+      document.addEventListener("click", function (e) {
+        if (!wrapper.contains(e.target)) close();
+      });
     });
-  });
 }
 
 /* -------------------------------------------------------------------------

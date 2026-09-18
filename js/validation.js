@@ -31,7 +31,7 @@ function validateField(fieldEl, ruleFns, customMessage) {
   const input = fieldEl.querySelector("input, select, textarea");
   if (!input) return true;
 
-  const value = input.value;
+  const value = input.type === "checkbox" ? input.checked : input.value;
   const ruleList = Array.isArray(ruleFns) ? ruleFns : [ruleFns];
   const passed = ruleList.every((fn) => fn(value));
 

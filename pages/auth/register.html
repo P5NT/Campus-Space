@@ -91,32 +91,44 @@
           </p>
 
           <form id="register-form" novalidate>
-            <h3
-              style="
-                font-size: var(--fs-sm);
-                text-transform: uppercase;
-                letter-spacing: 0.06em;
-                color: var(--text-tertiary);
-                margin-bottom: 12px;
-              "
-            >
-              Personal Information
-            </h3>
+            <!-- ============ Personal Information ============ -->
+            <h3 class="form-section-title">Personal Information</h3>
 
-            <div class="field">
-              <label class="label" for="firstName"
-                >First name <span class="req">*</span></label
-              >
-              <input
-                class="input"
-                type="text"
-                id="firstName"
-                name="firstName"
-                autocomplete="given-name"
-              />
-              <div class="field-error">
-                <i class="fa-solid fa-circle-exclamation"></i
-                ><span>Please enter your first name.</span>
+            <div class="grid grid-2" style="gap: 16px">
+              <div class="field">
+                <label class="label" for="firstName"
+                  >First name <span class="req">*</span></label
+                >
+                <input
+                  class="input"
+                  type="text"
+                  id="firstName"
+                  name="firstName"
+                  autocomplete="given-name"
+                  placeholder="e.g. Akinola"
+                />
+                <div class="field-error">
+                  <i class="fa-solid fa-circle-exclamation"></i
+                  ><span>Please enter your first name.</span>
+                </div>
+              </div>
+
+              <div class="field">
+                <label class="label" for="lastName"
+                  >Last name <span class="req">*</span></label
+                >
+                <input
+                  class="input"
+                  type="text"
+                  id="lastName"
+                  name="lastName"
+                  autocomplete="family-name"
+                  placeholder="e.g. Adeyemi"
+                />
+                <div class="field-error">
+                  <i class="fa-solid fa-circle-exclamation"></i
+                  ><span>Please enter your last name.</span>
+                </div>
               </div>
             </div>
 
@@ -130,24 +142,8 @@
                 id="otherName"
                 name="otherName"
                 autocomplete="additional-name"
+                placeholder="e.g. Oluwadara"
               />
-            </div>
-
-            <div class="field">
-              <label class="label" for="lastName"
-                >Last name <span class="req">*</span></label
-              >
-              <input
-                class="input"
-                type="text"
-                id="lastName"
-                name="lastName"
-                autocomplete="family-name"
-              />
-              <div class="field-error">
-                <i class="fa-solid fa-circle-exclamation"></i
-                ><span>Please enter your last name.</span>
-              </div>
             </div>
 
             <div class="field">
@@ -165,11 +161,38 @@
                   autocomplete="username"
                 />
               </div>
+              <div class="field-help">
+                3–20 characters — letters, numbers, and underscores only.
+              </div>
               <div class="field-error">
                 <i class="fa-solid fa-circle-exclamation"></i
                 ><span
                   >3–20 characters — letters, numbers, underscore only.</span
                 >
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="label" for="email"
+                >Email address <span class="req">*</span></label
+              >
+              <div class="input-wrap">
+                <i class="fa-solid fa-envelope input-icon"></i>
+                <input
+                  class="input"
+                  type="email"
+                  id="email"
+                  name="email"
+                  autocomplete="email"
+                  placeholder="e.g. you@example.com"
+                />
+              </div>
+              <div class="field-help">
+                A 4-digit verification code will be sent to this email.
+              </div>
+              <div class="field-error">
+                <i class="fa-solid fa-circle-exclamation"></i
+                ><span>Please enter a valid email address.</span>
               </div>
             </div>
 
@@ -185,6 +208,7 @@
                   id="phone"
                   name="phone"
                   autocomplete="tel"
+                  placeholder="e.g. +234 803 456 7890"
                 />
               </div>
               <div class="field-error">
@@ -193,17 +217,8 @@
               </div>
             </div>
 
-            <h3
-              style="
-                font-size: var(--fs-sm);
-                text-transform: uppercase;
-                letter-spacing: 0.06em;
-                color: var(--text-tertiary);
-                margin: 28px 0 12px;
-              "
-            >
-              Academic Information
-            </h3>
+            <!-- ============ Academic Information ============ -->
+            <h3 class="form-section-title">Academic Information</h3>
 
             <div class="field">
               <label class="label" for="faculty"
@@ -231,52 +246,45 @@
               </div>
             </div>
 
-            <div class="field">
-              <label class="label" for="level"
-                >Level <span class="req">*</span></label
-              >
-              <select class="select" id="level" name="level">
-                <option value="">Select level</option>
-                <option value="100">100</option>
-                <option value="200">200</option>
-                <option value="300">300</option>
-                <option value="400">400</option>
-                <option value="500">500</option>
-              </select>
-              <div class="field-error">
-                <i class="fa-solid fa-circle-exclamation"></i
-                ><span>Please select your level.</span>
+            <div class="grid grid-2" style="gap: 16px">
+              <div class="field">
+                <label class="label" for="level"
+                  >Level <span class="req">*</span></label
+                >
+                <select class="select" id="level" name="level">
+                  <option value="">Select level</option>
+                  <option value="100">100</option>
+                  <option value="200">200</option>
+                  <option value="300">300</option>
+                  <option value="400">400</option>
+                  <option value="500">500</option>
+                </select>
+                <div class="field-error">
+                  <i class="fa-solid fa-circle-exclamation"></i
+                  ><span>Please select your level.</span>
+                </div>
+              </div>
+
+              <div class="field">
+                <label class="label" for="matric"
+                  >Matric number <span class="req">*</span></label
+                >
+                <input
+                  class="input"
+                  type="text"
+                  id="matric"
+                  name="matric"
+                  placeholder="e.g. CSC/23/xxx"
+                />
+                <div class="field-error">
+                  <i class="fa-solid fa-circle-exclamation"></i
+                  ><span>Please enter your matric number.</span>
+                </div>
               </div>
             </div>
 
-            <div class="field">
-              <label class="label" for="matric"
-                >Matric number <span class="req">*</span></label
-              >
-              <input
-                class="input"
-                type="text"
-                id="matric"
-                name="matric"
-                placeholder="e.g. CSC/2021/045"
-              />
-              <div class="field-error">
-                <i class="fa-solid fa-circle-exclamation"></i
-                ><span>Please enter your matric number.</span>
-              </div>
-            </div>
-
-            <h3
-              style="
-                font-size: var(--fs-sm);
-                text-transform: uppercase;
-                letter-spacing: 0.06em;
-                color: var(--text-tertiary);
-                margin: 28px 0 12px;
-              "
-            >
-              Security
-            </h3>
+            <!-- ============ Security ============ -->
+            <h3 class="form-section-title">Security</h3>
 
             <div class="field">
               <label class="label" for="password"
@@ -356,30 +364,42 @@
               </div>
             </div>
 
-            <label class="checkbox" style="margin-bottom: 20px">
-              <input type="checkbox" name="agree" />
-              <span
-                >I agree to the
-                <a
-                  href="../student/terms.html"
-                  style="color: var(--brand-primary); font-weight: 600"
-                  >Terms</a
+            <!-- ============ Consent ============ -->
+            <div class="field" style="margin: 20px 0 24px">
+              <label class="checkbox" style="align-items: flex-start">
+                <input type="checkbox" name="agree" required />
+                <span>
+                  I agree to the
+                  <a
+                    href="../student/terms.html"
+                    target="_blank"
+                    style="color: var(--brand-primary); font-weight: 600"
+                    >Terms &amp; Conditions</a
+                  >
+                  and
+                  <a
+                    href="../student/privacy.html"
+                    target="_blank"
+                    style="color: var(--brand-primary); font-weight: 600"
+                    >Privacy Policy</a
+                  >.
+                </span>
+              </label>
+              <div class="field-error">
+                <i class="fa-solid fa-circle-exclamation"></i
+                ><span
+                  >You must agree to the Terms and Privacy Policy to
+                  continue.</span
                 >
-                and
-                <a
-                  href="../student/privacy.html"
-                  style="color: var(--brand-primary); font-weight: 600"
-                  >Privacy Policy</a
-                >.</span
-              >
-            </label>
+              </div>
+            </div>
 
             <button
               type="submit"
               class="btn btn-primary btn-block btn-lg"
               id="register-submit"
             >
-              Create account
+              <i class="fa-solid fa-user-plus"></i> Create account
             </button>
           </form>
 

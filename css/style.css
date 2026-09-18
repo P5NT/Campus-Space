@@ -6483,6 +6483,30 @@ p {
   white-space: nowrap;
 }
 
+/* Force the trigger text to ellipsize rather than expand */
+.cselect-trigger {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  overflow: hidden !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.cselect-text {
+  display: block !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.cselect-icon {
+  flex: 0 0 12px !important;
+}
+
 .cselect-icon {
   font-size: 11px;
   color: var(--text-tertiary);
@@ -7848,4 +7872,154 @@ p {
 }
 #cp-forgot-password i {
   margin-right: 6px;
+}
+
+/* ==========================================================================
+   AUTH — Form section titles
+   ========================================================================== */
+
+.form-section-title {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.form-section-title:not(:first-of-type) {
+  margin-top: 28px;
+}
+
+/* ==========================================================================
+   AUTH — custom select sizing
+   ========================================================================== */
+
+.auth-form-wrap .cselect {
+  width: 100%;
+}
+
+.auth-form-wrap .cselect-trigger {
+  width: 100%;
+  padding: 11px 38px 11px 14px;
+  font-size: var(--fs-base);
+}
+
+.auth-form-wrap .cselect-list {
+  left: 0;
+  right: 0;
+  max-height: 240px;
+}
+
+/* ==========================================================================
+   PREVENT AUTO-ZOOM ON MOBILE
+   iOS/mobile Chrome zooms the page when an input with font-size < 16px
+   receives focus. Setting 16px on the mobile breakpoint prevents this.
+   ========================================================================== */
+
+@media (max-width: 860px) {
+  input.input,
+  select.select,
+  textarea.textarea,
+  .cselect-trigger,
+  .cselect-option {
+    font-size: 16px;
+  }
+}
+
+/* ==========================================================================
+   CUSTOM SELECT — full-width constraint
+   The .cselect wrapper and its children must never exceed their parent.
+   ========================================================================== */
+
+.cselect {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.cselect-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.cselect-text {
+  flex: 1 1 0%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+
+.cselect-icon {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+/* Ensure the parent field also constrains its child */
+.field {
+  min-width: 0;
+}
+
+.field .cselect {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Grid items that contain selects must not overflow */
+.grid > .field,
+.grid > * {
+  min-width: 0;
+}
+
+/* ==========================================================================
+   AUTH LAYOUT — contain width on mobile
+   Prevents .auth-main from exceeding the viewport.
+   ========================================================================== */
+
+.auth-layout {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+.auth-main {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.auth-form-wrap {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.auth-form-wrap * {
+  box-sizing: border-box;
+}
+
+/* On narrow viewports, tighten the form padding */
+@media (max-width: 480px) {
+  .auth-main {
+    padding: var(--sp-5) var(--sp-4);
+  }
+  .auth-form-wrap {
+    padding: 0;
+  }
 }

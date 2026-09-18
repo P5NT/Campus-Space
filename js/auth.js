@@ -169,16 +169,13 @@ function initRegisterPage() {
   if (!form) return;
 
   if (typeof DEMO_FACULTIES === "undefined") {
-    console.warn(
-      "[auth.js] DEMO_FACULTIES is not loaded — the faculty dropdown will be empty.",
-    );
+    console.warn("[auth.js] DEMO_FACULTIES is not loaded.");
     return;
   }
 
   const facultySelect = form.querySelector('[name="faculty"]');
   const deptSelect = form.querySelector('[name="department"]');
 
-  /* Populate faculty dropdown */
   DEMO_FACULTIES.forEach((f) => {
     const opt = document.createElement("option");
     opt.value = f.name;
@@ -186,7 +183,18 @@ function initRegisterPage() {
     facultySelect.appendChild(opt);
   });
 
-  /* Department depends on faculty */
+  /* The custom-select dropdown was built by main.js before we populated
+     the native <select>. Rebuild it now so the 7 faculties show up. */
+  if (typeof initCustomSelects === "function") {
+    var stale = facultySelect.nextElementSibling;
+    if (stale && stale.classList.contains("cselect")) {
+      stale.remove();
+    }
+    facultySelect.classList.remove("cselect-native");
+    facultySelect.removeAttribute("data-customized");
+    initCustomSelects();
+  }
+
   facultySelect.addEventListener("change", () => {
     deptSelect.innerHTML = '<option value="">Select department</option>';
     const fac = DEMO_FACULTIES.find((f) => f.name === facultySelect.value);
@@ -198,9 +206,19 @@ function initRegisterPage() {
         deptSelect.appendChild(opt);
       });
     }
+
+    /* Rebuild the department custom dropdown with the new options */
+    if (typeof initCustomSelects === "function") {
+      var staleDept = deptSelect.nextElementSibling;
+      if (staleDept && staleDept.classList.contains("cselect")) {
+        staleDept.remove();
+      }
+      deptSelect.classList.remove("cselect-native");
+      deptSelect.removeAttribute("data-customized");
+      initCustomSelects();
+    }
   });
 
-  /* Live password feedback */
   const pw = form.querySelector('[name="password"]');
   const reqsEl = form.querySelector(".pw-reqs");
   const strengthEl = form.querySelector(".pw-strength");
@@ -212,6 +230,7 @@ function initRegisterPage() {
       firstName: [Rules.required, Rules.name],
       lastName: [Rules.required, Rules.name],
       username: [Rules.required, Rules.username],
+      email: [Rules.required, Rules.email],
       phone: [Rules.required, Rules.phone],
       faculty: [Rules.required],
       department: [Rules.required],
@@ -226,6 +245,7 @@ function initRegisterPage() {
         otherName: data.get("otherName") || "",
         lastName: data.get("lastName"),
         username: data.get("username"),
+        email: data.get("email"),
         phone: data.get("phone"),
         faculty: data.get("faculty"),
         department: data.get("department"),
@@ -233,11 +253,19 @@ function initRegisterPage() {
         matric: data.get("matric"),
         password: data.get("password"),
         code: String(Math.floor(1000 + Math.random() * 9000)),
+        agree: [
+          (v) => {
+            const checkbox = form.querySelector('[name="agree"]');
+            return checkbox && checkbox.checked;
+          },
+        ],
       };
 
       Store.set("pending_registration", pending);
       Toast.info(
-        "A 4-digit verification code has been sent to your email (simulated).",
+        "A 4-digit verification code has been sent to " +
+          pending.email +
+          " (simulated).",
         "Check your email",
       );
 
