@@ -45,8 +45,13 @@
   </head>
   <body class="has-session admin-body">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
-      <aside class="sidebar admin-sidebar" id="app-sidebar"></aside>
+      <aside
+        class="sidebar admin-sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
       <div class="app-main">
         <header class="app-header" id="app-header"></header>
         <main class="app-content" id="main">
@@ -54,53 +59,198 @@
             <div class="page-head-text">
               <h1 class="page-title">Registered Students</h1>
               <p class="page-subtitle">
-                All students with accounts on Campus Space.
+                Every student with an account on Campus Space.
               </p>
             </div>
           </div>
 
-          <div class="toolbar">
-            <div class="input-wrap">
-              <i class="fa-solid fa-magnifying-glass input-icon"></i>
-              <input
-                class="input"
-                type="search"
-                id="student-search"
-                placeholder="Search by name, username, matric, faculty, department…"
-              />
-            </div>
-            <select
-              class="select"
-              id="student-status"
-              aria-label="Filter by status"
-            >
-              <option value="">All statuses</option>
-              <option value="active">Active</option>
-              <option value="deactivated">Deactivated</option>
-              <option value="suspended">Suspended</option>
-            </select>
-          </div>
+          <div class="rs-page">
+            <!-- ==================== Left sidebar: filters ==================== -->
+            <aside class="rs-sidebar">
+              <nav class="rs-sidebar-group" aria-label="Filter by status">
+                <div class="rs-sidebar-label">Status</div>
+                <button
+                  class="rs-sidebar-item is-active"
+                  data-stat="all"
+                  type="button"
+                >
+                  <i class="fa-solid fa-layer-group"></i>
+                  <span>All students</span>
+                  <span class="rs-sidebar-count" id="count-all">—</span>
+                </button>
+                <button
+                  class="rs-sidebar-item"
+                  data-stat="active"
+                  type="button"
+                >
+                  <i
+                    class="fa-solid fa-circle-check"
+                    style="color: var(--success)"
+                  ></i>
+                  <span>Active</span>
+                  <span class="rs-sidebar-count" id="count-active">—</span>
+                </button>
+                <button
+                  class="rs-sidebar-item"
+                  data-stat="deactivated"
+                  type="button"
+                >
+                  <i
+                    class="fa-solid fa-user-slash"
+                    style="color: var(--warning)"
+                  ></i>
+                  <span>Deactivated</span>
+                  <span class="rs-sidebar-count" id="count-deactivated">—</span>
+                </button>
+                <button
+                  class="rs-sidebar-item"
+                  data-stat="suspended"
+                  type="button"
+                >
+                  <i class="fa-solid fa-ban" style="color: var(--danger)"></i>
+                  <span>Suspended</span>
+                  <span class="rs-sidebar-count" id="count-suspended">—</span>
+                </button>
+              </nav>
 
-          <div class="table-wrap">
-            <div class="table-scroll">
-              <table class="table table-card-mode">
-                <thead>
-                  <tr>
-                    <th>Student</th>
-                    <th>Matric</th>
-                    <th>Faculty</th>
-                    <th>Level</th>
-                    <th>Status</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody id="students-tbody"></tbody>
-              </table>
-            </div>
+              <div class="rs-sidebar-group">
+                <div class="rs-sidebar-label">Faculty</div>
+                <select
+                  class="select"
+                  id="filter-faculty"
+                  aria-label="Filter by faculty"
+                >
+                  <option value="">All faculties</option>
+                </select>
+              </div>
+
+              <div class="rs-sidebar-group">
+                <div class="rs-sidebar-label">Level</div>
+                <select
+                  class="select"
+                  id="filter-level"
+                  aria-label="Filter by level"
+                >
+                  <option value="">All levels</option>
+                  <option value="100">100 Level</option>
+                  <option value="200">200 Level</option>
+                  <option value="300">300 Level</option>
+                  <option value="400">400 Level</option>
+                  <option value="500">500 Level</option>
+                </select>
+              </div>
+            </aside>
+
+            <!-- ==================== Main: search + list ==================== -->
+            <section class="rs-main">
+              <div class="rs-search-wrap">
+                <div class="rs-search">
+                  <i
+                    class="fa-solid fa-magnifying-glass"
+                    aria-hidden="true"
+                  ></i>
+                  <input
+                    type="search"
+                    id="student-search"
+                    placeholder="Search by name, username, matric…"
+                    aria-label="Search students"
+                  />
+                  <button
+                    type="button"
+                    class="rs-search-clear"
+                    id="search-clear"
+                    aria-label="Clear search"
+                    hidden
+                  >
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+                <button
+                  class="rs-mobile-filters"
+                  id="rs-mobile-filters"
+                  type="button"
+                  aria-label="Open filters"
+                >
+                  <i class="fa-solid fa-sliders"></i>
+                  <span
+                    class="rs-mobile-filters-count"
+                    id="mobile-filter-count"
+                    hidden
+                    >0</span
+                  >
+                </button>
+              </div>
+
+              <div class="rs-chips" id="rs-chips" hidden></div>
+
+              <div class="rs-result-count" id="student-count">Loading…</div>
+
+              <div class="rs-list" id="students-list"></div>
+            </section>
           </div>
         </main>
       </div>
     </div>
+
+    <!-- ==================== Mobile filter drawer ==================== -->
+    <div class="rs-drawer-backdrop" id="rs-drawer-backdrop"></div>
+    <aside class="rs-drawer" id="rs-drawer" aria-label="Filters">
+      <div class="rs-drawer-head">
+        <h3>Filters</h3>
+        <button class="btn-icon" id="drawer-close" aria-label="Close filters">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="rs-drawer-body">
+        <div class="rs-drawer-section">
+          <div class="rs-drawer-label">Status</div>
+          <button
+            class="rs-drawer-radio is-active"
+            data-stat="all"
+            type="button"
+          >
+            <span class="rs-radio"></span>
+            <span>All students</span>
+          </button>
+          <button class="rs-drawer-radio" data-stat="active" type="button">
+            <span class="rs-radio"></span>
+            <span>Active</span>
+          </button>
+          <button class="rs-drawer-radio" data-stat="deactivated" type="button">
+            <span class="rs-radio"></span>
+            <span>Deactivated</span>
+          </button>
+          <button class="rs-drawer-radio" data-stat="suspended" type="button">
+            <span class="rs-radio"></span>
+            <span>Suspended</span>
+          </button>
+        </div>
+
+        <div class="rs-drawer-section">
+          <div class="rs-drawer-label">Faculty</div>
+          <select class="select" id="filter-faculty-m">
+            <option value="">All faculties</option>
+          </select>
+        </div>
+
+        <div class="rs-drawer-section">
+          <div class="rs-drawer-label">Level</div>
+          <select class="select" id="filter-level-m">
+            <option value="">All levels</option>
+            <option value="100">100 Level</option>
+            <option value="200">200 Level</option>
+            <option value="300">300 Level</option>
+            <option value="400">400 Level</option>
+            <option value="500">500 Level</option>
+          </select>
+        </div>
+      </div>
+      <div class="rs-drawer-foot">
+        <button class="btn btn-secondary" id="drawer-reset">Reset all</button>
+        <button class="btn btn-primary" id="drawer-apply">Show results</button>
+      </div>
+    </aside>
+
     <div class="mobile-menu-backdrop"></div>
     <aside
       class="mobile-menu"
@@ -109,67 +259,490 @@
     ></aside>
 
     <script src="../../data/students.js"></script>
+    <script src="../../data/faculties.js"></script>
     <script src="../../data/associations.js"></script>
     <script src="../../js/main.js"></script>
     <script src="../../js/validation.js"></script>
     <script src="../../js/auth.js"></script>
+    <script src="../../js/permissions.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
     <script src="../../js/leaders.js"></script>
     <script src="../../js/admin.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
-        if (
-          !session ||
-          (session.role !== "admin" && session.role !== "super_admin")
-        ) {
+      /* ==========================================================================
+   Registered Students — directory-style layout.
+   Desktop: filter sidebar + scrollable list.
+   Mobile:  full-width list + filter drawer.
+   ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
+        if (!session || !Permissions.isAdminRole(session)) {
           window.location.href = "../auth/login.html";
           return;
         }
+        if (!Permissions.can(session, "students.view")) {
+          window.location.href = "dashboard.html";
+          return;
+        }
+
         initAppShell("admin");
 
-        const tbody = document.getElementById("students-tbody");
-        const search = document.getElementById("student-search");
-        const status = document.getElementById("student-status");
+        /* ------------------------------------------------------------------
+     STATE — canonical "no status filter" value is "all"
+     ------------------------------------------------------------------ */
+        var state = { query: "", status: "all", faculty: "", level: "" };
 
-        function apply() {
-          let list = Admin.searchStudents(search.value.trim());
-          if (status.value)
-            list = list.filter((s) => s.status === status.value);
-          tbody.innerHTML = "";
+        /* ------------------------------------------------------------------
+     ELEMENTS
+     ------------------------------------------------------------------ */
+        var listEl = document.getElementById("students-list");
+        var countEl = document.getElementById("student-count");
+        var searchEl = document.getElementById("student-search");
+        var searchClear = document.getElementById("search-clear");
+        var facultySel = document.getElementById("filter-faculty");
+        var levelSel = document.getElementById("filter-level");
+        var facultySelM = document.getElementById("filter-faculty-m");
+        var levelSelM = document.getElementById("filter-level-m");
+        var chipsEl = document.getElementById("rs-chips");
+        var drawer = document.getElementById("rs-drawer");
+        var drawerBackdrop = document.getElementById("rs-drawer-backdrop");
+        var mobileFilterBtn = document.getElementById("rs-mobile-filters");
+        var mobileFilterCount = document.getElementById("mobile-filter-count");
+
+        /* ------------------------------------------------------------------
+     FACULTY POPULATION
+     ------------------------------------------------------------------ */
+        var faculties = (
+          typeof DEMO_FACULTIES !== "undefined" ? DEMO_FACULTIES : []
+        ).filter(function (f) {
+          return f.active !== false;
+        });
+
+        faculties.forEach(function (f) {
+          [facultySel, facultySelM].forEach(function (sel) {
+            var opt = document.createElement("option");
+            opt.value = f.name;
+            opt.textContent = f.name;
+            sel.appendChild(opt);
+          });
+        });
+
+        /* ------------------------------------------------------------------
+     COUNTS
+     ------------------------------------------------------------------ */
+        var allStudents = Admin.students();
+        document.getElementById("count-all").textContent = allStudents.length;
+        document.getElementById("count-active").textContent =
+          allStudents.filter(function (s) {
+            return s.status === "active";
+          }).length;
+        document.getElementById("count-deactivated").textContent =
+          allStudents.filter(function (s) {
+            return s.status === "deactivated";
+          }).length;
+        document.getElementById("count-suspended").textContent =
+          allStudents.filter(function (s) {
+            return s.status === "suspended";
+          }).length;
+
+        /* ------------------------------------------------------------------
+     FILTERING
+     ------------------------------------------------------------------ */
+        function applyFilters() {
+          var list = allStudents.slice();
+
+          if (state.query) {
+            var q = state.query.toLowerCase();
+            list = list.filter(function (s) {
+              return (
+                s.firstName.toLowerCase().indexOf(q) !== -1 ||
+                (s.otherName || "").toLowerCase().indexOf(q) !== -1 ||
+                s.lastName.toLowerCase().indexOf(q) !== -1 ||
+                s.username.toLowerCase().indexOf(q) !== -1 ||
+                (s.matric || "").toLowerCase().indexOf(q) !== -1
+              );
+            });
+          }
+          if (state.status && state.status !== "all") {
+            list = list.filter(function (s) {
+              return s.status === state.status;
+            });
+          }
+          if (state.faculty) {
+            list = list.filter(function (s) {
+              return s.faculty === state.faculty;
+            });
+          }
+          if (state.level) {
+            list = list.filter(function (s) {
+              return s.level === state.level;
+            });
+          }
+          return list;
+        }
+
+        /* ------------------------------------------------------------------
+     RENDER
+     ------------------------------------------------------------------ */
+        function render() {
+          var list = applyFilters();
+
+          countEl.textContent =
+            list.length + " student" + (list.length === 1 ? "" : "s");
+          renderChips();
+          updateMobileFilterCount();
+
           if (!list.length) {
-            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:40px; color:var(--text-tertiary);">No students match your filters.</td></tr>`;
+            listEl.innerHTML = renderEmpty();
+            var resetBtn = document.getElementById("rs-empty-reset");
+            if (resetBtn) resetBtn.addEventListener("click", clearAll);
             return;
           }
-          list.forEach((s) => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-        <td data-label="Student">
-          <div class="table-user">
-            <span class="avatar avatar-32 avatar-fallback">${Util.initials(s.firstName + " " + s.lastName)}</span>
-            <div class="table-user-info">
-              <div class="name">${Util.escape(s.firstName + " " + s.lastName)}</div>
-              <div class="meta">@${Util.escape(s.username)}</div>
-            </div>
-          </div>
-        </td>
-        <td data-label="Matric">${Util.escape(s.matric)}</td>
-        <td data-label="Faculty">${Util.escape(s.faculty)}</td>
-        <td data-label="Level">${Util.escape(s.level)}</td>
-        <td data-label="Status"><span class="badge ${s.status === "active" ? "badge-success" : s.status === "suspended" ? "badge-danger" : "badge-warning"}">${s.status}</span></td>
-        <td class="table-actions">
-          <a href="student-details.html?id=${s.id}" class="btn btn-secondary btn-sm">
-            <i class="fa-solid fa-eye"></i> Open
-          </a>
-        </td>`;
-            tbody.appendChild(tr);
+
+          listEl.innerHTML = list.map(renderRow).join("");
+
+          listEl
+            .querySelectorAll("[data-open-student]")
+            .forEach(function (row) {
+              row.addEventListener("click", function (e) {
+                if (e.target.closest(".rs-row-action")) return;
+                window.location.href =
+                  "student-details.html?id=" +
+                  encodeURIComponent(row.getAttribute("data-open-student"));
+              });
+              row.addEventListener("keydown", function (e) {
+                if (e.key === "Enter") {
+                  window.location.href =
+                    "student-details.html?id=" +
+                    encodeURIComponent(row.getAttribute("data-open-student"));
+                }
+              });
+            });
+        }
+
+        function statusClass(s) {
+          return s === "active"
+            ? "badge-success"
+            : s === "suspended"
+              ? "badge-danger"
+              : "badge-warning";
+        }
+
+        function renderRow(s) {
+          var verified = s.verified !== false;
+          var fullName = s.firstName + " " + s.lastName;
+
+          return (
+            '<div class="rs-row" data-open-student="' +
+            s.id +
+            '" role="button" tabindex="0" aria-label="Open ' +
+            Util.escape(fullName) +
+            "'s details\">" +
+            '<div class="rs-row-avatar">' +
+            '<span class="avatar avatar-44 avatar-fallback">' +
+            Util.initials(fullName) +
+            "</span>" +
+            "</div>" +
+            '<div class="rs-row-identity">' +
+            '<div class="rs-row-name">' +
+            Util.escape(fullName) +
+            (verified
+              ? '<i class="fa-solid fa-circle-check rs-row-verified" title="Verified"></i>'
+              : '<i class="fa-regular fa-clock rs-row-pending" title="Pending verification"></i>') +
+            "</div>" +
+            '<div class="rs-row-handle">@' +
+            Util.escape(s.username) +
+            "</div>" +
+            "</div>" +
+            '<div class="rs-row-academic">' +
+            '<div class="rs-row-dept">' +
+            Util.escape(s.department) +
+            "</div>" +
+            '<div class="rs-row-fac">' +
+            Util.escape(s.faculty) +
+            "</div>" +
+            "</div>" +
+            '<div class="rs-row-meta">' +
+            '<div class="rs-row-matric">' +
+            Util.escape(s.matric) +
+            "</div>" +
+            '<div class="rs-row-level">' +
+            Util.escape(s.level) +
+            " Level</div>" +
+            "</div>" +
+            '<div class="rs-row-status">' +
+            '<span class="badge ' +
+            statusClass(s.status) +
+            '">' +
+            s.status +
+            "</span>" +
+            "</div>" +
+            '<div class="rs-row-actions">' +
+            '<a href="student-details.html?id=' +
+            s.id +
+            '" class="rs-row-action" aria-label="Open details">' +
+            '<i class="fa-solid fa-chevron-right"></i>' +
+            "</a>" +
+            "</div>" +
+            "</div>"
+          );
+        }
+
+        function renderEmpty() {
+          var msg = state.query
+            ? 'No students match "' + Util.escape(state.query) + '"'
+            : "No students match your filters";
+
+          return (
+            '<div class="rs-empty">' +
+            '<div class="rs-empty-icon"><i class="fa-solid fa-users-slash"></i></div>' +
+            "<h3>" +
+            msg +
+            "</h3>" +
+            "<p>Try adjusting your search or clearing the filters.</p>" +
+            '<button class="btn btn-secondary" id="rs-empty-reset" type="button">' +
+            '<i class="fa-solid fa-rotate-left"></i> Clear all filters' +
+            "</button>" +
+            "</div>"
+          );
+        }
+
+        /* ------------------------------------------------------------------
+     CHIPS
+     ------------------------------------------------------------------ */
+        function renderChips() {
+          var chips = [];
+
+          if (state.query) {
+            chips.push({
+              key: "query",
+              label: 'Search: "' + state.query + '"',
+            });
+          }
+          if (state.status && state.status !== "all") {
+            chips.push({ key: "status", label: state.status });
+          }
+          if (state.faculty)
+            chips.push({ key: "faculty", label: state.faculty });
+          if (state.level)
+            chips.push({ key: "level", label: state.level + " Level" });
+
+          if (!chips.length) {
+            chipsEl.hidden = true;
+            chipsEl.innerHTML = "";
+            return;
+          }
+
+          chipsEl.hidden = false;
+          chipsEl.innerHTML =
+            chips
+              .map(function (c) {
+                return (
+                  '<button class="rs-chip" data-remove="' +
+                  c.key +
+                  '" type="button">' +
+                  "<span>" +
+                  Util.escape(c.label) +
+                  "</span>" +
+                  '<i class="fa-solid fa-xmark"></i>' +
+                  "</button>"
+                );
+              })
+              .join("") +
+            '<button class="rs-chip rs-chip-clear" id="rs-chips-clear" type="button">Clear all</button>';
+        }
+
+        /* Delegated click — one listener for all current + future chips */
+        chipsEl.addEventListener("click", function (e) {
+          var chip = e.target.closest(".rs-chip");
+          if (!chip) return;
+
+          if (chip.classList.contains("rs-chip-clear")) {
+            clearAll();
+            return;
+          }
+
+          var key = chip.getAttribute("data-remove");
+          if (!key) return;
+
+          /* Status uses "all" as the cleared value; others use "" */
+          state[key] = key === "status" ? "all" : "";
+
+          if (key === "query") {
+            searchEl.value = "";
+            searchClear.hidden = true;
+          }
+          if (key === "faculty") {
+            facultySel.value = "";
+            facultySelM.value = "";
+          }
+          if (key === "level") {
+            levelSel.value = "";
+            levelSelM.value = "";
+          }
+          if (key === "status") {
+            syncStatusButtons();
+          }
+
+          render();
+        });
+
+        /* ------------------------------------------------------------------
+     MOBILE FILTER COUNT
+     ------------------------------------------------------------------ */
+        function updateMobileFilterCount() {
+          var count = 0;
+          if (state.status && state.status !== "all") count++;
+          if (state.faculty) count++;
+          if (state.level) count++;
+
+          if (count) {
+            mobileFilterCount.hidden = false;
+            mobileFilterCount.textContent = count;
+          } else {
+            mobileFilterCount.hidden = true;
+          }
+        }
+
+        /* ------------------------------------------------------------------
+     SYNC STATUS BUTTONS
+     ------------------------------------------------------------------ */
+        function syncStatusButtons() {
+          document.querySelectorAll(".rs-sidebar-item").forEach(function (b) {
+            b.classList.toggle(
+              "is-active",
+              b.getAttribute("data-stat") === state.status,
+            );
+          });
+          document.querySelectorAll(".rs-drawer-radio").forEach(function (b) {
+            b.classList.toggle(
+              "is-active",
+              b.getAttribute("data-stat") === state.status,
+            );
           });
         }
 
-        search.addEventListener("input", apply);
-        status.addEventListener("change", apply);
-        apply();
+        /* ------------------------------------------------------------------
+     EVENTS
+     ------------------------------------------------------------------ */
+        /* Sidebar status nav */
+        document.querySelectorAll(".rs-sidebar-item").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            state.status = btn.getAttribute("data-stat") || "all";
+            syncStatusButtons();
+            render();
+          });
+        });
+
+        /* Mobile drawer status radios */
+        document.querySelectorAll(".rs-drawer-radio").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            state.status = btn.getAttribute("data-stat") || "all";
+            syncStatusButtons();
+          });
+        });
+
+        /* Search */
+        var debounce;
+        searchEl.addEventListener("input", function () {
+          clearTimeout(debounce);
+          state.query = searchEl.value.trim();
+          searchClear.hidden = !state.query;
+          debounce = setTimeout(render, 120);
+        });
+        searchClear.addEventListener("click", function () {
+          searchEl.value = "";
+          state.query = "";
+          searchClear.hidden = true;
+          render();
+        });
+
+        /* Desktop filter selects */
+        facultySel.addEventListener("change", function () {
+          state.faculty = facultySel.value;
+          facultySelM.value = facultySel.value;
+          render();
+        });
+        levelSel.addEventListener("change", function () {
+          state.level = levelSel.value;
+          levelSelM.value = levelSel.value;
+          render();
+        });
+
+        /* Mobile filter drawer */
+        function openDrawer() {
+          drawer.classList.add("is-open");
+          drawerBackdrop.classList.add("is-open");
+          document.body.style.overflow = "hidden";
+          /* Sync current state into the drawer inputs */
+          facultySelM.value = state.faculty;
+          levelSelM.value = state.level;
+          syncStatusButtons();
+        }
+        function closeDrawer() {
+          drawer.classList.remove("is-open");
+          drawerBackdrop.classList.remove("is-open");
+          document.body.style.overflow = "";
+        }
+        mobileFilterBtn.addEventListener("click", openDrawer);
+        document
+          .getElementById("drawer-close")
+          .addEventListener("click", closeDrawer);
+        drawerBackdrop.addEventListener("click", closeDrawer);
+
+        document
+          .getElementById("drawer-reset")
+          .addEventListener("click", function () {
+            state.status = "all";
+            state.faculty = "";
+            state.level = "";
+            facultySelM.value = "";
+            levelSelM.value = "";
+            facultySel.value = "";
+            levelSel.value = "";
+            syncStatusButtons();
+          });
+
+        document
+          .getElementById("drawer-apply")
+          .addEventListener("click", function () {
+            state.faculty = facultySelM.value;
+            state.level = levelSelM.value;
+            facultySel.value = state.faculty;
+            levelSel.value = state.level;
+            render();
+            closeDrawer();
+          });
+
+        /* ------------------------------------------------------------------
+     CLEAR ALL
+     ------------------------------------------------------------------ */
+        function clearAll() {
+          /* Mutate the existing object so all closures keep the same reference */
+          state.query = "";
+          state.status = "all"; /* ← canonical "no filter" value */
+          state.faculty = "";
+          state.level = "";
+
+          searchEl.value = "";
+          facultySel.value = "";
+          levelSel.value = "";
+          facultySelM.value = "";
+          levelSelM.value = "";
+          searchClear.hidden = true;
+
+          syncStatusButtons();
+          render();
+
+          /* Rebuild custom dropdowns so their trigger text reflects the cleared state */
+          if (typeof initCustomSelects === "function") initCustomSelects();
+        }
+
+        /* ------------------------------------------------------------------
+     INITIAL RENDER
+     ------------------------------------------------------------------ */
+        render();
       });
     </script>
   </body>

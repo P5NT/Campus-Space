@@ -45,6 +45,7 @@
   </head>
   <body class="has-session admin-body">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
       <aside
         class="sidebar admin-sidebar"
@@ -57,117 +58,91 @@
           <div class="page-head">
             <div class="page-head-text">
               <h1 class="page-title">Admin Dashboard</h1>
-              <p class="page-subtitle">
-                Overview of student activity, complaints and content on Campus
-                Space.
-              </p>
+              <p class="page-subtitle" id="dashboard-subtitle">Loading…</p>
             </div>
-            <span class="admin-badge"
-              ><i class="fa-solid fa-shield-halved"></i> Admin</span
-            >
+            <span class="admin-badge" id="role-badge">
+              <i class="fa-solid fa-shield-halved"></i>
+              <span id="role-badge-label">Admin</span>
+            </span>
           </div>
 
-          <div class="grid grid-4" style="margin-bottom: 32px">
-            <div class="stat">
-              <div class="stat-label">Registered Students</div>
-              <div class="stat-value" id="stat-total">—</div>
-              <div class="stat-meta" id="stat-total-sub">Loading…</div>
-            </div>
-            <div class="stat">
-              <div class="stat-label">Active Accounts</div>
-              <div
-                class="stat-value"
-                id="stat-active"
-                style="color: var(--success)"
-              >
-                —
-              </div>
-              <div class="stat-meta">Currently able to use Campus Space</div>
-            </div>
-            <div class="stat">
-              <div class="stat-label">Pending Complaints</div>
-              <div
-                class="stat-value"
-                id="stat-complaints"
-                style="color: var(--brand-primary)"
-              >
-                —
-              </div>
-              <div class="stat-meta">Awaiting review or resolution</div>
-            </div>
-            <div class="stat">
-              <div class="stat-label">Reports</div>
-              <div
-                class="stat-value"
-                id="stat-reports"
-                style="color: var(--warning)"
-              >
-                0
-              </div>
-              <div class="stat-meta">Community reports to review</div>
-            </div>
-          </div>
+          <!-- Stats (populated per role) -->
+          <div
+            class="grid grid-4"
+            style="margin-bottom: 32px"
+            id="stats-grid"
+          ></div>
 
           <div class="dash-grid">
             <div class="dash-col-main stack-lg">
-              <section>
+              <!-- Recent students (only for roles that can manage students) -->
+              <section id="recent-students-section" style="display: none">
                 <div class="cluster-between" style="margin-bottom: 16px">
                   <h2 class="section-title" style="margin: 0">
-                    Recent activity
+                    Recent students
                   </h2>
                   <a
                     href="registered-students.html"
                     class="btn btn-ghost btn-sm"
-                    >All students <i class="fa-solid fa-arrow-right"></i
-                  ></a>
+                  >
+                    All students <i class="fa-solid fa-arrow-right"></i>
+                  </a>
                 </div>
                 <div class="card">
                   <div id="admin-recent-students"></div>
                 </div>
               </section>
 
-              <section>
+              <!-- Recent complaints (for roles that handle complaints) -->
+              <section id="recent-complaints-section" style="display: none">
                 <div class="cluster-between" style="margin-bottom: 16px">
                   <h2 class="section-title" style="margin: 0">
                     Recent complaints
                   </h2>
-                  <a href="complaints.html" class="btn btn-ghost btn-sm"
-                    >All complaints <i class="fa-solid fa-arrow-right"></i
-                  ></a>
+                  <a href="complaints.html" class="btn btn-ghost btn-sm">
+                    All complaints <i class="fa-solid fa-arrow-right"></i>
+                  </a>
                 </div>
                 <div class="card">
                   <div id="admin-recent-complaints"></div>
                 </div>
               </section>
+
+              <!-- Recent academic uploads (for roles that manage academics) -->
+              <section id="recent-resources-section" style="display: none">
+                <div class="cluster-between" style="margin-bottom: 16px">
+                  <h2 class="section-title" style="margin: 0">
+                    Recent academic uploads
+                  </h2>
+                  <a
+                    href="academic-resources.html"
+                    class="btn btn-ghost btn-sm"
+                  >
+                    Manage <i class="fa-solid fa-arrow-right"></i>
+                  </a>
+                </div>
+                <div class="card">
+                  <div id="admin-recent-resources"></div>
+                </div>
+              </section>
             </div>
 
             <aside class="dash-col-side">
+              <!-- Quick actions (built per role) -->
               <div class="card">
                 <div class="card-head"><h3>Quick actions</h3></div>
-                <div class="card-body" style="padding: 12px 20px">
-                  <a class="dropdown-item" href="academic-resources.html">
-                    <i class="fa-solid fa-upload"></i> Upload resource
-                  </a>
-                  <a class="dropdown-item" href="announcements.html">
-                    <i class="fa-solid fa-bullhorn"></i> Post announcement
-                  </a>
-                  <a class="dropdown-item" href="student-leaders.html">
-                    <i class="fa-solid fa-user-tie"></i> Assign leader
-                  </a>
-                  <a class="dropdown-item" href="moderation.html">
-                    <i class="fa-solid fa-shield-halved"></i> Review reports
-                  </a>
-                  <a class="dropdown-item" href="emergency-contacts.html">
-                    <i class="fa-solid fa-shield-heart"></i> Manage emergency
-                    contacts
-                  </a>
-                </div>
+                <div
+                  class="card-body"
+                  style="padding: 12px 20px"
+                  id="quick-actions"
+                ></div>
               </div>
 
-              <div class="card">
-                <div class="card-head"><h3>Recent resource uploads</h3></div>
+              <!-- Recently registered (only for admin managers) -->
+              <div class="card" id="recent-admins-card" style="display: none">
+                <div class="card-head"><h3>Admin accounts</h3></div>
                 <div class="card-body" style="padding: 12px 20px">
-                  <div id="admin-recent-resources"></div>
+                  <div id="admin-accounts-preview"></div>
                 </div>
               </div>
             </aside>
@@ -175,6 +150,7 @@
         </main>
       </div>
     </div>
+
     <div class="mobile-menu-backdrop"></div>
     <aside
       class="mobile-menu"
@@ -192,92 +168,443 @@
     <script src="../../js/main.js"></script>
     <script src="../../js/validation.js"></script>
     <script src="../../js/auth.js"></script>
+    <script src="../../js/permissions.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
     <script src="../../js/complaints.js"></script>
     <script src="../../js/leaders.js"></script>
     <script src="../../js/admin.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
-        if (
-          !session ||
-          (session.role !== "admin" && session.role !== "super_admin")
-        ) {
+      /* ==========================================================================
+   Admin Dashboard — role-aware layout.
+
+   The page adapts to the current admin's role:
+   - Super Admin  → sees everything
+   - Senior Admin → sees everything except Super-Admin-only cards
+   - Academia     → academic stats + uploads only
+   - SU PRO       → complaints + content actions
+   ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
+        if (!session || !Permissions.isAdminRole(session)) {
           window.location.href = "../auth/login.html";
           return;
         }
+
+        /* ---- Identify the current admin's role and identity ---- */
+        var role =
+          Permissions.getRole(
+            session,
+          ); /* super_admin | senior_admin | academia | su_pro */
+        var roleLabel = Permissions.getRoleLabel(role);
+
+        /* ---- Header: subtitle + role badge ---- */
+        document.getElementById("role-badge-label").textContent = roleLabel;
+
+        var subtitleEl = document.getElementById("dashboard-subtitle");
+        var subtitles = {
+          super_admin:
+            "Full oversight of students, content, and other admins on Campus Space.",
+          senior_admin:
+            "Overview of student activity, complaints, and content on Campus Space.",
+          academia:
+            "Your academic workspace. Upload, edit, and publish materials for students.",
+          su_pro:
+            "Your content workspace. Respond to complaints and publish announcements, news, and opportunities.",
+        };
+        if (subtitleEl)
+          subtitleEl.textContent = subtitles[role] || subtitles.senior_admin;
+
+        /* ---- Build the sidebar (role-filtered) ---- */
         initAppShell("admin");
 
-        const students = Admin.students();
-        const active = students.filter((s) => s.status === "active").length;
-        const complaints = Complaints.all();
-        const pending = complaints.filter(
-          (c) => c.status !== "Resolved",
-        ).length;
+        /* ------------------------------------------------------------------
+     STATS — computed per role
+     ------------------------------------------------------------------ */
+        var statsGrid = document.getElementById("stats-grid");
+        var students = Admin.students();
+        var complaints = Complaints.all();
+        var pendingComplaints = complaints.filter(function (c) {
+          return c.status !== "Resolved";
+        }).length;
+        var activeStudents = students.filter(function (s) {
+          return s.status === "active";
+        }).length;
+        var deactivatedStudents = students.filter(function (s) {
+          return s.status === "deactivated";
+        }).length;
+        var reports = 0; /* community.js doesn't expose a report count yet — leave 0 for now */
 
-        document.getElementById("stat-total").textContent = students.length;
-        document.getElementById("stat-total-sub").textContent =
-          `${students.filter((s) => s.status === "deactivated").length} deactivated`;
-        document.getElementById("stat-active").textContent = active;
-        document.getElementById("stat-complaints").textContent = pending;
+        function statCard(label, value, meta, tone) {
+          var valueStyle = tone ? ' style="color:' + tone + '"' : "";
+          return (
+            '<div class="stat">' +
+            '<div class="stat-label">' +
+            label +
+            "</div>" +
+            '<div class="stat-value"' +
+            valueStyle +
+            ">" +
+            value +
+            "</div>" +
+            '<div class="stat-meta">' +
+            meta +
+            "</div>" +
+            "</div>"
+          );
+        }
 
-        // Recent students
-        const recent = document.getElementById("admin-recent-students");
-        students.slice(0, 5).forEach((s) => {
-          const el = document.createElement("div");
-          el.className = "resource-row";
-          el.style.padding = "14px 20px";
-          el.innerHTML = `
-      <span class="avatar avatar-40 avatar-fallback">${Util.initials(s.firstName + " " + s.lastName)}</span>
-      <div class="resource-info">
-        <div class="resource-name">${Util.escape(s.firstName + " " + s.lastName)}</div>
-        <div class="resource-meta">
-          <span>@${Util.escape(s.username)}</span>
-          <span>${Util.escape(s.department)}</span>
-        </div>
-      </div>
-      <span class="badge ${s.status === "active" ? "badge-success" : "badge-warning"}">${s.status}</span>`;
-          recent.appendChild(el);
-        });
+        var statsHtml = "";
 
-        // Recent complaints
-        const rc = document.getElementById("admin-recent-complaints");
-        complaints.slice(0, 4).forEach((c) => {
-          const el = document.createElement("a");
-          el.href = "complaints.html";
-          el.className = "complaint-row";
-          el.style.textDecoration = "none";
-          el.style.color = "inherit";
-          el.innerHTML = `
-      <span class="complaint-icon"><i class="fa-solid fa-file-shield"></i></span>
-      <div class="complaint-info">
-        <h4>${Util.escape(c.subject)}</h4>
-        <div class="meta">
-          <span>${Util.escape(c.id)}</span>
-          <span>${Util.escape(c.category)}</span>
-          <span>${Util.relativeTime(c.updated)}</span>
-        </div>
-      </div>
-      ${complaintStatusPill(c.status)}`;
-          rc.appendChild(el);
-        });
+        if (role === "super_admin" || role === "senior_admin") {
+          statsHtml += statCard(
+            "Registered Students",
+            students.length,
+            deactivatedStudents + " deactivated",
+          );
+          statsHtml += statCard(
+            "Active Accounts",
+            activeStudents,
+            "Currently able to use Campus Space",
+            "var(--success)",
+          );
+          statsHtml += statCard(
+            "Pending Complaints",
+            pendingComplaints,
+            "Awaiting review or resolution",
+            "var(--brand-primary)",
+          );
+          statsHtml += statCard(
+            "Reports",
+            reports,
+            "Community reports to review",
+            "var(--warning)",
+          );
+        } else if (role === "academia") {
+          statsHtml += statCard(
+            "Academic Resources",
+            DEMO_RESOURCES.length,
+            "Across all categories",
+          );
+          statsHtml += statCard(
+            "Courses",
+            typeof DEMO_COURSES !== "undefined" ? DEMO_COURSES.length : 0,
+            "In the catalog",
+          );
+          statsHtml += statCard(
+            "Faculties",
+            typeof DEMO_FACULTIES !== "undefined" ? DEMO_FACULTIES.length : 0,
+            "Active faculties",
+          );
+          statsHtml += statCard(
+            "Departments",
+            typeof DEMO_FACULTIES !== "undefined"
+              ? DEMO_FACULTIES.reduce(function (n, f) {
+                  return n + f.departments.length;
+                }, 0)
+              : 0,
+            "Across all faculties",
+          );
+        } else if (role === "su_pro") {
+          statsHtml += statCard(
+            "Pending Complaints",
+            pendingComplaints,
+            "Awaiting review or resolution",
+            "var(--brand-primary)",
+          );
+          statsHtml += statCard(
+            "Published Announcements",
+            typeof DEMO_ANNOUNCEMENTS !== "undefined"
+              ? DEMO_ANNOUNCEMENTS.length
+              : 0,
+            "On Campus Space",
+          );
+          statsHtml += statCard(
+            "Published News",
+            typeof DEMO_NEWS !== "undefined" ? DEMO_NEWS.length : 0,
+            "Editorial items",
+          );
+          statsHtml += statCard(
+            "Active Opportunities",
+            typeof DEMO_OPPORTUNITIES !== "undefined"
+              ? DEMO_OPPORTUNITIES.length
+              : 0,
+            "Scholarships, jobs, etc.",
+          );
+        }
 
-        // Recent resources
-        const rr = document.getElementById("admin-recent-resources");
-        DEMO_RESOURCES.slice(0, 3).forEach((r) => {
-          const el = document.createElement("div");
-          el.className = "resource-row";
-          el.style.padding = "12px 0";
-          el.style.borderBottom = "1px solid var(--border-subtle)";
-          el.innerHTML = `
-      <div class="resource-icon ${r.type}"><i class="fa-solid fa-file-pdf"></i></div>
-      <div class="resource-info">
-        <div class="resource-name">${Util.escape(r.name)}</div>
-        <div class="resource-meta"><span>${Util.relativeTime(r.uploaded)}</span></div>
-      </div>`;
-          rr.appendChild(el);
-        });
+        statsGrid.innerHTML = statsHtml;
+
+        /* ------------------------------------------------------------------
+     RECENT SECTIONS — per role
+     ------------------------------------------------------------------ */
+        function showSection(id) {
+          var el = document.getElementById(id);
+          if (el) el.style.display = "";
+        }
+
+        function renderRecentStudents() {
+          showSection("recent-students-section");
+          var wrap = document.getElementById("admin-recent-students");
+          if (!wrap) return;
+          wrap.innerHTML = "";
+          students.slice(0, 5).forEach(function (s) {
+            var el = document.createElement("div");
+            el.className = "resource-row";
+            el.style.padding = "14px 20px";
+            el.innerHTML =
+              '<span class="avatar avatar-40 avatar-fallback">' +
+              Util.initials(s.firstName + " " + s.lastName) +
+              "</span>" +
+              '<div class="resource-info">' +
+              '<div class="resource-name">' +
+              Util.escape(s.firstName + " " + s.lastName) +
+              "</div>" +
+              '<div class="resource-meta">' +
+              "<span>@" +
+              Util.escape(s.username) +
+              "</span>" +
+              "<span>" +
+              Util.escape(s.department) +
+              "</span>" +
+              "</div>" +
+              "</div>" +
+              '<span class="badge ' +
+              (s.status === "active" ? "badge-success" : "badge-warning") +
+              '">' +
+              s.status +
+              "</span>";
+            wrap.appendChild(el);
+          });
+        }
+
+        function renderRecentComplaints() {
+          showSection("recent-complaints-section");
+          var wrap = document.getElementById("admin-recent-complaints");
+          if (!wrap) return;
+          wrap.innerHTML = "";
+          if (!complaints.length) {
+            wrap.innerHTML =
+              '<div class="empty-state" style="padding:40px 20px;">' +
+              '<div class="empty-icon"><i class="fa-solid fa-file-shield"></i></div>' +
+              "<h3>No complaints yet</h3>" +
+              "<p>Complaints submitted by students will appear here.</p>" +
+              "</div>";
+            return;
+          }
+          complaints.slice(0, 4).forEach(function (c) {
+            var el = document.createElement("a");
+            el.href = "complaints.html";
+            el.className = "complaint-row";
+            el.style.textDecoration = "none";
+            el.style.color = "inherit";
+            el.innerHTML =
+              '<span class="complaint-icon"><i class="fa-solid fa-file-shield"></i></span>' +
+              '<div class="complaint-info">' +
+              "<h4>" +
+              Util.escape(c.subject) +
+              "</h4>" +
+              '<div class="meta">' +
+              "<span>" +
+              Util.escape(c.id) +
+              "</span>" +
+              "<span>" +
+              Util.escape(c.category) +
+              "</span>" +
+              "<span>" +
+              Util.relativeTime(c.updated) +
+              "</span>" +
+              "</div>" +
+              "</div>" +
+              (typeof complaintStatusPill === "function"
+                ? complaintStatusPill(c.status)
+                : "");
+            wrap.appendChild(el);
+          });
+        }
+
+        function renderRecentResources() {
+          showSection("recent-resources-section");
+          var wrap = document.getElementById("admin-recent-resources");
+          if (!wrap) return;
+          wrap.innerHTML = "";
+          if (!DEMO_RESOURCES.length) {
+            wrap.innerHTML =
+              '<div class="empty-state" style="padding:40px 20px;">' +
+              '<div class="empty-icon"><i class="fa-solid fa-file-lines"></i></div>' +
+              "<h3>No uploads yet</h3>" +
+              "<p>Upload academic materials to see them listed here.</p>" +
+              "</div>";
+            return;
+          }
+          DEMO_RESOURCES.slice(0, 4).forEach(function (r) {
+            var el = document.createElement("div");
+            el.className = "resource-row";
+            el.style.padding = "12px 20px";
+            el.innerHTML =
+              '<div class="resource-icon ' +
+              r.type +
+              '">' +
+              '<i class="fa-solid fa-file-pdf"></i>' +
+              "</div>" +
+              '<div class="resource-info">' +
+              '<div class="resource-name">' +
+              Util.escape(r.name) +
+              "</div>" +
+              '<div class="resource-meta">' +
+              "<span>" +
+              Util.escape(r.category) +
+              "</span>" +
+              "<span>" +
+              Util.relativeTime(r.uploaded) +
+              "</span>" +
+              "</div>" +
+              "</div>";
+            wrap.appendChild(el);
+          });
+        }
+
+        /* Show sections based on role */
+        if (Permissions.can(session, "students.view")) {
+          renderRecentStudents();
+        }
+        if (Permissions.can(session, "complaints.view")) {
+          renderRecentComplaints();
+        }
+        if (Permissions.can(session, "academics.view")) {
+          renderRecentResources();
+        }
+
+        /* ------------------------------------------------------------------
+     QUICK ACTIONS — built from the permission table
+     ------------------------------------------------------------------ */
+        var actions = [];
+
+        if (Permissions.can(session, "academics.upload")) {
+          actions.push({
+            href: "academic-resources.html",
+            icon: "fa-solid fa-upload",
+            label: "Upload academic resource",
+          });
+        }
+        if (Permissions.can(session, "announcements.publish")) {
+          actions.push({
+            href: "announcements.html",
+            icon: "fa-solid fa-bullhorn",
+            label: "Publish announcement",
+          });
+        }
+        if (Permissions.can(session, "news.publish")) {
+          actions.push({
+            href: "news.html",
+            icon: "fa-solid fa-newspaper",
+            label: "Publish news",
+          });
+        }
+        if (Permissions.can(session, "opportunities.publish")) {
+          actions.push({
+            href: "opportunities.html",
+            icon: "fa-solid fa-briefcase",
+            label: "Publish opportunity",
+          });
+        }
+        if (Permissions.can(session, "complaints.view")) {
+          actions.push({
+            href: "complaints.html",
+            icon: "fa-solid fa-file-shield",
+            label: "Review complaints",
+          });
+        }
+        if (Permissions.can(session, "students.verify")) {
+          actions.push({
+            href: "registered-students.html",
+            icon: "fa-solid fa-user-check",
+            label: "Verify students",
+          });
+        }
+        if (Permissions.can(session, "leaders.assign")) {
+          actions.push({
+            href: "student-leaders.html",
+            icon: "fa-solid fa-user-tie",
+            label: "Assign leader",
+          });
+        }
+        if (Permissions.can(session, "moderation.view")) {
+          actions.push({
+            href: "moderation.html",
+            icon: "fa-solid fa-shield-halved",
+            label: "Review reports",
+          });
+        }
+        if (Permissions.can(session, "emergency.manage")) {
+          actions.push({
+            href: "emergency-contacts.html",
+            icon: "fa-solid fa-shield-heart",
+            label: "Manage emergency contacts",
+          });
+        }
+        if (Permissions.can(session, "admins.manage")) {
+          actions.push({
+            href: "../super-admin/admins.html",
+            icon: "fa-solid fa-user-shield",
+            label: "Manage admins",
+          });
+        }
+
+        var qa = document.getElementById("quick-actions");
+        if (qa) {
+          if (!actions.length) {
+            qa.innerHTML =
+              '<p style="font-size:var(--fs-sm); color:var(--text-tertiary); padding:8px 0;">No quick actions available for your role.</p>';
+          } else {
+            actions.forEach(function (a) {
+              var el = document.createElement("a");
+              el.className = "dropdown-item";
+              el.href = a.href;
+              el.innerHTML = '<i class="' + a.icon + '"></i> ' + a.label;
+              qa.appendChild(el);
+            });
+          }
+        }
+
+        /* ------------------------------------------------------------------
+     ADMIN ACCOUNTS PREVIEW — Super Admin only
+     ------------------------------------------------------------------ */
+        if (Permissions.can(session, "admins.manage")) {
+          var card = document.getElementById("recent-admins-card");
+          var wrap = document.getElementById("admin-accounts-preview");
+          if (card && wrap) {
+            card.style.display = "";
+            wrap.innerHTML = "";
+            var admins = typeof DEMO_ADMINS !== "undefined" ? DEMO_ADMINS : [];
+            admins.slice(0, 4).forEach(function (a) {
+              var el = document.createElement("div");
+              el.className = "resource-row";
+              el.style.padding = "10px 0";
+              el.style.borderBottom = "1px solid var(--border-subtle)";
+              el.innerHTML =
+                '<span class="avatar avatar-32 avatar-fallback">' +
+                Util.initials(a.firstName + " " + a.lastName) +
+                "</span>" +
+                '<div class="resource-info">' +
+                '<div class="resource-name">' +
+                Util.escape(a.firstName + " " + a.lastName) +
+                "</div>" +
+                '<div class="resource-meta"><span>@' +
+                Util.escape(a.username) +
+                "</span></div>" +
+                "</div>" +
+                '<span class="badge ' +
+                (a.status === "active" ? "badge-success" : "badge-warning") +
+                '">' +
+                a.status +
+                "</span>";
+              wrap.appendChild(el);
+            });
+            wrap.innerHTML +=
+              '<a href="../super-admin/admins.html" class="btn btn-ghost btn-sm" style="margin-top:8px;">View all admins <i class="fa-solid fa-arrow-right"></i></a>';
+          }
+        }
       });
     </script>
   </body>

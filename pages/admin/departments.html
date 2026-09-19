@@ -45,8 +45,13 @@
   </head>
   <body class="has-session admin-body">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
-      <aside class="sidebar admin-sidebar" id="app-sidebar"></aside>
+      <aside
+        class="sidebar admin-sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
       <div class="app-main">
         <header class="app-header" id="app-header"></header>
         <main class="app-content" id="main">
@@ -55,12 +60,27 @@
               <h1 class="page-title">Departments</h1>
               <p class="page-subtitle">Departments under each faculty.</p>
             </div>
-            <button class="btn btn-primary" data-modal-open="add-dept-modal">
+            <button
+              class="btn btn-primary"
+              data-modal-open="add-dept-modal"
+              type="button"
+            >
               <i class="fa-solid fa-plus"></i> Add department
             </button>
           </div>
 
+          <!-- Toolbar -->
           <div class="toolbar">
+            <div class="input-wrap">
+              <i class="fa-solid fa-magnifying-glass input-icon"></i>
+              <input
+                class="input"
+                type="search"
+                id="dept-search"
+                placeholder="Search departments…"
+                aria-label="Search departments"
+              />
+            </div>
             <select
               class="select"
               id="fac-filter"
@@ -70,17 +90,29 @@
             </select>
           </div>
 
-          <div class="card">
-            <div id="dept-list"></div>
+          <div class="cluster-between" style="margin-bottom: 16px">
+            <p class="section-desc" style="margin: 0" id="dept-count">
+              Loading…
+            </p>
           </div>
+
+          <!-- Grouped list -->
+          <div id="dept-list"></div>
         </main>
       </div>
     </div>
 
-    <div class="modal-backdrop" id="add-dept-modal">
+    <!-- ============ Add department modal ============ -->
+    <div
+      class="modal-backdrop"
+      id="add-dept-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ad-title"
+    >
       <div class="modal">
         <div class="modal-head">
-          <h3>Add department</h3>
+          <h3 id="ad-title">Add department</h3>
           <button class="btn-icon" data-modal-close aria-label="Close">
             <i class="fa-solid fa-xmark"></i>
           </button>
@@ -88,8 +120,10 @@
         <form id="add-dept-form" novalidate>
           <div class="modal-body">
             <div class="field">
-              <label class="label">Faculty <span class="req">*</span></label>
-              <select class="select" name="facultyId" id="new-dept-fac">
+              <label class="label" for="ad-faculty"
+                >Faculty <span class="req">*</span></label
+              >
+              <select class="select" name="facultyId" id="ad-faculty">
                 <option value="">Select faculty</option>
               </select>
               <div class="field-error">
@@ -98,11 +132,12 @@
               </div>
             </div>
             <div class="field">
-              <label class="label"
+              <label class="label" for="ad-name"
                 >Department name <span class="req">*</span></label
               >
               <input
                 class="input"
+                id="ad-name"
                 name="name"
                 placeholder="e.g. Software Engineering"
               />
@@ -117,7 +152,51 @@
               Cancel
             </button>
             <button type="submit" class="btn btn-primary">
-              Add department
+              <i class="fa-solid fa-check"></i> Add department
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ============ Edit department modal ============ -->
+    <div
+      class="modal-backdrop"
+      id="edit-dept-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ed-title"
+    >
+      <div class="modal">
+        <div class="modal-head">
+          <h3 id="ed-title">Edit department</h3>
+          <button class="btn-icon" data-modal-close aria-label="Close">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <form id="edit-dept-form" novalidate>
+          <div class="modal-body">
+            <div class="field">
+              <label class="label" for="ed-faculty">Faculty</label>
+              <input class="input" id="ed-faculty" disabled />
+            </div>
+            <div class="field">
+              <label class="label" for="ed-name"
+                >Department name <span class="req">*</span></label
+              >
+              <input class="input" id="ed-name" name="name" />
+              <div class="field-error">
+                <i class="fa-solid fa-circle-exclamation"></i
+                ><span>Please enter a department name.</span>
+              </div>
+            </div>
+          </div>
+          <div class="modal-foot">
+            <button type="button" class="btn btn-secondary" data-modal-close>
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fa-solid fa-check"></i> Save changes
             </button>
           </div>
         </form>
@@ -136,130 +215,493 @@
     <script src="../../js/main.js"></script>
     <script src="../../js/validation.js"></script>
     <script src="../../js/auth.js"></script>
+    <script src="../../js/permissions.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
     <script src="../../js/admin.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
-        if (
-          !session ||
-          (session.role !== "admin" && session.role !== "super_admin")
-        ) {
+      /* ==========================================================================
+   Departments — Admin workspace.
+   Role-aware: only admins with departments.manage.
+   ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
+        if (!session || !Permissions.isAdminRole(session)) {
           window.location.href = "../auth/login.html";
           return;
         }
+        if (!Permissions.can(session, "departments.manage")) {
+          window.location.href = "dashboard.html";
+          return;
+        }
+
         initAppShell("admin");
 
-        const facFilter = document.getElementById("fac-filter");
-        const newDeptFac = document.getElementById("new-dept-fac");
-        DEMO_FACULTIES.forEach((f) => {
-          facFilter.insertAdjacentHTML(
-            "beforeend",
-            `<option value="${f.id}">${Util.escape(f.name)}</option>`,
-          );
-          newDeptFac.insertAdjacentHTML(
-            "beforeend",
-            `<option value="${f.id}">${Util.escape(f.name)}</option>`,
-          );
+        /* ------------------------------------------------------------------
+     WORKING COPY OF FACULTIES + DEPARTMENTS
+     ------------------------------------------------------------------ */
+        var faculties = (
+          typeof DEMO_FACULTIES !== "undefined" ? DEMO_FACULTIES : []
+        ).map(function (f) {
+          return {
+            id: f.id,
+            name: f.name,
+            shortName: f.shortName,
+            active: f.active !== false,
+            departments: (Array.isArray(f.departments)
+              ? f.departments
+              : []
+            ).map(function (d) {
+              return { id: d.id, name: d.name, active: d.active !== false };
+            }),
+          };
         });
 
-        const presetFaculty = new URLSearchParams(location.search).get(
-          "faculty",
-        );
-        if (presetFaculty) facFilter.value = presetFaculty;
-
-        function render() {
-          const list = document.getElementById("dept-list");
-          list.innerHTML = "";
-          const filterId = facFilter.value;
-          const faculties = filterId
-            ? DEMO_FACULTIES.filter((f) => f.id === filterId)
-            : DEMO_FACULTIES;
-          faculties.forEach((f) => {
-            const head = document.createElement("div");
-            head.style.background = "var(--bg-subtle)";
-            head.style.padding = "12px 20px";
-            head.style.fontWeight = "700";
-            head.style.fontSize = "var(--fs-sm)";
-            head.style.borderBottom = "1px solid var(--border-subtle)";
-            head.textContent = f.name;
-            list.appendChild(head);
-            f.departments.forEach((d) => {
-              const el = document.createElement("div");
-              el.className = "resource-row";
-              el.innerHTML = `
-          <span class="resource-icon"><i class="fa-solid fa-diagram-project"></i></span>
-          <div class="resource-info">
-            <div class="resource-name">${Util.escape(d.name)}</div>
-            <div class="resource-meta"><span>${Util.escape(f.shortName)}</span></div>
-          </div>
-          <button class="btn btn-ghost btn-sm" data-edit><i class="fa-solid fa-pen"></i></button>
-          <button class="btn btn-ghost btn-sm" data-toggle style="color:var(--danger);"><i class="fa-solid fa-trash"></i></button>`;
-              el.querySelector("[data-edit]").addEventListener("click", () => {
-                Toast.info(
-                  'Editing "' + d.name + '" (simulated).',
-                  "Edit department",
-                );
-              });
-              el.querySelector("[data-toggle]").addEventListener(
-                "click",
-                async () => {
-                  if (
-                    await Confirmation.confirm({
-                      title: "Remove this department?",
-                      message:
-                        'The department "' +
-                        d.name +
-                        '" will no longer appear in the registration form.',
-                      confirmLabel: "Remove",
-                      variant: "danger",
-                    })
-                  ) {
-                    f.departments = f.departments.filter((x) => x.id !== d.id);
-                    render();
-                    Toast.success("Department removed.", "Saved");
-                  }
-                },
-              );
-              list.appendChild(el);
+        /* Apply saved overrides from previous sessions */
+        var saved = Store.get("departments_overrides", null);
+        if (Array.isArray(saved)) {
+          saved.forEach(function (entry) {
+            var fac = faculties.find(function (f) {
+              return f.id === entry.facultyId;
             });
-            if (!f.departments.length) {
-              const empty = document.createElement("div");
-              empty.style.padding = "20px";
-              empty.style.textAlign = "center";
-              empty.style.color = "var(--text-tertiary)";
-              empty.style.fontSize = "var(--fs-sm)";
-              empty.textContent = "No departments in this faculty.";
-              list.appendChild(empty);
-            }
+            if (!fac) return;
+            entry.departments.forEach(function (d) {
+              var match = fac.departments.find(function (x) {
+                return x.id === d.id;
+              });
+              if (match) {
+                if (d.name) match.name = d.name;
+                if (typeof d.active === "boolean") match.active = d.active;
+              } else if (d.name) {
+                /* Newly added department */
+                fac.departments.push({
+                  id: d.id,
+                  name: d.name,
+                  active: d.active !== false,
+                });
+              }
+            });
           });
         }
-        facFilter.addEventListener("change", render);
-        render();
 
+        /* ------------------------------------------------------------------
+     ELEMENTS
+     ------------------------------------------------------------------ */
+        var listEl = document.getElementById("dept-list");
+        var searchEl = document.getElementById("dept-search");
+        var facFilter = document.getElementById("fac-filter");
+        var countEl = document.getElementById("dept-count");
+        var newDeptFac = document.getElementById("ad-faculty");
+
+        /* Populate faculty dropdowns */
+        faculties.forEach(function (f) {
+          var opt = document.createElement("option");
+          opt.value = f.id;
+          opt.textContent = f.name;
+          facFilter.appendChild(opt);
+
+          var opt2 = document.createElement("option");
+          opt2.value = f.id;
+          opt2.textContent = f.name;
+          newDeptFac.appendChild(opt2);
+        });
+
+        /* Rebuild custom dropdowns now that options exist */
+        if (typeof initCustomSelects === "function") {
+          /* Tear down any existing custom wrappers on the two faculty selects */
+          [facFilter, newDeptFac].forEach(function (sel) {
+            var staleNext = sel.nextElementSibling;
+            if (staleNext && staleNext.classList.contains("cselect"))
+              staleNext.remove();
+            var stalePrev = sel.previousElementSibling;
+            if (stalePrev && stalePrev.classList.contains("cselect"))
+              stalePrev.remove();
+            sel.classList.remove("cselect-native");
+            sel.removeAttribute("data-customized");
+          });
+          initCustomSelects();
+        }
+
+        /* Preset from URL */
+        var preset = new URLSearchParams(location.search).get("faculty");
+        if (preset) facFilter.value = preset;
+
+        /* ------------------------------------------------------------------
+     PERSIST
+     ------------------------------------------------------------------ */
+        function persist() {
+          Store.set(
+            "departments_overrides",
+            faculties.map(function (f) {
+              return {
+                facultyId: f.id,
+                departments: f.departments.map(function (d) {
+                  return { id: d.id, name: d.name, active: d.active };
+                }),
+              };
+            }),
+          );
+        }
+
+        /* ------------------------------------------------------------------
+     RENDER
+     ------------------------------------------------------------------ */
+        function render() {
+          var q = searchEl.value.trim().toLowerCase();
+          var filterId = facFilter.value;
+
+          var visibleFaculties = faculties.filter(function (f) {
+            if (filterId && f.id !== filterId) return false;
+            return true;
+          });
+
+          listEl.innerHTML = "";
+
+          var total = 0;
+
+          visibleFaculties.forEach(function (f) {
+            /* Filter departments within the faculty */
+            var departments = f.departments.filter(function (d) {
+              if (!q) return true;
+              return (
+                d.name.toLowerCase().indexOf(q) !== -1 ||
+                f.name.toLowerCase().indexOf(q) !== -1
+              );
+            });
+
+            /* If we have a search query and this faculty has no matching departments,
+         skip the whole group */
+            if (q && !departments.length) return;
+
+            total += departments.length;
+
+            var group = document.createElement("div");
+            group.className = "card";
+            group.style.marginBottom = "16px";
+
+            var headHtml =
+              '<div class="card-head" style="background:var(--bg-subtle);">' +
+              '<div style="display:flex; align-items:center; gap:10px; min-width:0;">' +
+              '<span class="badge badge-marine">' +
+              Util.escape(f.shortName) +
+              "</span>" +
+              '<h3 style="margin:0; font-size:var(--fs-sm);">' +
+              Util.escape(f.name) +
+              "</h3>" +
+              "</div>" +
+              '<span class="badge ' +
+              (f.active ? "badge-success" : "badge-neutral") +
+              '">' +
+              (f.active ? "Active" : "Inactive") +
+              "</span>" +
+              "</div>";
+
+            var bodyHtml = "<div>";
+
+            if (!departments.length) {
+              bodyHtml +=
+                '<div class="empty-state" style="padding:32px 20px;">' +
+                '<div class="empty-icon" style="width:48px; height:48px; font-size:18px; margin-bottom:12px;">' +
+                '<i class="fa-solid fa-diagram-project"></i>' +
+                "</div>" +
+                '<h3 style="font-size:var(--fs-sm);">No departments yet</h3>' +
+                '<p style="font-size:var(--fs-xs);">Add the first department to this faculty.</p>' +
+                '<button class="btn btn-secondary btn-sm" data-add-to-faculty="' +
+                f.id +
+                '" type="button">' +
+                '<i class="fa-solid fa-plus"></i> Add department' +
+                "</button>" +
+                "</div>";
+            } else {
+              departments.forEach(function (d) {
+                var row = document.createElement("div");
+                row.className = "resource-row";
+                row.style.padding = "14px 20px";
+                row.innerHTML =
+                  '<span class="resource-icon" style="' +
+                  (!d.active
+                    ? "background:var(--bg-subtle); color:var(--text-tertiary);"
+                    : "") +
+                  '">' +
+                  '<i class="fa-solid fa-diagram-project"></i>' +
+                  "</span>" +
+                  '<div class="resource-info">' +
+                  '<div class="resource-name">' +
+                  Util.escape(d.name) +
+                  (!d.active
+                    ? ' <span class="badge badge-neutral" style="margin-left:8px;">Inactive</span>'
+                    : "") +
+                  "</div>" +
+                  '<div class="resource-meta">' +
+                  "<span>" +
+                  Util.escape(f.name) +
+                  "</span>" +
+                  "</div>" +
+                  "</div>" +
+                  '<button class="btn btn-ghost btn-sm" data-edit type="button" aria-label="Edit department">' +
+                  '<i class="fa-solid fa-pen"></i>' +
+                  "</button>" +
+                  '<button class="btn btn-ghost btn-sm" data-toggle type="button" aria-label="' +
+                  (d.active ? "Deactivate" : "Reactivate") +
+                  ' department" style="color:' +
+                  (d.active ? "var(--danger)" : "var(--success)") +
+                  ';">' +
+                  (d.active
+                    ? '<i class="fa-solid fa-ban"></i>'
+                    : '<i class="fa-solid fa-circle-check"></i>') +
+                  "</button>";
+
+                row
+                  .querySelector("[data-edit]")
+                  .addEventListener("click", function () {
+                    openEditModal(f, d);
+                  });
+
+                row
+                  .querySelector("[data-toggle]")
+                  .addEventListener("click", async function () {
+                    var willDeactivate = d.active;
+                    var ok = await Confirmation.confirm({
+                      title: willDeactivate
+                        ? "Deactivate this department?"
+                        : "Reactivate this department?",
+                      message: willDeactivate
+                        ? 'The department "' +
+                          d.name +
+                          '" will no longer appear in the student registration form. Existing student records are kept.'
+                        : 'The department "' +
+                          d.name +
+                          '" will be reactivated.',
+                      confirmLabel: willDeactivate
+                        ? "Deactivate"
+                        : "Reactivate",
+                      variant: willDeactivate ? "danger" : "primary",
+                    });
+                    if (!ok) return;
+                    d.active = !d.active;
+                    persist();
+                    render();
+                    Toast.success(
+                      "Department " +
+                        (d.active ? "reactivated" : "deactivated") +
+                        ".",
+                      "Saved",
+                    );
+                  });
+
+                bodyHtml += row.outerHTML;
+              });
+            }
+
+            bodyHtml += "</div>";
+
+            group.innerHTML = headHtml + bodyHtml;
+            listEl.appendChild(group);
+
+            /* Wire the "add to faculty" buttons and re-wire row buttons since
+         we used outerHTML (which loses event listeners) */
+            group
+              .querySelectorAll("[data-add-to-faculty]")
+              .forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                  newDeptFac.value = btn.getAttribute("data-add-to-faculty");
+                  Modal.open("add-dept-modal");
+                });
+              });
+          });
+
+          /* Re-wire row actions after innerHTML assignment above */
+          listEl.querySelectorAll(".resource-row").forEach(function (row) {
+            var editBtn = row.querySelector("[data-edit]");
+            var toggleBtn = row.querySelector("[data-toggle]");
+            var name = row.querySelector(".resource-name").textContent.trim();
+
+            /* Find the department matching this row */
+            var dept = null;
+            var fac = null;
+            for (var i = 0; i < faculties.length; i++) {
+              var ff = faculties[i];
+              for (var j = 0; j < ff.departments.length; j++) {
+                if (ff.departments[j].name === name) {
+                  dept = ff.departments[j];
+                  fac = ff;
+                  break;
+                }
+              }
+              if (dept) break;
+            }
+
+            if (editBtn && dept && fac) {
+              editBtn.onclick = function () {
+                openEditModal(fac, dept);
+              };
+            }
+            if (toggleBtn && dept && fac) {
+              toggleBtn.onclick = async function () {
+                var willDeactivate = dept.active;
+                var ok = await Confirmation.confirm({
+                  title: willDeactivate
+                    ? "Deactivate this department?"
+                    : "Reactivate this department?",
+                  message: willDeactivate
+                    ? 'The department "' +
+                      dept.name +
+                      '" will no longer appear in the student registration form. Existing student records are kept.'
+                    : 'The department "' + dept.name + '" will be reactivated.',
+                  confirmLabel: willDeactivate ? "Deactivate" : "Reactivate",
+                  variant: willDeactivate ? "danger" : "primary",
+                });
+                if (!ok) return;
+                dept.active = !dept.active;
+                persist();
+                render();
+                Toast.success(
+                  "Department " +
+                    (dept.active ? "reactivated" : "deactivated") +
+                    ".",
+                  "Saved",
+                );
+              };
+            }
+          });
+
+          countEl.textContent =
+            total + " department" + (total === 1 ? "" : "s");
+
+          if (!total && (q || filterId)) {
+            listEl.innerHTML =
+              '<div class="card">' +
+              '<div class="empty-state">' +
+              '<div class="empty-icon"><i class="fa-solid fa-diagram-project"></i></div>' +
+              "<h3>No departments match</h3>" +
+              "<p>Try a different search term or clear the faculty filter.</p>" +
+              "</div>" +
+              "</div>";
+          }
+        }
+
+        /* ------------------------------------------------------------------
+     EDIT MODAL
+     ------------------------------------------------------------------ */
+        var currentEditDept = null;
+        var currentEditFac = null;
+
+        function openEditModal(faculty, dept) {
+          currentEditDept = dept;
+          currentEditFac = faculty;
+
+          var form = document.getElementById("edit-dept-form");
+          form.querySelector('[name="name"]').value = dept.name;
+          document.getElementById("ed-faculty").value = faculty.name;
+
+          /* Clear any leftover error state */
+          form.querySelectorAll(".field").forEach(function (field) {
+            field.classList.remove("is-invalid", "is-valid");
+          });
+
+          Modal.open("edit-dept-modal");
+        }
+
+        bindForm(
+          document.getElementById("edit-dept-form"),
+          {
+            name: [Rules.required, Rules.minLen(3)],
+          },
+          function (data) {
+            if (!currentEditDept || !currentEditFac) return;
+
+            var newName = data.get("name").trim();
+
+            /* Check duplicates within the same faculty */
+            var duplicate = currentEditFac.departments.some(function (x) {
+              return (
+                x.id !== currentEditDept.id &&
+                x.name.toLowerCase() === newName.toLowerCase()
+              );
+            });
+            if (duplicate) {
+              Toast.error(
+                'A department named "' +
+                  newName +
+                  '" already exists in this faculty.',
+                "Duplicate name",
+              );
+              return;
+            }
+
+            currentEditDept.name = newName;
+            persist();
+
+            Modal.close("edit-dept-modal");
+            currentEditDept = null;
+            currentEditFac = null;
+
+            render();
+            Toast.success("Department updated.", "Saved");
+          },
+        );
+
+        /* ------------------------------------------------------------------
+     ADD FORM
+     ------------------------------------------------------------------ */
         bindForm(
           document.getElementById("add-dept-form"),
           {
             facultyId: [Rules.required],
-            name: [Rules.required],
+            name: [Rules.required, Rules.minLen(3)],
           },
-          (data) => {
-            const f = DEMO_FACULTIES.find(
-              (x) => x.id === data.get("facultyId"),
-            );
-            if (f)
-              f.departments.push({
-                id: "dep-" + Date.now(),
-                name: data.get("name"),
-                active: true,
-              });
+          function (data) {
+            var facId = data.get("facultyId");
+            var fac = faculties.find(function (x) {
+              return x.id === facId;
+            });
+            if (!fac) return;
+
+            var newName = data.get("name").trim();
+
+            /* Check duplicates within the faculty */
+            var duplicate = fac.departments.some(function (x) {
+              return x.name.toLowerCase() === newName.toLowerCase();
+            });
+            if (duplicate) {
+              Toast.error(
+                'A department named "' +
+                  newName +
+                  '" already exists in this faculty.',
+                "Duplicate name",
+              );
+              return;
+            }
+
+            fac.departments.push({
+              id: "dep-" + Date.now(),
+              name: newName,
+              active: true,
+            });
+
+            persist();
             render();
             Modal.close("add-dept-modal");
             document.getElementById("add-dept-form").reset();
             Toast.success("Department added.", "Saved");
           },
         );
+
+        /* ------------------------------------------------------------------
+     EVENTS
+     ------------------------------------------------------------------ */
+        var debounce;
+        searchEl.addEventListener("input", function () {
+          clearTimeout(debounce);
+          debounce = setTimeout(render, 120);
+        });
+
+        facFilter.addEventListener("change", render);
+
+        /* ------------------------------------------------------------------
+     INITIAL RENDER
+     ------------------------------------------------------------------ */
+        render();
       });
     </script>
   </body>

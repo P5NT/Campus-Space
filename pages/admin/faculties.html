@@ -45,8 +45,13 @@
   </head>
   <body class="has-session admin-body">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
-      <aside class="sidebar admin-sidebar" id="app-sidebar"></aside>
+      <aside
+        class="sidebar admin-sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
       <div class="app-main">
         <header class="app-header" id="app-header"></header>
         <main class="app-content" id="main">
@@ -55,20 +60,50 @@
               <h1 class="page-title">Faculties</h1>
               <p class="page-subtitle">Manage faculties across OAUSTECH.</p>
             </div>
-            <button class="btn btn-primary" data-modal-open="add-faculty-modal">
+            <button
+              class="btn btn-primary"
+              data-modal-open="add-faculty-modal"
+              type="button"
+            >
               <i class="fa-solid fa-plus"></i> Add faculty
             </button>
           </div>
 
-          <div class="grid grid-2" id="faculties-grid"></div>
+          <div class="toolbar">
+            <div class="input-wrap">
+              <i class="fa-solid fa-magnifying-glass input-icon"></i>
+              <input
+                class="input"
+                type="search"
+                id="faculty-search"
+                placeholder="Search faculties…"
+                aria-label="Search faculties"
+              />
+            </div>
+          </div>
+
+          <div class="cluster-between" style="margin-bottom: 16px">
+            <p class="section-desc" style="margin: 0" id="faculty-count">
+              Loading…
+            </p>
+          </div>
+
+          <div class="grid grid-3" id="faculties-grid"></div>
         </main>
       </div>
     </div>
 
-    <div class="modal-backdrop" id="add-faculty-modal">
+    <!-- ============ Add faculty modal ============ -->
+    <div
+      class="modal-backdrop"
+      id="add-faculty-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="af-title"
+    >
       <div class="modal">
         <div class="modal-head">
-          <h3>Add faculty</h3>
+          <h3 id="af-title">Add faculty</h3>
           <button class="btn-icon" data-modal-close aria-label="Close">
             <i class="fa-solid fa-xmark"></i>
           </button>
@@ -76,11 +111,12 @@
         <form id="add-faculty-form" novalidate>
           <div class="modal-body">
             <div class="field">
-              <label class="label"
+              <label class="label" for="af-name"
                 >Faculty name <span class="req">*</span></label
               >
               <input
                 class="input"
+                id="af-name"
                 name="name"
                 placeholder="e.g. Faculty of Law"
               />
@@ -90,8 +126,19 @@
               </div>
             </div>
             <div class="field">
-              <label class="label">Short name <span class="req">*</span></label>
-              <input class="input" name="shortName" placeholder="e.g. LAW" />
+              <label class="label" for="af-short"
+                >Short name <span class="req">*</span></label
+              >
+              <input
+                class="input"
+                id="af-short"
+                name="shortName"
+                placeholder="e.g. LAW"
+                maxlength="10"
+              />
+              <div class="field-help">
+                A short acronym used across the platform.
+              </div>
               <div class="field-error">
                 <i class="fa-solid fa-circle-exclamation"></i
                 ><span>Please enter a short name.</span>
@@ -102,7 +149,67 @@
             <button type="button" class="btn btn-secondary" data-modal-close>
               Cancel
             </button>
-            <button type="submit" class="btn btn-primary">Add faculty</button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fa-solid fa-check"></i> Add faculty
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ============ Edit faculty modal ============ -->
+    <div
+      class="modal-backdrop"
+      id="edit-faculty-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ef-title"
+    >
+      <div class="modal">
+        <div class="modal-head">
+          <h3 id="ef-title">Edit faculty</h3>
+          <button class="btn-icon" data-modal-close aria-label="Close">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <form id="edit-faculty-form" novalidate>
+          <div class="modal-body">
+            <div class="field">
+              <label class="label" for="ef-name"
+                >Faculty name <span class="req">*</span></label
+              >
+              <input class="input" id="ef-name" name="name" />
+              <div class="field-error">
+                <i class="fa-solid fa-circle-exclamation"></i
+                ><span>Please enter a faculty name.</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label" for="ef-short"
+                >Short name <span class="req">*</span></label
+              >
+              <input
+                class="input"
+                id="ef-short"
+                name="shortName"
+                maxlength="10"
+              />
+              <div class="field-help">
+                A short acronym used across the platform.
+              </div>
+              <div class="field-error">
+                <i class="fa-solid fa-circle-exclamation"></i
+                ><span>Please enter a short name.</span>
+              </div>
+            </div>
+          </div>
+          <div class="modal-foot">
+            <button type="button" class="btn btn-secondary" data-modal-close>
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fa-solid fa-check"></i> Save changes
+            </button>
           </div>
         </form>
       </div>
@@ -120,95 +227,200 @@
     <script src="../../js/main.js"></script>
     <script src="../../js/validation.js"></script>
     <script src="../../js/auth.js"></script>
+    <script src="../../js/permissions.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
     <script src="../../js/admin.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
-        if (
-          !session ||
-          (session.role !== "admin" && session.role !== "super_admin")
-        ) {
+      /* ==========================================================================
+   Faculties — Admin workspace.
+   Role-aware: only admins with faculties.manage.
+   ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
+        if (!session || !Permissions.isAdminRole(session)) {
           window.location.href = "../auth/login.html";
           return;
         }
+        if (!Permissions.can(session, "faculties.manage")) {
+          window.location.href = "dashboard.html";
+          return;
+        }
+
         initAppShell("admin");
 
-        let faculties = DEMO_FACULTIES.map((f) => ({ ...f }));
-        const grid = document.getElementById("faculties-grid");
+        /* ---- Working copy of the faculties ---- */
+        var faculties = (
+          typeof DEMO_FACULTIES !== "undefined" ? DEMO_FACULTIES : []
+        ).map(function (f) {
+          return {
+            id: f.id,
+            name: f.name,
+            shortName: f.shortName,
+            active: f.active !== false,
+            departments: Array.isArray(f.departments)
+              ? f.departments.slice()
+              : [],
+          };
+        });
 
-        function render() {
-          grid.innerHTML = "";
-          faculties.forEach((f, idx) => {
-            const card = document.createElement("div");
-            card.className = "card card-pad";
-            card.innerHTML = `
-        <div class="cluster-between" style="margin-bottom:12px;">
-          <span class="badge badge-marine">${Util.escape(f.shortName)}</span>
-          <span class="badge ${f.active ? "badge-success" : "badge-neutral"}">${f.active ? "Active" : "Inactive"}</span>
-        </div>
-        <h3 style="font-size:var(--fs-md); margin-bottom:4px;">${Util.escape(f.name)}</h3>
-        <p style="font-size:var(--fs-sm); color:var(--text-secondary); margin-bottom:16px;">${f.departments.length} department${f.departments.length === 1 ? "" : "s"}</p>
-        <div class="cluster">
-          <a href="departments.html?faculty=${f.id}" class="btn btn-secondary btn-sm">
-            <i class="fa-solid fa-diagram-project"></i> Departments
-          </a>
-          <button class="btn btn-ghost btn-sm" data-edit>
-            <i class="fa-solid fa-pen"></i> Edit
-          </button>
-          <button class="btn btn-ghost btn-sm" data-toggle style="color:${f.active ? "var(--danger)" : "var(--success)"};">
-            ${f.active ? '<i class="fa-solid fa-ban"></i> Deactivate' : '<i class="fa-solid fa-circle-check"></i> Activate'}
-          </button>
-        </div>`;
-            card.querySelector("[data-edit]").addEventListener("click", () => {
-              Toast.info(
-                'Editing "' + f.name + '" (simulated).',
-                "Edit faculty",
-              );
+        /* Apply any edits saved in localStorage from previous sessions */
+        var savedOverrides = Store.get("faculties_overrides", null);
+        if (Array.isArray(savedOverrides)) {
+          savedOverrides.forEach(function (override) {
+            var target = faculties.find(function (x) {
+              return x.id === override.id;
             });
-            card
-              .querySelector("[data-toggle]")
-              .addEventListener("click", async () => {
-                const willDeactivate = f.active;
-                if (
-                  await Confirmation.confirm({
-                    title: willDeactivate
-                      ? "Deactivate this faculty?"
-                      : "Reactivate this faculty?",
-                    message: willDeactivate
-                      ? "The faculty will no longer appear in the student registration form."
-                      : "The faculty will be reactivated.",
-                    confirmLabel: willDeactivate ? "Deactivate" : "Reactivate",
-                    variant: willDeactivate ? "danger" : "primary",
-                  })
-                ) {
-                  f.active = !f.active;
-                  render();
-                  Toast.success(
-                    "Faculty " +
-                      (f.active ? "reactivated" : "deactivated") +
-                      ".",
-                    "Saved",
-                  );
-                }
-              });
-            grid.appendChild(card);
+            if (!target) return;
+            if (override.name) target.name = override.name;
+            if (override.shortName) target.shortName = override.shortName;
+            if (typeof override.active === "boolean")
+              target.active = override.active;
           });
         }
-        render();
 
+        var grid = document.getElementById("faculties-grid");
+        var countEl = document.getElementById("faculty-count");
+        var searchEl = document.getElementById("faculty-search");
+
+        /* ---- Render ---- */
+        function render() {
+          var q = searchEl.value.trim().toLowerCase();
+          var visible = q
+            ? faculties.filter(function (f) {
+                return (
+                  f.name.toLowerCase().indexOf(q) !== -1 ||
+                  f.shortName.toLowerCase().indexOf(q) !== -1
+                );
+              })
+            : faculties.slice();
+
+          grid.innerHTML = "";
+
+          if (!visible.length) {
+            grid.innerHTML =
+              '<div class="card" style="grid-column: 1 / -1;">' +
+              '<div class="empty-state">' +
+              '<div class="empty-icon"><i class="fa-solid fa-building-columns"></i></div>' +
+              "<h3>" +
+              (q
+                ? 'No faculties match "' + Util.escape(q) + '"'
+                : "No faculties yet") +
+              "</h3>" +
+              "<p>Add a faculty to see it here.</p>" +
+              '<button class="btn btn-primary" data-modal-open="add-faculty-modal" type="button">' +
+              '<i class="fa-solid fa-plus"></i> Add faculty' +
+              "</button>" +
+              "</div>" +
+              "</div>";
+            countEl.textContent = "";
+            return;
+          }
+
+          visible.forEach(function (f) {
+            var card = document.createElement("div");
+            card.className = "card card-pad";
+            card.innerHTML =
+              '<div class="cluster-between" style="margin-bottom:12px;">' +
+              '<span class="badge badge-marine">' +
+              Util.escape(f.shortName) +
+              "</span>" +
+              '<span class="badge ' +
+              (f.active ? "badge-success" : "badge-neutral") +
+              '">' +
+              (f.active ? "Active" : "Inactive") +
+              "</span>" +
+              "</div>" +
+              '<h3 style="font-size:var(--fs-md); margin-bottom:6px; line-height:1.35;">' +
+              Util.escape(f.name) +
+              "</h3>" +
+              '<p style="font-size:var(--fs-sm); color:var(--text-secondary); margin-bottom:16px;">' +
+              f.departments.length +
+              " department" +
+              (f.departments.length === 1 ? "" : "s") +
+              "</p>" +
+              '<div class="cluster" style="gap:6px;">' +
+              '<a href="departments.html?faculty=' +
+              f.id +
+              '" class="btn btn-secondary btn-sm">' +
+              '<i class="fa-solid fa-diagram-project"></i> Departments' +
+              "</a>" +
+              '<button class="btn btn-ghost btn-sm" data-edit type="button">' +
+              '<i class="fa-solid fa-pen"></i> Edit' +
+              "</button>" +
+              '<button class="btn btn-ghost btn-sm" data-toggle type="button" style="color:' +
+              (f.active ? "var(--danger)" : "var(--success)") +
+              ';">' +
+              (f.active
+                ? '<i class="fa-solid fa-ban"></i> Deactivate'
+                : '<i class="fa-solid fa-circle-check"></i> Activate') +
+              "</button>" +
+              "</div>";
+
+            card
+              .querySelector("[data-edit]")
+              .addEventListener("click", function () {
+                openEditModal(f);
+              });
+
+            card
+              .querySelector("[data-toggle]")
+              .addEventListener("click", async function () {
+                var willDeactivate = f.active;
+                var ok = await Confirmation.confirm({
+                  title: willDeactivate
+                    ? "Deactivate this faculty?"
+                    : "Reactivate this faculty?",
+                  message: willDeactivate
+                    ? 'The faculty "' +
+                      f.name +
+                      '" will no longer appear in the student registration form. Existing students keep their records.'
+                    : 'The faculty "' + f.name + '" will be reactivated.',
+                  confirmLabel: willDeactivate ? "Deactivate" : "Reactivate",
+                  variant: willDeactivate ? "danger" : "primary",
+                });
+                if (!ok) return;
+                f.active = !f.active;
+
+                /* Persist the active state */
+                Store.set(
+                  "faculties_overrides",
+                  faculties.map(function (x) {
+                    return {
+                      id: x.id,
+                      name: x.name,
+                      shortName: x.shortName,
+                      active: x.active,
+                    };
+                  }),
+                );
+
+                render();
+                Toast.success(
+                  "Faculty " + (f.active ? "reactivated" : "deactivated") + ".",
+                  "Saved",
+                );
+              });
+
+            grid.appendChild(card);
+          });
+
+          countEl.textContent =
+            visible.length + " facult" + (visible.length === 1 ? "y" : "ies");
+        }
+
+        /* ---- Add faculty form ---- */
         bindForm(
           document.getElementById("add-faculty-form"),
           {
-            name: [Rules.required],
-            shortName: [Rules.required],
+            name: [Rules.required, Rules.minLen(3)],
+            shortName: [Rules.required, Rules.maxLen(10)],
           },
-          (data) => {
+          function (data) {
             faculties.push({
               id: "fac-" + Date.now(),
-              name: data.get("name"),
-              shortName: data.get("shortName"),
+              name: data.get("name").trim(),
+              shortName: data.get("shortName").trim().toUpperCase(),
               active: true,
               departments: [],
             });
@@ -218,6 +430,94 @@
             Toast.success("Faculty added.", "Saved");
           },
         );
+
+        /* ------------------------------------------------------------------
+     EDIT FACULTY
+     ------------------------------------------------------------------ */
+        var currentEditId = null;
+
+        function openEditModal(faculty) {
+          currentEditId = faculty.id;
+
+          var form = document.getElementById("edit-faculty-form");
+          form.querySelector('[name="name"]').value = faculty.name;
+          form.querySelector('[name="shortName"]').value = faculty.shortName;
+
+          /* Clear any leftover error state */
+          form.querySelectorAll(".field").forEach(function (field) {
+            field.classList.remove("is-invalid", "is-valid");
+          });
+
+          Modal.open("edit-faculty-modal");
+        }
+
+        bindForm(
+          document.getElementById("edit-faculty-form"),
+          {
+            name: [Rules.required, Rules.minLen(3)],
+            shortName: [Rules.required, Rules.maxLen(10)],
+          },
+          function (data) {
+            if (!currentEditId) return;
+
+            var target = faculties.find(function (x) {
+              return x.id === currentEditId;
+            });
+            if (!target) return;
+
+            var newName = data.get("name").trim();
+            var newShort = data.get("shortName").trim().toUpperCase();
+
+            /* Check for duplicates (excluding the faculty being edited) */
+            var duplicate = faculties.some(function (x) {
+              return (
+                x.id !== currentEditId &&
+                x.name.toLowerCase() === newName.toLowerCase()
+              );
+            });
+            if (duplicate) {
+              Toast.error(
+                'A faculty named "' + newName + '" already exists.',
+                "Duplicate name",
+              );
+              return;
+            }
+
+            target.name = newName;
+            target.shortName = newShort;
+
+            /* Persist to localStorage so changes survive reloads */
+            Store.set(
+              "faculties_overrides",
+              faculties.map(function (x) {
+                return {
+                  id: x.id,
+                  name: x.name,
+                  shortName: x.shortName,
+                  active: x.active,
+                };
+              }),
+            );
+
+            Modal.close("edit-faculty-modal");
+            currentEditId = null;
+
+            /* Re-render the grid with the new values */
+            render();
+
+            Toast.success("Faculty updated.", "Saved");
+          },
+        );
+
+        /* ---- Search ---- */
+        var debounce;
+        searchEl.addEventListener("input", function () {
+          clearTimeout(debounce);
+          debounce = setTimeout(render, 120);
+        });
+
+        /* ---- Initial render ---- */
+        render();
       });
     </script>
   </body>
