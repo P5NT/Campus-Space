@@ -45,8 +45,13 @@
   </head>
   <body class="has-session admin-body">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
-      <aside class="sidebar admin-sidebar" id="app-sidebar"></aside>
+      <aside
+        class="sidebar admin-sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
       <div class="app-main">
         <header class="app-header" id="app-header"></header>
         <main class="app-content" id="main">
@@ -57,10 +62,30 @@
                 Manage recognised associations and their public tags.
               </p>
             </div>
-            <button class="btn btn-primary" data-modal-open="add-assoc-modal">
+            <button class="btn btn-primary" id="add-assoc-btn" type="button">
               <i class="fa-solid fa-plus"></i> Add association
             </button>
           </div>
+
+          <div class="toolbar">
+            <div class="input-wrap">
+              <i class="fa-solid fa-magnifying-glass input-icon"></i>
+              <input
+                class="input"
+                type="search"
+                id="assoc-search"
+                placeholder="Search by name or acronym…"
+                aria-label="Search associations"
+              />
+            </div>
+          </div>
+
+          <div class="cluster-between" style="margin-bottom: 12px">
+            <p class="section-desc" style="margin: 0" id="assoc-count">
+              Loading…
+            </p>
+          </div>
+
           <div class="card">
             <div id="assoc-list"></div>
           </div>
@@ -68,22 +93,30 @@
       </div>
     </div>
 
-    <div class="modal-backdrop" id="add-assoc-modal">
+    <!-- ============ Add / Edit association modal ============ -->
+    <div
+      class="modal-backdrop"
+      id="assoc-editor-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="assoc-modal-title"
+    >
       <div class="modal">
         <div class="modal-head">
-          <h3>Add association</h3>
+          <h3 id="assoc-modal-title">Add association</h3>
           <button class="btn-icon" data-modal-close aria-label="Close">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
-        <form id="add-assoc-form" novalidate>
+        <form id="assoc-form" novalidate>
           <div class="modal-body">
             <div class="field">
-              <label class="label"
+              <label class="label" for="assoc-name"
                 >Official full name <span class="req">*</span></label
               >
               <input
                 class="input"
+                id="assoc-name"
                 name="name"
                 placeholder="e.g. Nigerian Association of Science Students"
               />
@@ -93,14 +126,16 @@
               </div>
             </div>
             <div class="field">
-              <label class="label"
+              <label class="label" for="assoc-acronym"
                 >Acronym / Tag <span class="req">*</span></label
               >
               <input
                 class="input"
+                id="assoc-acronym"
                 name="acronym"
                 placeholder="e.g. NASS"
                 maxlength="10"
+                style="text-transform: uppercase"
               />
               <div class="field-help">
                 This is the public tag used in community posts.
@@ -115,8 +150,8 @@
             <button type="button" class="btn btn-secondary" data-modal-close>
               Cancel
             </button>
-            <button type="submit" class="btn btn-primary">
-              Add association
+            <button type="submit" class="btn btn-primary" id="assoc-submit">
+              <i class="fa-solid fa-check"></i> <span>Add association</span>
             </button>
           </div>
         </form>
@@ -139,8 +174,12 @@
     <script src="../../js/notifications.js"></script>
     <script src="../../js/admin.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
+      /* ==========================================================================
+         Student Associations — Admin workspace.
+         Full CRUD with localStorage persistence.
+         ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
         if (
           !session ||
           (session.role !== "admin" && session.role !== "super_admin")
@@ -150,78 +189,349 @@
         }
         initAppShell("admin");
 
-        let assocs = DEMO_ASSOCIATIONS.slice();
-        const listEl = document.getElementById("assoc-list");
+        var STORAGE_KEY = "associations_overrides";
 
-        function render() {
-          listEl.innerHTML = "";
-          assocs.forEach((a) => {
-            const el = document.createElement("div");
-            el.className = "resource-row";
-            el.innerHTML = `
-        <span class="resource-icon"><i class="fa-solid fa-people-group"></i></span>
-        <div class="resource-info">
-          <div class="resource-name">${Util.escape(a.name)}</div>
-          <div class="resource-meta">
-            <span>Public tag: <strong>${Util.escape(a.acronym)}</strong></span>
-            <span class="badge ${a.active ? "badge-success" : "badge-neutral"}">${a.active ? "Active" : "Inactive"}</span>
-          </div>
-        </div>
-        <button class="btn btn-ghost btn-sm" data-edit><i class="fa-solid fa-pen"></i></button>
-        <button class="btn btn-ghost btn-sm" data-toggle style="color:${a.active ? "var(--danger)" : "var(--success)"};">
-          ${a.active ? '<i class="fa-solid fa-ban"></i>' : '<i class="fa-solid fa-circle-check"></i>'}
-        </button>`;
-            el.querySelector("[data-edit]").addEventListener("click", () => {
-              Toast.info(
-                'Editing "' + a.name + '" (simulated).',
-                "Edit association",
-              );
+        /* ------------------------------------------------------------------
+           LOAD — merge demo with saved overrides
+           ------------------------------------------------------------------ */
+        function loadAssociations() {
+          var base = (
+            typeof DEMO_ASSOCIATIONS !== "undefined" ? DEMO_ASSOCIATIONS : []
+          ).map(function (a) {
+            return Object.assign({}, a);
+          });
+
+          var saved = Store.get(STORAGE_KEY, null);
+          if (saved && Array.isArray(saved.added)) {
+            saved.added.forEach(function (a) {
+              if (
+                !base.some(function (x) {
+                  return x.id === a.id;
+                })
+              ) {
+                base.push(a);
+              }
             });
-            el.querySelector("[data-toggle]").addEventListener(
+          }
+          if (saved && Array.isArray(saved.deleted)) {
+            base = base.filter(function (a) {
+              return saved.deleted.indexOf(a.id) === -1;
+            });
+          }
+          if (saved && saved.edits) {
+            base.forEach(function (a) {
+              var edit = saved.edits[a.id];
+              if (edit) Object.assign(a, edit);
+            });
+          }
+          return base;
+        }
+
+        /* ------------------------------------------------------------------
+           PERSIST — write added/deleted/edits to localStorage
+           ------------------------------------------------------------------ */
+        function saveAssociations(current) {
+          var existing = Store.get(STORAGE_KEY, {}) || {};
+          var deleted = existing.deleted || [];
+          var edits = existing.edits || {};
+          var added = existing.added || [];
+
+          /* Track everything we've added that isn't in DEMO_ASSOCIATIONS */
+          current.forEach(function (a) {
+            var isDemo = (
+              typeof DEMO_ASSOCIATIONS !== "undefined" ? DEMO_ASSOCIATIONS : []
+            ).some(function (x) {
+              return x.id === a.id;
+            });
+            if (!isDemo) {
+              var idx = added.findIndex(function (x) {
+                return x.id === a.id;
+              });
+              if (idx >= 0) added[idx] = a;
+              else added.push(a);
+            }
+          });
+
+          Store.set(STORAGE_KEY, {
+            added: added,
+            deleted: deleted,
+            edits: edits,
+          });
+        }
+
+        function persistEdit(record) {
+          var existing = Store.get(STORAGE_KEY, {}) || {};
+          existing.edits = existing.edits || {};
+          existing.edits[record.id] = {
+            name: record.name,
+            acronym: record.acronym,
+            active: record.active,
+          };
+          Store.set(STORAGE_KEY, existing);
+        }
+
+        function persistAdded(record) {
+          var existing = Store.get(STORAGE_KEY, {}) || {};
+          existing.added = existing.added || [];
+          if (
+            !existing.added.some(function (x) {
+              return x.id === record.id;
+            })
+          ) {
+            existing.added.push(record);
+          }
+          Store.set(STORAGE_KEY, existing);
+        }
+
+        /* ------------------------------------------------------------------
+           STATE
+           ------------------------------------------------------------------ */
+        var assocs = loadAssociations();
+        var editingId = null;
+
+        var listEl = document.getElementById("assoc-list");
+        var countEl = document.getElementById("assoc-count");
+        var searchEl = document.getElementById("assoc-search");
+        var modalTitle = document.getElementById("assoc-modal-title");
+        var submitBtn = document.getElementById("assoc-submit");
+        var form = document.getElementById("assoc-form");
+
+        /* ------------------------------------------------------------------
+           RENDER
+           ------------------------------------------------------------------ */
+        function render() {
+          var q = searchEl.value.trim().toLowerCase();
+          var visible = assocs.filter(function (a) {
+            if (!q) return true;
+            return (
+              a.name.toLowerCase().indexOf(q) !== -1 ||
+              a.acronym.toLowerCase().indexOf(q) !== -1
+            );
+          });
+
+          countEl.textContent =
+            visible.length +
+            " association" +
+            (visible.length === 1 ? "" : "s") +
+            (q && visible.length !== assocs.length ? " matching" : "");
+
+          listEl.innerHTML = "";
+
+          if (!visible.length) {
+            listEl.innerHTML =
+              '<div class="empty-state" style="padding:48px 24px;">' +
+              '<div class="empty-icon"><i class="fa-solid fa-people-group"></i></div>' +
+              "<h3>" +
+              (q ? "No associations match" : "No associations yet") +
+              "</h3>" +
+              "<p>" +
+              (q
+                ? "Try a different name or acronym."
+                : "Click <strong>Add association</strong> to get started.") +
+              "</p>" +
+              "</div>";
+            return;
+          }
+
+          visible.forEach(function (a) {
+            var el = document.createElement("div");
+            el.className = "assoc-row";
+
+            el.innerHTML =
+              /* Left: icon */
+              '<div class="assoc-row-icon">' +
+              '<i class="fa-solid fa-people-group"></i>' +
+              "</div>" +
+              /* Middle: name, tag, status */
+              '<div class="assoc-row-body">' +
+              '<div class="assoc-row-name">' +
+              Util.escape(a.name) +
+              "</div>" +
+              '<div class="assoc-row-meta">' +
+              '<span class="assoc-tag"><i class="fa-solid fa-tag"></i> ' +
+              Util.escape(a.acronym) +
+              "</span>" +
+              '<span class="badge ' +
+              (a.active ? "badge-success" : "badge-neutral") +
+              '">' +
+              '<i class="fa-solid ' +
+              (a.active ? "fa-circle-check" : "fa-circle-pause") +
+              '"></i> ' +
+              (a.active ? "Active" : "Inactive") +
+              "</span>" +
+              "</div>" +
+              "</div>" +
+              /* Right: actions (become full-width buttons on mobile) */
+              '<div class="assoc-row-actions">' +
+              '<button class="btn btn-secondary btn-sm" data-edit type="button" aria-label="Edit association">' +
+              '<i class="fa-solid fa-pen"></i> <span>Edit</span>' +
+              "</button>" +
+              '<button class="btn btn-sm ' +
+              (a.active ? "btn-ghost" : "btn-secondary") +
+              '" data-toggle type="button" aria-label="' +
+              (a.active ? "Deactivate association" : "Reactivate association") +
+              '"' +
+              (a.active ? ' style="color:var(--danger);"' : "") +
+              ">" +
+              '<i class="fa-solid ' +
+              (a.active ? "fa-ban" : "fa-circle-check") +
+              '"></i> ' +
+              "<span>" +
+              (a.active ? "Deactivate" : "Activate") +
+              "</span>" +
+              "</button>" +
+              "</div>";
+
+            /* ---- Edit handler ---- */
+            el.querySelector("[data-edit]").addEventListener(
               "click",
-              async () => {
-                if (
-                  await Confirmation.confirm({
-                    title: a.active
-                      ? "Deactivate this association?"
-                      : "Reactivate this association?",
-                    message: a.active
-                      ? "New students will not be able to select this association."
-                      : "This association will be available again.",
-                    confirmLabel: a.active ? "Deactivate" : "Reactivate",
-                    variant: a.active ? "danger" : "primary",
-                  })
-                ) {
-                  a.active = !a.active;
-                  render();
-                  Toast.success("Association updated.", "Saved");
-                }
+              function () {
+                openEditor(a);
               },
             );
+
+            /* ---- Toggle handler ---- */
+            el.querySelector("[data-toggle]").addEventListener(
+              "click",
+              async function () {
+                var ok = await Confirmation.confirm({
+                  title: a.active
+                    ? "Deactivate this association?"
+                    : "Reactivate this association?",
+                  message: a.active
+                    ? 'New students will not be able to select "' +
+                      a.name +
+                      '".'
+                    : '"' + a.name + '" will be available again.',
+                  confirmLabel: a.active ? "Deactivate" : "Reactivate",
+                  variant: a.active ? "danger" : "primary",
+                });
+                if (!ok) return;
+
+                a.active = !a.active;
+                persistEdit(a);
+                render();
+                Toast.success(
+                  a.active
+                    ? "Association reactivated."
+                    : "Association deactivated.",
+                  "Saved",
+                );
+              },
+            );
+
             listEl.appendChild(el);
           });
         }
-        render();
 
+        /* ------------------------------------------------------------------
+           OPEN EDITOR — Add or Edit
+           ------------------------------------------------------------------ */
+        function openEditor(existing) {
+          form.reset();
+          form.querySelectorAll(".field").forEach(function (f) {
+            f.classList.remove("is-invalid", "is-valid");
+          });
+
+          if (existing) {
+            editingId = existing.id;
+            modalTitle.textContent = "Edit association";
+            form.querySelector('[name="name"]').value = existing.name;
+            form.querySelector('[name="acronym"]').value = existing.acronym;
+            submitBtn.querySelector("span").textContent = "Save changes";
+          } else {
+            editingId = null;
+            modalTitle.textContent = "Add association";
+            submitBtn.querySelector("span").textContent = "Add association";
+          }
+
+          Modal.open("assoc-editor-modal");
+        }
+
+        /* ------------------------------------------------------------------
+           SUBMIT
+           ------------------------------------------------------------------ */
         bindForm(
-          document.getElementById("add-assoc-form"),
+          form,
           {
-            name: [Rules.required],
-            acronym: [Rules.required],
+            name: [Rules.required, Rules.minLen(3)],
+            acronym: [Rules.required, Rules.minLen(2), Rules.maxLen(10)],
           },
-          (data) => {
-            assocs.push({
-              id: "as-" + Date.now(),
-              name: data.get("name"),
-              acronym: data.get("acronym").toUpperCase(),
-              active: true,
+          function (data) {
+            var name = data.get("name").trim();
+            var acronym = data.get("acronym").trim().toUpperCase();
+
+            /* Duplicate acronym check (excluding the record being edited) */
+            var clash = assocs.find(function (a) {
+              return a.acronym.toUpperCase() === acronym && a.id !== editingId;
             });
+            if (clash) {
+              Toast.error(
+                'The tag "' +
+                  acronym +
+                  '" is already used by "' +
+                  clash.name +
+                  '".',
+                "Duplicate tag",
+              );
+              return;
+            }
+
+            if (editingId) {
+              /* Edit in place */
+              var target = assocs.find(function (a) {
+                return a.id === editingId;
+              });
+              if (target) {
+                target.name = name;
+                target.acronym = acronym;
+                persistEdit(target);
+              }
+              Toast.success("Association updated.", "Saved");
+            } else {
+              /* Add new */
+              var newRec = {
+                id: "as-" + Date.now(),
+                name: name,
+                acronym: acronym,
+                active: true,
+              };
+              assocs.push(newRec);
+              persistAdded(newRec);
+              Toast.success("Association added.", "Saved");
+            }
+
             render();
-            Modal.close("add-assoc-modal");
-            document.getElementById("add-assoc-form").reset();
-            Toast.success("Association added.", "Saved");
+            Modal.close("assoc-editor-modal");
+            form.reset();
+            editingId = null;
           },
         );
+
+        /* ------------------------------------------------------------------
+           TRIGGERS
+           ------------------------------------------------------------------ */
+        document
+          .getElementById("add-assoc-btn")
+          .addEventListener("click", function () {
+            openEditor(null);
+          });
+
+        var debounce;
+        searchEl.addEventListener("input", function () {
+          clearTimeout(debounce);
+          debounce = setTimeout(render, 120);
+        });
+
+        /* Reset edit state on modal close */
+        document.addEventListener("click", function (e) {
+          if (e.target.closest("[data-modal-close]")) {
+            editingId = null;
+          }
+        });
+
+        /* Initial render */
+        render();
       });
     </script>
   </body>

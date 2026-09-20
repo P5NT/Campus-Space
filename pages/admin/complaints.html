@@ -45,8 +45,13 @@
   </head>
   <body class="has-session admin-body">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
-      <aside class="sidebar admin-sidebar" id="app-sidebar"></aside>
+      <aside
+        class="sidebar admin-sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
       <div class="app-main">
         <header class="app-header" id="app-header"></header>
         <main class="app-content" id="main">
@@ -59,14 +64,87 @@
             </div>
           </div>
 
-          <div class="filter-bar">
-            <button class="chip is-active" data-status="all">All</button>
-            <button class="chip" data-status="Submitted">Submitted</button>
-            <button class="chip" data-status="Under Review">
+          <!-- Summary stats -->
+          <div class="grid grid-4" style="margin-bottom: 24px">
+            <div class="stat">
+              <div class="stat-label">Submitted</div>
+              <div
+                class="stat-value"
+                id="stat-submitted"
+                style="color: var(--info)"
+              >
+                —
+              </div>
+              <div class="stat-meta">Awaiting first review</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Under Review</div>
+              <div
+                class="stat-value"
+                id="stat-review"
+                style="color: var(--warning)"
+              >
+                —
+              </div>
+              <div class="stat-meta">Being assessed</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">In Progress</div>
+              <div
+                class="stat-value"
+                id="stat-progress"
+                style="color: var(--brand-primary)"
+              >
+                —
+              </div>
+              <div class="stat-meta">Being acted upon</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Resolved</div>
+              <div
+                class="stat-value"
+                id="stat-resolved"
+                style="color: var(--success)"
+              >
+                —
+              </div>
+              <div class="stat-meta">Closed</div>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <div class="input-wrap">
+              <i class="fa-solid fa-magnifying-glass input-icon"></i>
+              <input
+                class="input"
+                type="search"
+                id="cm-search"
+                placeholder="Search by subject, ID or category…"
+                aria-label="Search complaints"
+              />
+            </div>
+          </div>
+
+          <div class="filter-bar" id="cm-filter" role="tablist">
+            <button class="chip is-active" data-status="all" role="tab">
+              All
+            </button>
+            <button class="chip" data-status="Submitted" role="tab">
+              Submitted
+            </button>
+            <button class="chip" data-status="Under Review" role="tab">
               Under Review
             </button>
-            <button class="chip" data-status="In Progress">In Progress</button>
-            <button class="chip" data-status="Resolved">Resolved</button>
+            <button class="chip" data-status="In Progress" role="tab">
+              In Progress
+            </button>
+            <button class="chip" data-status="Resolved" role="tab">
+              Resolved
+            </button>
+          </div>
+
+          <div class="cluster-between" style="margin-bottom: 12px">
+            <p class="section-desc" style="margin: 0" id="cm-count">Loading…</p>
           </div>
 
           <div class="card">
@@ -75,6 +153,7 @@
         </main>
       </div>
     </div>
+
     <div class="mobile-menu-backdrop"></div>
     <aside
       class="mobile-menu"
@@ -86,137 +165,402 @@
     <script src="../../js/main.js"></script>
     <script src="../../js/validation.js"></script>
     <script src="../../js/auth.js"></script>
+    <script src="../../js/permissions.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
     <script src="../../js/complaints.js"></script>
     <script src="../../js/admin.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
-        if (
-          !session ||
-          (session.role !== "admin" && session.role !== "super_admin")
-        ) {
+      /* ==========================================================================
+         Complaints — Admin workspace.
+         Uses the shared Complaints module (js/complaints.js) for CRUD.
+         Complaints module persists to cs_complaints in localStorage.
+         ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
+        if (!session || !Permissions.isAdminRole(session)) {
           window.location.href = "../auth/login.html";
           return;
         }
+        if (!Permissions.can(session, "complaints.view")) {
+          window.location.href = "dashboard.html";
+          return;
+        }
+
         initAppShell("admin");
 
-        const listEl = document.getElementById("admin-complaints-list");
-        let filter = "all";
+        var canRespond = Permissions.can(session, "complaints.respond");
 
+        var listEl = document.getElementById("admin-complaints-list");
+        var countEl = document.getElementById("cm-count");
+        var searchEl = document.getElementById("cm-search");
+        var filterBar = document.getElementById("cm-filter");
+
+        var activeFilter = "all";
+
+        /* ------------------------------------------------------------------
+           HELPERS
+           ------------------------------------------------------------------ */
+        var CATEGORY_ICONS = {
+          Facilities: "fa-building",
+          Academic: "fa-graduation-cap",
+          Welfare: "fa-heart",
+          Hostel: "fa-house",
+          Security: "fa-shield-halved",
+          Finance: "fa-coins",
+          Other: "fa-circle-info",
+        };
+
+        function getCategoryIcon(category) {
+          return CATEGORY_ICONS[category] || CATEGORY_ICONS.Other;
+        }
+
+        function getRelativeSubmitted(c) {
+          return Util.relativeTime(c.date);
+        }
+
+        function getRelativeUpdated(c) {
+          return Util.relativeTime(c.updated || c.date);
+        }
+
+        /* ------------------------------------------------------------------
+           RENDER
+           ------------------------------------------------------------------ */
         function render() {
+          var all = Complaints.all();
+          var q = searchEl.value.trim().toLowerCase();
+
+          /* Update stat cards — counts across ALL complaints, not just visible */
+          var counts = {
+            Submitted: 0,
+            "Under Review": 0,
+            "In Progress": 0,
+            Resolved: 0,
+          };
+          all.forEach(function (c) {
+            if (counts[c.status] !== undefined) counts[c.status]++;
+          });
+          document.getElementById("stat-submitted").textContent =
+            counts["Submitted"];
+          document.getElementById("stat-review").textContent =
+            counts["Under Review"];
+          document.getElementById("stat-progress").textContent =
+            counts["In Progress"];
+          document.getElementById("stat-resolved").textContent =
+            counts["Resolved"];
+
+          /* Filter + search */
+          var visible = all.filter(function (c) {
+            if (activeFilter !== "all" && c.status !== activeFilter)
+              return false;
+            if (!q) return true;
+            return (
+              (c.subject || "").toLowerCase().indexOf(q) !== -1 ||
+              (c.id || "").toLowerCase().indexOf(q) !== -1 ||
+              (c.category || "").toLowerCase().indexOf(q) !== -1
+            );
+          });
+
+          /* Sort: unresolved first (Submitted → Under Review → In Progress), then resolved; newest first within each */
+          var statusOrder = {
+            Submitted: 0,
+            "Under Review": 1,
+            "In Progress": 2,
+            Resolved: 3,
+          };
+          visible.sort(function (a, b) {
+            var sa =
+              statusOrder[a.status] !== undefined ? statusOrder[a.status] : 9;
+            var sb =
+              statusOrder[b.status] !== undefined ? statusOrder[b.status] : 9;
+            if (sa !== sb) return sa - sb;
+            return (b.updated || b.date) - (a.updated || a.date);
+          });
+
+          countEl.textContent =
+            visible.length +
+            " complaint" +
+            (visible.length === 1 ? "" : "s") +
+            (q || activeFilter !== "all" ? " matching" : "");
+
           listEl.innerHTML = "";
-          let list = Complaints.all();
-          if (filter !== "all") list = list.filter((c) => c.status === filter);
-          if (!list.length) {
+
+          if (!visible.length) {
+            var emptyMsg = q
+              ? "No complaints match your search."
+              : activeFilter === "all"
+                ? "No complaints yet"
+                : "No complaints in this status";
             listEl.innerHTML =
-              '<div class="empty-state" style="padding:40px;"><div class="empty-icon"><i class="fa-solid fa-file-shield"></i></div><h3>No complaints in this filter</h3></div>';
+              '<div class="empty-state" style="padding: 48px 24px;">' +
+              '<div class="empty-icon"><i class="fa-solid fa-file-shield"></i></div>' +
+              "<h3>" +
+              emptyMsg +
+              "</h3>" +
+              "<p>" +
+              (q
+                ? "Try a different subject, ID or category."
+                : activeFilter === "all"
+                  ? "When students submit complaints, they'll appear here."
+                  : "Try a different filter.") +
+              "</p>" +
+              "</div>";
             return;
           }
-          list.forEach((c) => {
-            const row = document.createElement("div");
-            row.className = "complaint-row";
-            row.innerHTML = `
-        <span class="complaint-icon"><i class="fa-solid fa-file-shield"></i></span>
-        <div class="complaint-info">
-          <h4>${Util.escape(c.subject)}</h4>
-          <div class="meta">
-            <span>${Util.escape(c.id)}</span>
-            <span>${Util.escape(c.category)}</span>
-            <span>${Util.relativeTime(c.updated)}</span>
-          </div>
-        </div>
-        ${complaintStatusPill(c.status)}
-        <button class="btn btn-secondary btn-sm" data-open>Open</button>`;
+
+          visible.forEach(function (c) {
+            var row = document.createElement("div");
+            row.className = "complaint-row cm-admin-row";
+
+            row.innerHTML =
+              '<span class="complaint-icon"><i class="fa-solid ' +
+              getCategoryIcon(c.category) +
+              '"></i></span>' +
+              '<div class="complaint-info">' +
+              "<h4>" +
+              Util.escape(c.subject) +
+              "</h4>" +
+              '<div class="meta">' +
+              '<span class="cm-id"><i class="fa-solid fa-hashtag"></i> ' +
+              Util.escape(c.id) +
+              "</span>" +
+              '<span><i class="fa-solid fa-tag"></i> ' +
+              Util.escape(c.category) +
+              "</span>" +
+              '<span><i class="fa-regular fa-clock"></i> Submitted ' +
+              getRelativeSubmitted(c) +
+              "</span>" +
+              (c.updated && c.updated !== c.date
+                ? '<span><i class="fa-solid fa-rotate"></i> Updated ' +
+                  getRelativeUpdated(c) +
+                  "</span>"
+                : "") +
+              "</div>" +
+              "</div>" +
+              '<div class="cm-admin-status">' +
+              complaintStatusPill(c.status) +
+              "</div>" +
+              '<div class="cm-admin-actions">' +
+              '<button class="btn btn-secondary btn-sm" data-open type="button">' +
+              '<i class="fa-solid fa-eye"></i> <span>Open</span>' +
+              "</button>" +
+              "</div>";
+
             row
               .querySelector("[data-open]")
-              .addEventListener("click", () => openComplaint(c.id));
+              .addEventListener("click", function () {
+                openComplaint(c.id);
+              });
+
             listEl.appendChild(row);
           });
         }
 
+        /* ------------------------------------------------------------------
+           OPEN COMPLAINT — full modal with history and response
+           ------------------------------------------------------------------ */
         function openComplaint(id) {
-          const c = Complaints.all().find((x) => x.id === id);
-          if (!c) return;
-          let modal = document.getElementById("admin-complaint-modal");
-          if (!modal) {
-            modal = document.createElement("div");
-            modal.className = "modal-backdrop";
-            modal.id = "admin-complaint-modal";
-            modal.innerHTML = `
-        <div class="modal modal-lg">
-          <div class="modal-head">
-            <h3 id="cm-title"></h3>
-            <button class="btn-icon" data-modal-close aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
-          </div>
-          <div class="modal-body" id="cm-body"></div>
-          <div class="modal-foot">
-            <button class="btn btn-secondary" data-modal-close>Close</button>
-          </div>
-        </div>`;
-            document.body.appendChild(modal);
-          }
-          modal.querySelector("#cm-title").textContent =
-            c.id + " — " + c.category;
-          const body = modal.querySelector("#cm-body");
-          body.innerHTML = `
-      <div style="margin-bottom:20px;">
-        <div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Subject</div>
-        <div style="font-weight:600; margin-bottom:12px;">${Util.escape(c.subject)}</div>
-        <div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Description</div>
-        <p style="color:var(--text-secondary); margin-bottom:12px;">${Util.escape(c.description)}</p>
-      </div>
-
-      <div class="field">
-        <label class="label">Update status</label>
-        <select class="select" id="cm-status">
-          ${["Submitted", "Under Review", "In Progress", "Resolved"].map((s) => `<option${c.status === s ? " selected" : ""}>${s}</option>`).join("")}
-        </select>
-      </div>
-
-      <div class="field">
-        <label class="label">Respond to student</label>
-        <textarea class="textarea" id="cm-response" placeholder="Write a response…"></textarea>
-      </div>
-
-      <button class="btn btn-primary" id="cm-submit">Update complaint</button>
-    `;
-          body.querySelector("#cm-submit").addEventListener("click", () => {
-            const newStatus = body.querySelector("#cm-status").value;
-            const response = body.querySelector("#cm-response").value.trim();
-            if (newStatus !== c.status)
-              Complaints.updateStatus(
-                c.id,
-                newStatus,
-                (session.name || session.username) + " (Admin)",
-              );
-            if (response)
-              Complaints.respond(
-                c.id,
-                response,
-                session.name || session.username,
-              );
-            Modal.close("admin-complaint-modal");
-            render();
-            Toast.success(
-              "Complaint updated. Student will be notified.",
-              "Saved",
-            );
+          var c = Complaints.all().find(function (x) {
+            return x.id === id;
           });
+          if (!c) return;
+
+          var existing = document.getElementById("admin-complaint-modal");
+          if (existing) existing.remove();
+
+          var modal = document.createElement("div");
+          modal.className = "modal-backdrop";
+          modal.id = "admin-complaint-modal";
+          modal.setAttribute("role", "dialog");
+          modal.setAttribute("aria-modal", "true");
+
+          /* Build history timeline */
+          var historyHtml = (c.history || [])
+            .map(function (h) {
+              return (
+                '<div style="padding:8px 0; border-bottom:1px dashed var(--border-subtle); font-size:var(--fs-xs);">' +
+                '<div style="font-weight:600; color:var(--text-primary);">' +
+                Util.escape(h.action) +
+                "</div>" +
+                '<div style="color:var(--text-tertiary); margin-top:2px;">' +
+                Util.escape(h.actor) +
+                " · " +
+                Util.relativeTime(h.at) +
+                "</div>" +
+                "</div>"
+              );
+            })
+            .join("");
+
+          /* Build existing responses */
+          var responsesHtml = (c.responses || []).length
+            ? (c.responses || [])
+                .map(function (r) {
+                  return (
+                    '<div class="cm-response">' +
+                    '<div class="cm-response-head">' +
+                    '<span class="avatar avatar-32 avatar-fallback" style="background:var(--brand-primary);">' +
+                    Util.initials(r.name) +
+                    "</span>" +
+                    "<div>" +
+                    '<div class="font-semibold" style="font-size:var(--fs-sm);">' +
+                    Util.escape(r.name) +
+                    "</div>" +
+                    '<div class="text-xs text-muted">' +
+                    Util.relativeTime(r.at) +
+                    "</div>" +
+                    "</div>" +
+                    "</div>" +
+                    '<p style="font-size:var(--fs-sm); color:var(--text-secondary); line-height:1.6; margin:0;">' +
+                    Util.escape(r.text) +
+                    "</p>" +
+                    "</div>"
+                  );
+                })
+                .join("")
+            : '<p style="font-size:var(--fs-sm); color:var(--text-tertiary); margin:0 0 20px;">No responses yet.</p>';
+
+          modal.innerHTML =
+            '<div class="modal modal-lg">' +
+            '<div class="modal-head">' +
+            '<div style="min-width: 0;">' +
+            "<h3>" +
+            Util.escape(c.subject) +
+            "</h3>" +
+            '<p style="font-size: var(--fs-xs); color: var(--text-tertiary); margin-top: 2px;">' +
+            Util.escape(c.id) +
+            " · " +
+            Util.escape(c.category) +
+            "</p>" +
+            "</div>" +
+            '<button class="btn-icon" data-modal-close aria-label="Close"><i class="fa-solid fa-xmark"></i></button>' +
+            "</div>" +
+            '<div class="modal-body">' +
+            /* Status strip */
+            '<div class="cm-modal-status-strip">' +
+            '<span class="text-xs text-muted" style="text-transform:uppercase; letter-spacing:.05em; font-weight:700;">Current status</span>' +
+            complaintStatusPill(c.status) +
+            "</div>" +
+            /* Description */
+            '<div style="margin-bottom:24px;">' +
+            '<div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Description</div>' +
+            '<p style="color:var(--text-secondary); line-height:1.7; margin:0;">' +
+            Util.escape(c.description) +
+            "</p>" +
+            "</div>" +
+            /* Two-column: history + responses */
+            '<div class="cm-modal-grid">' +
+            "<div>" +
+            '<div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px;">History</div>' +
+            '<div style="max-height: 240px; overflow-y: auto;">' +
+            historyHtml +
+            "</div>" +
+            "</div>" +
+            "<div>" +
+            '<div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px;">Responses</div>' +
+            responsesHtml +
+            "</div>" +
+            "</div>" +
+            (canRespond
+              ? '<div style="margin-top:24px; padding-top:20px; border-top:1px solid var(--border-subtle);">' +
+                '<div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px;">Take action</div>' +
+                '<div class="field">' +
+                '<label class="label" for="cm-status">Update status</label>' +
+                '<select class="select" id="cm-status">' +
+                ["Submitted", "Under Review", "In Progress", "Resolved"]
+                  .map(function (s) {
+                    return (
+                      "<option" +
+                      (c.status === s ? " selected" : "") +
+                      ">" +
+                      s +
+                      "</option>"
+                    );
+                  })
+                  .join("") +
+                "</select>" +
+                "</div>" +
+                '<div class="field">' +
+                '<label class="label" for="cm-response">Respond to student <span class="label-hint">Optional</span></label>' +
+                '<textarea class="textarea" id="cm-response" placeholder="Write a response. The student will be notified." style="min-height:100px;"></textarea>' +
+                "</div>" +
+                '<div class="cluster" style="justify-content: flex-end; gap:10px;">' +
+                '<button type="button" class="btn btn-secondary" data-modal-close>Close</button>' +
+                '<button type="button" class="btn btn-primary" id="cm-submit">' +
+                '<i class="fa-solid fa-check"></i> Update complaint' +
+                "</button>" +
+                "</div>" +
+                "</div>"
+              : '<div style="margin-top:24px; padding-top:20px; border-top:1px solid var(--border-subtle); text-align:right;">' +
+                '<button type="button" class="btn btn-secondary" data-modal-close>Close</button>' +
+                "</div>") +
+            "</div>" +
+            "</div>";
+
+          document.body.appendChild(modal);
+
+          if (canRespond) {
+            modal
+              .querySelector("#cm-submit")
+              .addEventListener("click", function () {
+                var newStatus = modal.querySelector("#cm-status").value;
+                var response = modal.querySelector("#cm-response").value.trim();
+                var changed = false;
+
+                if (newStatus !== c.status) {
+                  Complaints.updateStatus(
+                    c.id,
+                    newStatus,
+                    (session.name || session.username) + " (Admin)",
+                  );
+                  changed = true;
+                }
+                if (response) {
+                  Complaints.respond(
+                    c.id,
+                    response,
+                    session.name || session.username,
+                  );
+                  changed = true;
+                }
+
+                if (!changed) {
+                  Toast.info("No changes made.", "Nothing to save");
+                  return;
+                }
+
+                Modal.close("admin-complaint-modal");
+                render();
+                Toast.success(
+                  "Complaint updated. Student will be notified.",
+                  "Saved",
+                );
+              });
+          }
+
           Modal.open("admin-complaint-modal");
         }
 
-        document.querySelectorAll("[data-status]").forEach((btn) => {
-          btn.addEventListener("click", () => {
-            document
-              .querySelectorAll("[data-status]")
-              .forEach((b) => b.classList.remove("is-active"));
-            btn.classList.add("is-active");
-            filter = btn.getAttribute("data-status");
-            render();
+        /* ------------------------------------------------------------------
+           TRIGGERS
+           ------------------------------------------------------------------ */
+        filterBar.addEventListener("click", function (e) {
+          var btn = e.target.closest("[data-status]");
+          if (!btn) return;
+          filterBar.querySelectorAll(".chip").forEach(function (c) {
+            c.classList.remove("is-active");
           });
+          btn.classList.add("is-active");
+          activeFilter = btn.getAttribute("data-status");
+          render();
         });
+
+        var debounce;
+        searchEl.addEventListener("input", function () {
+          clearTimeout(debounce);
+          debounce = setTimeout(render, 120);
+        });
+
         render();
       });
     </script>

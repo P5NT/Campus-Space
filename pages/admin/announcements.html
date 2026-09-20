@@ -45,8 +45,13 @@
   </head>
   <body class="has-session admin-body">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
-      <aside class="sidebar admin-sidebar" id="app-sidebar"></aside>
+      <aside
+        class="sidebar admin-sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
       <div class="app-main">
         <header class="app-header" id="app-header"></header>
         <main class="app-content" id="main">
@@ -54,36 +59,79 @@
             <div class="page-head-text">
               <h1 class="page-title">Announcements</h1>
               <p class="page-subtitle">
-                Publish official announcements to all students.
+                Publish and manage official announcements.
               </p>
             </div>
-            <button class="btn btn-primary" data-modal-open="add-ann-modal">
+            <button class="btn btn-primary" id="ann-publish-btn" type="button">
               <i class="fa-solid fa-bullhorn"></i> New announcement
             </button>
           </div>
+
+          <div class="toolbar">
+            <div class="input-wrap">
+              <i class="fa-solid fa-magnifying-glass input-icon"></i>
+              <input
+                class="input"
+                type="search"
+                id="ann-search"
+                placeholder="Search by title or audience…"
+                aria-label="Search announcements"
+              />
+            </div>
+          </div>
+
+          <div class="filter-bar" id="ann-filter" role="tablist">
+            <button class="chip is-active" data-status="all" role="tab">
+              All
+            </button>
+            <button class="chip" data-status="important" role="tab">
+              Important
+            </button>
+            <button class="chip" data-status="expired" role="tab">
+              Expired
+            </button>
+          </div>
+
+          <div class="cluster-between" style="margin-bottom: 12px">
+            <p class="section-desc" style="margin: 0" id="ann-count">
+              Loading…
+            </p>
+          </div>
+
           <div id="admin-ann-list" class="stack"></div>
         </main>
       </div>
     </div>
 
-    <div class="modal-backdrop" id="add-ann-modal">
+    <!-- ============ Publish / Edit announcement modal ============ -->
+    <div
+      class="modal-backdrop"
+      id="ann-editor-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ann-modal-title"
+    >
       <div class="modal modal-lg">
         <div class="modal-head">
-          <h3>Publish announcement</h3>
+          <h3 id="ann-modal-title">Publish announcement</h3>
           <button class="btn-icon" data-modal-close aria-label="Close">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
-        <form id="add-ann-form" novalidate>
+        <form id="ann-form" novalidate>
           <div class="modal-body">
             <div class="field">
-              <label class="label">Title <span class="req">*</span></label>
-              <input class="input" name="title" />
+              <label class="label" for="ann-title"
+                >Title <span class="req">*</span></label
+              >
+              <input class="input" id="ann-title" name="title" />
               <div class="field-error">
                 <i class="fa-solid fa-circle-exclamation"></i
                 ><span>Please enter a title.</span>
               </div>
             </div>
+
+            <!-- Audience targeting -->
             <div class="field">
               <label class="label">Audience <span class="req">*</span></label>
               <div class="audience-picker" id="audience-picker">
@@ -208,33 +256,117 @@
               </div>
               <div class="field-error">
                 <i class="fa-solid fa-circle-exclamation"></i
-                ><span>Please select at least one audience group.</span>
+                ><span>Please select at least one audience.</span>
               </div>
             </div>
+
             <div class="field">
-              <label class="label">Body <span class="req">*</span></label>
+              <label class="label" for="ann-body"
+                >Body <span class="req">*</span></label
+              >
               <textarea
                 class="textarea"
+                id="ann-body"
                 name="body"
-                style="min-height: 180px"
+                style="min-height: 200px"
+                placeholder="Write the announcement. Separate paragraphs with a blank line."
               ></textarea>
               <div class="field-error">
                 <i class="fa-solid fa-circle-exclamation"></i
                 ><span>Please write the announcement.</span>
               </div>
             </div>
-            <label class="checkbox">
-              <input type="checkbox" name="important" />
-              <span>Mark as important</span>
-            </label>
+
+            <div class="grid grid-2" style="gap: 16px">
+              <div class="field">
+                <label class="label" for="ann-publish-date">Publish date</label>
+                <input
+                  class="input"
+                  type="date"
+                  id="ann-publish-date"
+                  name="publishDate"
+                />
+                <div class="field-help">Defaults to today if left empty.</div>
+              </div>
+
+              <div class="field">
+                <label class="label" for="ann-expiry-date"
+                  >Expiry date <span class="label-hint">Optional</span></label
+                >
+                <input
+                  class="input"
+                  type="date"
+                  id="ann-expiry-date"
+                  name="expiresAt"
+                />
+                <div class="field-help">
+                  After this date the announcement hides from students but stays
+                  visible here.
+                </div>
+              </div>
+            </div>
+
+            <div class="field" style="margin-top: 12px">
+              <label class="checkbox">
+                <input type="checkbox" name="important" id="ann-important" />
+                <span>Mark as important</span>
+              </label>
+              <div class="field-help">
+                Important announcements appear at the top of the student list
+                and are visually emphasised.
+              </div>
+            </div>
+
+            <div class="field" style="margin-top: 12px">
+              <label class="checkbox">
+                <input type="checkbox" name="notify" id="ann-notify" checked />
+                <span>Send an in-app notification when published</span>
+              </label>
+            </div>
           </div>
           <div class="modal-foot">
             <button type="button" class="btn btn-secondary" data-modal-close>
               Cancel
             </button>
-            <button type="submit" class="btn btn-primary">Publish</button>
+            <button type="submit" class="btn btn-primary" id="ann-submit">
+              <i class="fa-solid fa-check"></i> <span>Publish</span>
+            </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- ============ Preview modal ============ -->
+    <div
+      class="modal-backdrop"
+      id="ann-preview-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ann-preview-title"
+    >
+      <div class="modal modal-lg">
+        <div class="modal-head">
+          <div style="min-width: 0">
+            <h3 id="ann-preview-title">Preview</h3>
+            <p
+              id="ann-preview-sub"
+              style="
+                font-size: var(--fs-xs);
+                color: var(--text-tertiary);
+                margin-top: 2px;
+              "
+            ></p>
+          </div>
+          <button class="btn-icon" data-modal-close aria-label="Close">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="modal-body" id="ann-preview-body"></div>
+        <div class="modal-foot">
+          <button type="button" class="btn btn-secondary" data-modal-close>
+            Close
+          </button>
+        </div>
       </div>
     </div>
 
@@ -247,115 +379,565 @@
 
     <script src="../../data/students.js"></script>
     <script src="../../data/news.js"></script>
+    <script src="../../data/faculties.js"></script>
     <script src="../../js/main.js"></script>
     <script src="../../js/validation.js"></script>
     <script src="../../js/auth.js"></script>
+    <script src="../../js/permissions.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
     <script src="../../js/admin.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
-        if (
-          !session ||
-          (session.role !== "admin" && session.role !== "super_admin")
-        ) {
+      /* ==========================================================================
+         Announcements — Admin workspace.
+         Full CRUD with localStorage persistence (cs_announcements_overrides).
+         Optional expiry date: expired announcements hide from students
+         but remain visible to admins.
+         ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
+        if (!session || !Permissions.isAdminRole(session)) {
           window.location.href = "../auth/login.html";
           return;
         }
+        if (!Permissions.can(session, "announcements.publish")) {
+          window.location.href = "dashboard.html";
+          return;
+        }
+
         initAppShell("admin");
 
-        const wrap = document.getElementById("admin-ann-list");
+        var STORAGE_KEY = "announcements_overrides";
+
+        /* ------------------------------------------------------------------
+           LOAD — merge demo seed with saved overrides
+           ------------------------------------------------------------------ */
+        function loadAnnouncements() {
+          var base = (
+            typeof DEMO_ANNOUNCEMENTS !== "undefined" ? DEMO_ANNOUNCEMENTS : []
+          ).map(function (a) {
+            var copy = Object.assign({}, a);
+            /* Normalize affected: always an array */
+            if (typeof copy.affected === "string") {
+              copy.affected = [copy.affected];
+            }
+            if (!Array.isArray(copy.affected)) {
+              copy.affected = ["All students"];
+            }
+            return copy;
+          });
+
+          var saved = Store.get(STORAGE_KEY, null);
+          if (saved && Array.isArray(saved.added)) {
+            saved.added.forEach(function (a) {
+              if (
+                !base.some(function (x) {
+                  return x.id === a.id;
+                })
+              ) {
+                base.unshift(a);
+              }
+            });
+          }
+          if (saved && Array.isArray(saved.deleted)) {
+            base = base.filter(function (a) {
+              return saved.deleted.indexOf(a.id) === -1;
+            });
+          }
+          if (saved && saved.edits) {
+            base.forEach(function (a) {
+              var edit = saved.edits[a.id];
+              if (edit) Object.assign(a, edit);
+            });
+          }
+          return base;
+        }
+
+        /* ------------------------------------------------------------------
+           PERSIST
+           ------------------------------------------------------------------ */
+        function persistAdded(record) {
+          var existing = Store.get(STORAGE_KEY, {}) || {};
+          existing.added = existing.added || [];
+          if (
+            !existing.added.some(function (x) {
+              return x.id === record.id;
+            })
+          ) {
+            existing.added.unshift(record);
+          }
+          Store.set(STORAGE_KEY, existing);
+        }
+
+        function persistEdit(record) {
+          var existing = Store.get(STORAGE_KEY, {}) || {};
+          existing.edits = existing.edits || {};
+          existing.edits[record.id] = {
+            title: record.title,
+            body: record.body,
+            affected: record.affected,
+            important: record.important,
+            date: record.date,
+            expiresAt: record.expiresAt || "",
+            lastEditedAt: Date.now(),
+          };
+          Store.set(STORAGE_KEY, existing);
+        }
+
+        function persistDeleted(id) {
+          var existing = Store.get(STORAGE_KEY, {}) || {};
+          existing.deleted = existing.deleted || [];
+          if (existing.deleted.indexOf(id) === -1) existing.deleted.push(id);
+          if (Array.isArray(existing.added)) {
+            existing.added = existing.added.filter(function (x) {
+              return x.id !== id;
+            });
+          }
+          if (existing.edits && existing.edits[id]) delete existing.edits[id];
+          Store.set(STORAGE_KEY, existing);
+        }
+
+        /* ------------------------------------------------------------------
+           STATE
+           ------------------------------------------------------------------ */
+        var announcements = loadAnnouncements();
+        var activeFilter = "all";
+        var editingId = null;
+
+        var listEl = document.getElementById("admin-ann-list");
+        var countEl = document.getElementById("ann-count");
+        var searchEl = document.getElementById("ann-search");
+        var filterBar = document.getElementById("ann-filter");
+        var modalTitle = document.getElementById("ann-modal-title");
+        var submitBtn = document.getElementById("ann-submit");
+        var form = document.getElementById("ann-form");
+
+        /* ------------------------------------------------------------------
+           HELPERS
+           ------------------------------------------------------------------ */
+        function todayISO() {
+          return new Date().toISOString().slice(0, 10);
+        }
+
+        function isExpired(a) {
+          if (!a || !a.expiresAt) return false;
+          var expiry = new Date(a.expiresAt);
+          if (isNaN(expiry.getTime())) return false;
+          var now = new Date();
+          now.setHours(0, 0, 0, 0);
+          return expiry < now;
+        }
+
+        function getStatus(a) {
+          return isExpired(a) ? "expired" : "active";
+        }
+
+        function audienceLabel(a) {
+          var arr = Array.isArray(a.affected)
+            ? a.affected
+            : [a.affected || "All students"];
+          if (arr.indexOf("All students") !== -1) return "All students";
+          return arr.join(", ");
+        }
+
+        /* ------------------------------------------------------------------
+           RENDER
+           ------------------------------------------------------------------ */
         function render() {
-          wrap.innerHTML = "";
-          DEMO_ANNOUNCEMENTS.forEach((a) => {
-            const el = document.createElement("div");
+          var q = searchEl.value.trim().toLowerCase();
+
+          var visible = announcements.filter(function (a) {
+            var status = getStatus(a);
+            if (activeFilter === "expired") return status === "expired";
+            if (activeFilter === "important") return a.important === true;
+            /* "all" → include expired */
+            if (!q) return true;
+            return (
+              (a.title || "").toLowerCase().indexOf(q) !== -1 ||
+              audienceLabel(a).toLowerCase().indexOf(q) !== -1
+            );
+          });
+
+          if (q) {
+            visible = visible.filter(function (a) {
+              return (
+                (a.title || "").toLowerCase().indexOf(q) !== -1 ||
+                audienceLabel(a).toLowerCase().indexOf(q) !== -1
+              );
+            });
+          }
+
+          /* Sort: important first, then newest */
+          visible.sort(function (a, b) {
+            if (!!a.important !== !!b.important) return a.important ? -1 : 1;
+            return new Date(b.date) - new Date(a.date);
+          });
+
+          countEl.textContent =
+            visible.length +
+            " announcement" +
+            (visible.length === 1 ? "" : "s") +
+            (q || activeFilter !== "all" ? " matching" : "");
+
+          listEl.innerHTML = "";
+
+          if (!visible.length) {
+            var emptyMsg = q
+              ? "No announcements match your search."
+              : activeFilter === "expired"
+                ? "No expired announcements."
+                : activeFilter === "important"
+                  ? "No important announcements."
+                  : "No announcements yet.";
+            listEl.innerHTML =
+              '<div class="card"><div class="empty-state" style="padding: 48px 24px;">' +
+              '<div class="empty-icon"><i class="fa-solid fa-bullhorn"></i></div>' +
+              "<h3>" +
+              emptyMsg +
+              "</h3>" +
+              (!q && activeFilter === "all"
+                ? "<p>Click <strong>New announcement</strong> to get started.</p>"
+                : "") +
+              "</div></div>";
+            return;
+          }
+
+          visible.forEach(function (a) {
+            var status = getStatus(a);
+            var el = document.createElement("div");
             el.className =
               "announcement" + (a.important ? " is-important" : "");
-            el.innerHTML = `
-        <div class="announcement-head">
-          <i class="fa-solid fa-bullhorn" style="color:var(--brand-secondary);"></i>
-          <div>
-            <div class="font-semibold" style="font-size:var(--fs-sm);">${Util.escape(a.author)}</div>
-            <div class="text-xs text-muted">${Util.formatDate(a.date)}</div>
-          </div>
-          <div class="cluster" style="margin-left:auto;">
-            ${a.important ? '<span class="badge badge-brand">Important</span>' : ""}
-            <button class="btn btn-ghost btn-sm" data-edit><i class="fa-solid fa-pen"></i></button>
-            <button class="btn btn-ghost btn-sm" data-del style="color:var(--danger);"><i class="fa-solid fa-trash"></i></button>
-          </div>
-        </div>
-        <h3>${Util.escape(a.title)}</h3>
-        <p>${Util.escape(a.body.split("\n")[0])}</p>
-        <div class="announcement-foot">
-          <span><i class="fa-solid fa-users"></i> ${Util.escape(a.affected)}</span>
-        </div>`;
-            el.querySelector("[data-edit]").addEventListener("click", () =>
-              Toast.info(
-                'Editing "' + a.title + '" (simulated).',
-                "Edit announcement",
-              ),
-            );
-            el.querySelector("[data-del]").addEventListener(
+
+            var audienceText = audienceLabel(a);
+
+            var badgeHtml = "";
+            if (a.important)
+              badgeHtml +=
+                '<span class="badge badge-brand"><i class="fa-solid fa-star"></i> Important</span>';
+            if (status === "expired")
+              badgeHtml +=
+                '<span class="badge badge-neutral"><i class="fa-solid fa-clock"></i> Expired</span>';
+
+            var expiryNote =
+              status === "expired"
+                ? "Expired on " + Util.formatDate(a.expiresAt)
+                : a.expiresAt
+                  ? "Expires " + Util.formatDate(a.expiresAt)
+                  : "No expiry";
+
+            el.innerHTML =
+              '<div class="announcement-head">' +
+              '<i class="fa-solid fa-bullhorn" style="color:var(--brand-secondary); flex-shrink:0;"></i>' +
+              '<div style="min-width:0;">' +
+              '<div class="font-semibold" style="font-size:var(--fs-sm);">' +
+              Util.escape(a.author || "Space Admin") +
+              "</div>" +
+              '<div class="text-xs text-muted">' +
+              Util.formatDate(a.date) +
+              " · " +
+              expiryNote +
+              "</div>" +
+              "</div>" +
+              '<div class="cluster" style="margin-left:auto; gap:6px;">' +
+              badgeHtml +
+              '<button class="btn btn-ghost btn-sm" data-preview type="button" aria-label="Preview announcement"><i class="fa-solid fa-eye"></i></button>' +
+              '<button class="btn btn-ghost btn-sm" data-edit type="button" aria-label="Edit announcement"><i class="fa-solid fa-pen"></i></button>' +
+              '<button class="btn btn-ghost btn-sm" data-del type="button" aria-label="Delete announcement" style="color:var(--danger);"><i class="fa-solid fa-trash"></i></button>' +
+              "</div>" +
+              "</div>" +
+              "<h3>" +
+              Util.escape(a.title) +
+              "</h3>" +
+              "<p>" +
+              Util.escape((a.body || "").split("\n")[0]) +
+              "</p>" +
+              '<div class="announcement-foot">' +
+              '<span><i class="fa-solid fa-users"></i> ' +
+              Util.escape(audienceText) +
+              "</span>" +
+              "</div>";
+
+            /* ---- Preview ---- */
+            el.querySelector("[data-preview]").addEventListener(
               "click",
-              async () => {
-                if (
-                  await Confirmation.confirm({
-                    title: "Delete this announcement?",
-                    message:
-                      '"' + a.title + '" will be removed from Campus Space.',
-                    confirmLabel: "Delete",
-                    variant: "danger",
-                  })
-                ) {
-                  const idx = DEMO_ANNOUNCEMENTS.findIndex(
-                    (x) => x.id === a.id,
-                  );
-                  DEMO_ANNOUNCEMENTS.splice(idx, 1);
-                  render();
-                  Toast.success("Announcement deleted.", "Removed");
-                }
+              function () {
+                openPreviewModal(a);
               },
             );
-            wrap.appendChild(el);
+
+            /* ---- Edit ---- */
+            el.querySelector("[data-edit]").addEventListener(
+              "click",
+              function () {
+                openEditor(a);
+              },
+            );
+
+            /* ---- Delete ---- */
+            el.querySelector("[data-del]").addEventListener(
+              "click",
+              async function () {
+                var ok = await Confirmation.confirm({
+                  title: "Delete this announcement?",
+                  message:
+                    '"' + a.title + '" will be removed from Campus Space.',
+                  confirmLabel: "Delete",
+                  variant: "danger",
+                });
+                if (!ok) return;
+                announcements = announcements.filter(function (x) {
+                  return x.id !== a.id;
+                });
+                persistDeleted(a.id);
+                render();
+                Toast.success("Announcement deleted.", "Removed");
+              },
+            );
+
+            listEl.appendChild(el);
           });
         }
-        render();
 
+        /* ------------------------------------------------------------------
+           OPEN EDITOR — Add or Edit
+           ------------------------------------------------------------------ */
+        function openEditor(existing) {
+          form.reset();
+          form.querySelectorAll(".field").forEach(function (f) {
+            f.classList.remove("is-invalid", "is-valid");
+          });
+
+          if (existing) {
+            editingId = existing.id;
+            modalTitle.textContent = "Edit announcement";
+            submitBtn.querySelector("span").textContent = "Save changes";
+            form.querySelector('[name="title"]').value = existing.title || "";
+            form.querySelector('[name="body"]').value = existing.body || "";
+            form.querySelector('[name="publishDate"]').value =
+              existing.date || todayISO();
+            form.querySelector('[name="expiresAt"]').value =
+              existing.expiresAt || "";
+            form.querySelector('[name="important"]').checked =
+              !!existing.important;
+            form.querySelector('[name="notify"]').checked = false;
+
+            /* Prefill audience checkboxes */
+            var affected = Array.isArray(existing.affected)
+              ? existing.affected
+              : [existing.affected];
+            form.querySelectorAll('[name="audience"]').forEach(function (cb) {
+              cb.checked = affected.indexOf(cb.value) !== -1;
+            });
+          } else {
+            editingId = null;
+            modalTitle.textContent = "Publish announcement";
+            submitBtn.querySelector("span").textContent = "Publish";
+            form.querySelector('[name="publishDate"]').value = todayISO();
+            form.querySelector('[name="notify"]').checked = true;
+            form.querySelector('[name="important"]').checked = false;
+          }
+
+          Modal.open("ann-editor-modal");
+        }
+
+        /* ------------------------------------------------------------------
+           PREVIEW MODAL
+           ------------------------------------------------------------------ */
+        function openPreviewModal(a) {
+          document.getElementById("ann-preview-title").textContent = a.title;
+          document.getElementById("ann-preview-sub").textContent =
+            audienceLabel(a) +
+            " · " +
+            Util.formatDate(a.date) +
+            (isExpired(a)
+              ? " · Expired on " + Util.formatDate(a.expiresAt)
+              : "");
+
+          var bodyHtml = (a.body || "")
+            .split(/\n\s*\n/)
+            .map(function (p) {
+              return (
+                '<p style="margin:0 0 14px; font-size:var(--fs-md); line-height:1.7; color:var(--text-primary);">' +
+                Util.escape(p) +
+                "</p>"
+              );
+            })
+            .join("");
+
+          var expiredNote = isExpired(a)
+            ? '<div class="report-review-notice" style="background:var(--warning-soft); border-left-color:var(--warning); margin-bottom:20px;">' +
+              '<i class="fa-solid fa-clock"></i> This announcement is expired and hidden from students.' +
+              "</div>"
+            : "";
+
+          var importantBadge = a.important
+            ? '<div class="report-review-notice" style="background:var(--brand-primary-soft); border-left-color:var(--brand-primary); margin-bottom:20px;">' +
+              '<i class="fa-solid fa-star"></i> This is an important announcement — it appears at the top of the student list.' +
+              "</div>"
+            : "";
+
+          document.getElementById("ann-preview-body").innerHTML =
+            '<div style="padding:24px;">' +
+            expiredNote +
+            importantBadge +
+            '<div class="announcement-head" style="margin-bottom:16px; border:none; padding:0;">' +
+            '<span class="avatar avatar-32 avatar-fallback" style="background:var(--brand-secondary); flex-shrink:0;">SA</span>' +
+            '<div style="min-width:0;">' +
+            '<div class="font-semibold" style="font-size:var(--fs-sm);">' +
+            Util.escape(a.author || "Space Admin") +
+            "</div>" +
+            '<div class="text-xs text-muted">' +
+            Util.formatDate(a.date, {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            }) +
+            "</div>" +
+            "</div>" +
+            "</div>" +
+            bodyHtml +
+            '<div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--border-subtle); font-size:var(--fs-xs); color:var(--text-tertiary);">' +
+            '<i class="fa-solid fa-users"></i> Sent to: ' +
+            Util.escape(audienceLabel(a)) +
+            "</div>" +
+            "</div>";
+
+          Modal.open("ann-preview-modal");
+        }
+
+        /* ------------------------------------------------------------------
+           SUBMIT
+           ------------------------------------------------------------------ */
         bindForm(
-          document.getElementById("add-ann-form"),
+          form,
           {
-            title: [Rules.required],
+            title: [Rules.required, Rules.minLen(5)],
             body: [Rules.required, Rules.minLen(20)],
           },
-          (data) => {
-            // Collect selected audiences
-            const audiences = data.getAll("audience");
+          function (data) {
+            var title = data.get("title").trim();
+            var body = data.get("body").trim();
+            var audiences = data.getAll("audience");
+            var important = data.get("important") === "on";
+            var notify = data.get("notify") === "on";
+            var publishDate = data.get("publishDate") || todayISO();
+            var expiresAt = (data.get("expiresAt") || "").trim();
 
             if (!audiences.length) {
               Toast.warning(
-                "Please select at least one audience group.",
+                "Please select at least one audience.",
                 "Audience required",
               );
               return;
             }
 
-            DEMO_ANNOUNCEMENTS.unshift({
-              id: "ann-" + Date.now(),
-              title: data.get("title"),
-              author: session.name || session.username,
-              date: new Date().toISOString().slice(0, 10),
-              important: !!data.get("important"),
-              body: data.get("body"),
-              affected: audiences, // ← now an ARRAY
-            });
+            if (
+              expiresAt &&
+              publishDate &&
+              new Date(expiresAt) < new Date(publishDate)
+            ) {
+              Toast.error(
+                "Expiry date can't be before the publish date.",
+                "Invalid dates",
+              );
+              return;
+            }
+
+            if (editingId) {
+              var target = announcements.find(function (a) {
+                return a.id === editingId;
+              });
+              if (target) {
+                target.title = title;
+                target.body = body;
+                target.affected = audiences;
+                target.important = important;
+                target.date = publishDate;
+                target.expiresAt = expiresAt;
+                persistEdit(target);
+              }
+              Toast.success("Announcement updated.", "Saved");
+            } else {
+              var newRec = {
+                id: "ann-" + Date.now(),
+                title: title,
+                author: session.name || session.username,
+                date: publishDate,
+                important: important,
+                body: body,
+                affected: audiences,
+                expiresAt: expiresAt,
+                createdAt: Date.now(),
+              };
+              announcements.unshift(newRec);
+              persistAdded(newRec);
+
+              if (notify) {
+                var notifs = Store.get("notifications", []) || [];
+                notifs.unshift({
+                  id: "n-" + Date.now(),
+                  type: "announcement",
+                  icon: "fa-bullhorn",
+                  tone: important ? "brand" : "marine",
+                  title: important
+                    ? "Important Announcement"
+                    : "New Announcement",
+                  body: title,
+                  link: "announcements.html",
+                  time: Date.now(),
+                  read: false,
+                });
+                Store.set("notifications", notifs);
+              }
+
+              Toast.success(
+                notify
+                  ? "Announcement published. Students notified."
+                  : "Announcement published.",
+                "Published",
+              );
+            }
 
             render();
-            Modal.close("add-ann-modal");
-            document.getElementById("add-ann-form").reset();
-            Toast.success("Announcement published.", "Published");
+            Modal.close("ann-editor-modal");
+            form.reset();
+            editingId = null;
           },
         );
+
+        /* ------------------------------------------------------------------
+           TRIGGERS
+           ------------------------------------------------------------------ */
+        document
+          .getElementById("ann-publish-btn")
+          .addEventListener("click", function () {
+            openEditor(null);
+          });
+
+        filterBar.addEventListener("click", function (e) {
+          var btn = e.target.closest("[data-status]");
+          if (!btn) return;
+          filterBar.querySelectorAll(".chip").forEach(function (c) {
+            c.classList.remove("is-active");
+          });
+          btn.classList.add("is-active");
+          activeFilter = btn.getAttribute("data-status");
+          render();
+        });
+
+        var debounce;
+        searchEl.addEventListener("input", function () {
+          clearTimeout(debounce);
+          debounce = setTimeout(render, 120);
+        });
+
+        document.addEventListener("click", function (e) {
+          if (e.target.closest("[data-modal-close]")) {
+            editingId = null;
+          }
+        });
+
+        render();
       });
     </script>
   </body>

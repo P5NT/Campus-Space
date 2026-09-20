@@ -272,6 +272,8 @@
     <script src="../../data/students.js"></script>
     <script src="../../data/pending-announcements.js"></script>
     <script src="../../data/courses.js"></script>
+    <script src="../../js/timetable-admin.js"></script>
+    <script src="../../js/calendar-admin.js"></script>
     <script src="../../data/news.js"></script>
     <script src="../../data/opportunities.js"></script>
     <script src="../../data/events.js"></script>
@@ -388,23 +390,129 @@
         });
 
         // ---- Academic resources preview ----
+        // Shows the latest resources including any structured ones (calendar).
         const resWrap = document.getElementById("dashboard-resources");
-        DEMO_RESOURCES.slice(0, 3).forEach((r) => {
+
+        // Build a merged list: structured calendar (if published) + latest file resources
+        const structuredItems = [];
+
+        // Structured Academic Calendar — appears first if admin has published events
+        if (typeof CalendarAdmin !== "undefined") {
+          const split = CalendarAdmin.getSplitEvents("2026/2027");
+          const total =
+            (split.first?.length || 0) + (split.second?.length || 0);
+          if (total > 0) {
+            structuredItems.push({
+              id: "cal-2026-2027",
+              name: "Academic Calendar — 2026/2027 Session",
+              icon: "fa-calendar-days",
+              iconBg: "warning",
+              meta: total + " event" + (total === 1 ? "" : "s"),
+              uploaded: new Date().toISOString().slice(0, 10),
+              href: "academic-calendar.html",
+              isStructured: true,
+            });
+          }
+        }
+
+        // Structured Lecture/Exam Timetables for this student's audience
+        if (typeof TimetableAdmin !== "undefined" && student) {
+          const lt = TimetableAdmin.getMergedLectureTimetables().find(
+            (t) =>
+              t.faculty === student.faculty &&
+              t.department === student.department &&
+              t.level === student.level,
+          );
+          if (lt && (lt.slots || []).length) {
+            let count = 0;
+            lt.slots.forEach((s) => {
+              count += Object.keys(s.periods || {}).length;
+            });
+            structuredItems.push({
+              id: "lt-" + student.department + "-" + student.level,
+              name: "Lecture Timetable — " + student.department,
+              icon: "fa-chalkboard",
+              iconBg: "brand",
+              meta: count + " course slot" + (count === 1 ? "" : "s"),
+              uploaded: new Date().toISOString().slice(0, 10),
+              href: "lecture-timetable.html",
+              isStructured: true,
+            });
+          }
+
+          const et = TimetableAdmin.getMergedExamTimetables().find(
+            (t) =>
+              t.faculty === student.faculty &&
+              t.department === student.department &&
+              t.level === student.level,
+          );
+          if (et && (et.exams || []).length) {
+            structuredItems.push({
+              id: "et-" + student.department + "-" + student.level,
+              name: "Exam Timetable — " + student.department,
+              icon: "fa-file-signature",
+              iconBg: "marine",
+              meta:
+                et.exams.length + " exam" + (et.exams.length === 1 ? "" : "s"),
+              uploaded: new Date().toISOString().slice(0, 10),
+              href: "exam-timetable.html",
+              isStructured: true,
+            });
+          }
+        }
+
+        // File resources (latest 3, but leave room for the structured ones)
+        const fileItems = (
+          typeof DEMO_RESOURCES !== "undefined" ? DEMO_RESOURCES : []
+        )
+          .slice(0, Math.max(3 - structuredItems.length, 0))
+          .map((r) => ({
+            id: r.id,
+            name: r.name,
+            icon: "fa-file-pdf",
+            iconBg: r.type || "pdf",
+            meta: Util.relativeTime(r.uploaded),
+            uploaded: r.uploaded,
+            href: null,
+            isStructured: false,
+            raw: r,
+          }));
+
+        const combined = structuredItems.concat(fileItems);
+
+        if (!combined.length) {
+          resWrap.innerHTML =
+            '<div style="padding:24px; text-align:center; color:var(--text-tertiary); font-size:var(--fs-sm);">' +
+            "No resources yet." +
+            "</div>";
+        }
+
+        combined.forEach((item) => {
           const el = document.createElement("div");
           el.className = "resource-row";
           el.style.padding = "12px 20px";
           el.innerHTML = `
-      <div class="resource-icon pdf"><i class="fa-solid fa-file-pdf"></i></div>
-      <div class="resource-info">
-        <div class="resource-name" title="${Util.escape(r.name)}">${Util.escape(r.name)}</div>
-        <div class="resource-meta"><span><i class="fa-regular fa-clock"></i> ${Util.relativeTime(r.uploaded)}</span></div>
-      </div>
-      <button class="btn-icon" aria-label="Download ${Util.escape(r.name)}">
-        <i class="fa-solid fa-download"></i>
-      </button>`;
+              <div class="resource-icon ${item.iconBg}"><i class="fa-solid ${item.icon}"></i></div>
+              <div class="resource-info">
+                <div class="resource-name" title="${Util.escape(item.name)}">${Util.escape(item.name)}</div>
+                <div class="resource-meta"><span>${Util.escape(item.meta)}</span></div>
+              </div>
+              <button class="btn-icon" aria-label="Open ${Util.escape(item.name)}">
+                <i class="fa-solid ${item.isStructured ? "fa-arrow-right" : "fa-download"}"></i>
+              </button>`;
+
           el.querySelector("button").addEventListener("click", () => {
-            Toast.success("Download started (simulated).", "Downloading");
+            if (item.isStructured && item.href) {
+              window.location.href = item.href;
+            } else if (item.raw) {
+              if (typeof downloadResourceFile === "function") {
+                downloadResourceFile(item.raw);
+              } else {
+                Toast.success("Download started.", "Downloading");
+              }
+            }
           });
+
           resWrap.appendChild(el);
         });
 

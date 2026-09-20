@@ -45,8 +45,13 @@
   </head>
   <body class="has-session admin-body">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
-      <aside class="sidebar admin-sidebar" id="app-sidebar"></aside>
+      <aside
+        class="sidebar admin-sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
       <div class="app-main">
         <header class="app-header" id="app-header"></header>
         <main class="app-content" id="main">
@@ -60,12 +65,77 @@
             </div>
           </div>
 
+          <!-- Summary stats -->
+          <div class="grid grid-4" style="margin-bottom: 24px">
+            <div class="stat">
+              <div class="stat-label">Pending</div>
+              <div
+                class="stat-value"
+                id="stat-pending"
+                style="color: var(--warning)"
+              >
+                —
+              </div>
+              <div class="stat-meta">Awaiting review</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Resolved</div>
+              <div
+                class="stat-value"
+                id="stat-resolved"
+                style="color: var(--success)"
+              >
+                —
+              </div>
+              <div class="stat-meta">Action taken</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Dismissed</div>
+              <div
+                class="stat-value"
+                id="stat-dismissed"
+                style="color: var(--text-secondary)"
+              >
+                —
+              </div>
+              <div class="stat-meta">No action needed</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Total</div>
+              <div class="stat-value" id="stat-total">—</div>
+              <div class="stat-meta">All reports</div>
+            </div>
+          </div>
+
+          <!-- Filter tabs -->
+          <div class="filter-bar" id="reports-filter" role="tablist">
+            <button class="chip is-active" data-status="all" role="tab">
+              All
+            </button>
+            <button class="chip" data-status="pending" role="tab">
+              Pending
+            </button>
+            <button class="chip" data-status="resolved" role="tab">
+              Resolved
+            </button>
+            <button class="chip" data-status="dismissed" role="tab">
+              Dismissed
+            </button>
+          </div>
+
+          <div class="cluster-between" style="margin-bottom: 12px">
+            <p class="section-desc" style="margin: 0" id="reports-count">
+              Loading…
+            </p>
+          </div>
+
           <div class="card">
             <div id="reports-list"></div>
           </div>
         </main>
       </div>
     </div>
+
     <div class="mobile-menu-backdrop"></div>
     <aside
       class="mobile-menu"
@@ -74,104 +144,482 @@
     ></aside>
 
     <script src="../../data/students.js"></script>
+    <script src="../../data/associations.js"></script>
     <script src="../../js/main.js"></script>
     <script src="../../js/validation.js"></script>
     <script src="../../js/auth.js"></script>
+    <script src="../../js/permissions.js"></script>
+    <script src="../../js/community.js"></script>
+    <script src="../../js/leaders.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
-    <script src="../../js/community.js"></script>
     <script src="../../js/admin.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
-        if (
-          !session ||
-          (session.role !== "admin" && session.role !== "super_admin")
-        ) {
+      /* ==========================================================================
+         Moderation & Reports — Admin workspace.
+         Reads reported posts from Community, tracks resolution state in
+         localStorage via the shared community store.
+         ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
+        if (!session || !Permissions.isAdminRole(session)) {
           window.location.href = "../auth/login.html";
           return;
         }
-        initAppShell("admin");
-
-        const listEl = document.getElementById("reports-list");
-        const reported = Community.all().filter((p) => p.reported);
-        if (!reported.length) {
-          listEl.innerHTML = `
-      <div class="empty-state" style="padding:48px 24px;">
-        <div class="empty-icon"><i class="fa-solid fa-shield-halved"></i></div>
-        <h3>No reports to review</h3>
-        <p>When a student reports a post, it will appear here for moderation.</p>
-      </div>`;
+        if (!Permissions.can(session, "moderation.view")) {
+          window.location.href = "dashboard.html";
           return;
         }
-        reported.forEach((p) => {
-          const row = document.createElement("div");
-          row.className = "resource-row";
-          row.innerHTML = `
-      <span class="avatar avatar-40 avatar-fallback">${p.initials}</span>
-      <div class="resource-info">
-        <div class="resource-name">${Util.escape(p.author)} · @${Util.escape(p.handle)}</div>
-        <div class="resource-meta">
-          <span>Reason: ${Util.escape(p.reportReason || "—")}</span>
-          <span class="badge badge-danger">Reported</span>
-        </div>
-        <p style="font-size:var(--fs-sm); color:var(--text-secondary); margin-top:6px;">${Util.escape(p.text.slice(0, 180))}…</p>
-      </div>
-      <div class="cluster">
-        <button class="btn btn-secondary btn-sm" data-hide><i class="fa-solid fa-eye-slash"></i> Hide</button>
-        <button class="btn btn-danger btn-sm" data-delete><i class="fa-solid fa-trash"></i> Delete</button>
-        <button class="btn btn-ghost btn-sm" data-suspend style="color:var(--danger);"><i class="fa-solid fa-user-slash"></i> Suspend author</button>
-      </div>`;
-          row
-            .querySelector("[data-hide]")
-            .addEventListener("click", async () => {
-              if (
-                await Confirmation.confirm({
-                  title: "Hide this post?",
+
+        initAppShell("admin");
+
+        var canAct = Permissions.can(session, "moderation.act");
+
+        var listEl = document.getElementById("reports-list");
+        var countEl = document.getElementById("reports-count");
+        var filterBar = document.getElementById("reports-filter");
+        var activeFilter = "all";
+
+        /* ------------------------------------------------------------------
+           REASON ICONS — visual cue per report reason
+           ------------------------------------------------------------------ */
+        var REASON_ICONS = {
+          Spam: { icon: "fa-ban", color: "warning" },
+          "Harassment / bullying": { icon: "fa-user-slash", color: "danger" },
+          "Inappropriate content": { icon: "fa-eye-slash", color: "danger" },
+          "False / misleading": {
+            icon: "fa-triangle-exclamation",
+            color: "warning",
+          },
+          "Hate speech": { icon: "fa-circle-exclamation", color: "danger" },
+          "Scam / fraud": { icon: "fa-hand-holding-dollar", color: "warning" },
+          Other: { icon: "fa-circle-info", color: "neutral" },
+        };
+
+        function getReasonMeta(reason) {
+          return REASON_ICONS[reason] || REASON_ICONS["Other"];
+        }
+
+        /* ------------------------------------------------------------------
+           STATUS RESOLVER — what state is this report in?
+             - "pending"    → not yet touched
+             - "resolved"   → reportStatus === "resolved"
+             - "dismissed"  → reportStatus === "dismissed"
+           ------------------------------------------------------------------ */
+        function getStatus(post) {
+          if (post.reportStatus === "resolved") return "resolved";
+          if (post.reportStatus === "dismissed") return "dismissed";
+          return "pending";
+        }
+
+        /* ------------------------------------------------------------------
+           RENDER
+           ------------------------------------------------------------------ */
+        function render() {
+          var all = Community.reported();
+          var counts = { pending: 0, resolved: 0, dismissed: 0 };
+          all.forEach(function (p) {
+            counts[getStatus(p)]++;
+          });
+
+          document.getElementById("stat-pending").textContent = counts.pending;
+          document.getElementById("stat-resolved").textContent =
+            counts.resolved;
+          document.getElementById("stat-dismissed").textContent =
+            counts.dismissed;
+          document.getElementById("stat-total").textContent = all.length;
+
+          var visible = all.filter(function (p) {
+            if (activeFilter === "all") return true;
+            return getStatus(p) === activeFilter;
+          });
+
+          countEl.textContent =
+            visible.length +
+            " report" +
+            (visible.length === 1 ? "" : "s") +
+            (activeFilter !== "all" ? " · " + activeFilter : "");
+
+          listEl.innerHTML = "";
+
+          if (!visible.length) {
+            var emptyMsg =
+              activeFilter === "all"
+                ? "No reports yet"
+                : activeFilter === "pending"
+                  ? "No pending reports"
+                  : activeFilter === "resolved"
+                    ? "No resolved reports"
+                    : "No dismissed reports";
+
+            listEl.innerHTML =
+              '<div class="empty-state" style="padding: 48px 24px;">' +
+              '<div class="empty-icon"><i class="fa-solid fa-shield-halved"></i></div>' +
+              "<h3>" +
+              emptyMsg +
+              "</h3>" +
+              "<p>" +
+              (activeFilter === "all"
+                ? "When a student reports a post, it will appear here for moderation."
+                : "Try a different filter.") +
+              "</p>" +
+              "</div>";
+            return;
+          }
+
+          visible.forEach(function (p) {
+            var status = getStatus(p);
+            var reasonMeta = getReasonMeta(p.reportReason);
+
+            var row = document.createElement("div");
+            row.className = "report-row report-row-" + status;
+
+            /* Status badge */
+            var statusBadge =
+              status === "pending"
+                ? '<span class="badge badge-warning"><i class="fa-solid fa-clock"></i> Pending</span>'
+                : status === "resolved"
+                  ? '<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Resolved</span>'
+                  : '<span class="badge badge-neutral"><i class="fa-solid fa-xmark"></i> Dismissed</span>';
+
+            row.innerHTML =
+              /* Left: reporter's report — icon + reason + reporter */
+              '<div class="report-row-main">' +
+              '<div class="report-row-icon report-reason-' +
+              reasonMeta.color +
+              '">' +
+              '<i class="fa-solid ' +
+              reasonMeta.icon +
+              '"></i>' +
+              "</div>" +
+              '<div class="report-row-body">' +
+              '<div class="report-row-head">' +
+              '<span class="report-reason">' +
+              Util.escape(p.reportReason || "Other") +
+              "</span>" +
+              statusBadge +
+              "</div>" +
+              '<div class="report-row-meta">' +
+              '<span><i class="fa-solid fa-user"></i> Reported by ' +
+              Util.escape(p.reportedBy || "Anonymous") +
+              "</span>" +
+              '<span><i class="fa-regular fa-clock"></i> ' +
+              Util.relativeTime(p.reportedAt || p.time) +
+              "</span>" +
+              "</div>" +
+              "</div>" +
+              "</div>" +
+              /* Middle: the reported post itself */
+              '<div class="report-row-post">' +
+              '<div class="report-post-head">' +
+              '<span class="avatar avatar-32 avatar-fallback">' +
+              Util.escape(p.initials || "??") +
+              "</span>" +
+              '<div class="report-post-author">' +
+              '<span class="report-post-name">' +
+              Util.escape(p.author) +
+              "</span>" +
+              '<span class="report-post-handle">@' +
+              Util.escape(p.handle) +
+              "</span>" +
+              "</div>" +
+              "</div>" +
+              '<p class="report-post-text">' +
+              Util.escape(p.text || "") +
+              "</p>" +
+              (p.hidden
+                ? '<div class="report-post-hidden"><i class="fa-solid fa-eye-slash"></i> Post hidden from students</div>'
+                : "") +
+              "</div>" +
+              /* Right: actions */
+              '<div class="report-row-actions">' +
+              '<button class="btn btn-secondary btn-sm" data-review type="button">' +
+              '<i class="fa-solid fa-eye"></i> <span>Review</span>' +
+              "</button>" +
+              (status === "pending" && canAct
+                ? '<button class="btn btn-ghost btn-sm" data-resolve type="button" style="color:var(--success);">' +
+                  '<i class="fa-solid fa-circle-check"></i> <span>Resolve</span>' +
+                  "</button>" +
+                  '<button class="btn btn-ghost btn-sm" data-dismiss type="button">' +
+                  '<i class="fa-solid fa-xmark"></i> <span>Dismiss</span>' +
+                  "</button>"
+                : "") +
+              (status !== "pending" && canAct
+                ? '<button class="btn btn-ghost btn-sm" data-reopen type="button">' +
+                  '<i class="fa-solid fa-rotate-left"></i> <span>Reopen</span>' +
+                  "</button>"
+                : "") +
+              (canAct
+                ? '<button class="btn btn-ghost btn-sm" data-hide type="button" style="color:var(--warning);">' +
+                  '<i class="fa-solid fa-eye-slash"></i> <span>' +
+                  (p.hidden ? "Unhide" : "Hide") +
+                  "</span>" +
+                  "</button>" +
+                  '<button class="btn btn-ghost btn-sm" data-delete type="button" style="color:var(--danger);">' +
+                  '<i class="fa-solid fa-trash"></i> <span>Delete</span>' +
+                  "</button>"
+                : "") +
+              "</div>";
+
+            /* ---- Review (opens a modal with the full post) ---- */
+            var reviewBtn = row.querySelector("[data-review]");
+            if (reviewBtn) {
+              reviewBtn.addEventListener("click", function () {
+                openReviewModal(p);
+              });
+            }
+
+            /* ---- Resolve ---- */
+            var resolveBtn = row.querySelector("[data-resolve]");
+            if (resolveBtn) {
+              resolveBtn.addEventListener("click", async function () {
+                var ok = await Confirmation.confirm({
+                  title: "Resolve this report?",
                   message:
-                    "The post will be removed from student feeds but retained for Admin.",
-                  confirmLabel: "Hide",
-                })
-              ) {
-                p.hidden = true;
-                Community.save(Community.all());
-                Toast.success("Post hidden from students.", "Hidden");
-              }
-            });
-          row
-            .querySelector("[data-delete]")
-            .addEventListener("click", async () => {
-              if (
-                await Confirmation.confirm({
+                    "The report will be marked as resolved. The post stays in the feed unless you also hide or delete it.",
+                  confirmLabel: "Resolve",
+                });
+                if (!ok) return;
+                Community.resolveReport(p.id, "resolved");
+                render();
+                Toast.success("Report marked as resolved.", "Resolved");
+              });
+            }
+
+            /* ---- Dismiss ---- */
+            var dismissBtn = row.querySelector("[data-dismiss]");
+            if (dismissBtn) {
+              dismissBtn.addEventListener("click", async function () {
+                var ok = await Confirmation.confirm({
+                  title: "Dismiss this report?",
+                  message:
+                    "No action will be taken. The reporter will not be notified.",
+                  confirmLabel: "Dismiss",
+                });
+                if (!ok) return;
+                Community.resolveReport(p.id, "dismissed");
+                render();
+                Toast.info("Report dismissed.", "Dismissed");
+              });
+            }
+
+            /* ---- Reopen (move back to pending) ---- */
+            var reopenBtn = row.querySelector("[data-reopen]");
+            if (reopenBtn) {
+              reopenBtn.addEventListener("click", function () {
+                var posts = Community.all();
+                var target = posts.find(function (x) {
+                  return x.id === p.id;
+                });
+                if (target) {
+                  delete target.reportStatus;
+                  delete target.reportResolvedAt;
+                  Community.save(posts);
+                }
+                render();
+                Toast.info("Report reopened.", "Reopened");
+              });
+            }
+
+            /* ---- Hide / Unhide post ---- */
+            var hideBtn = row.querySelector("[data-hide]");
+            if (hideBtn) {
+              hideBtn.addEventListener("click", async function () {
+                var willHide = !p.hidden;
+                var ok = await Confirmation.confirm({
+                  title: willHide ? "Hide this post?" : "Unhide this post?",
+                  message: willHide
+                    ? "The post will be removed from student feeds but retained for Admin."
+                    : "The post will appear in student feeds again.",
+                  confirmLabel: willHide ? "Hide" : "Unhide",
+                  variant: willHide ? "danger" : "primary",
+                });
+                if (!ok) return;
+
+                if (willHide) Community.hide(p.id);
+                else {
+                  var all = Community.all();
+                  var t = all.find(function (x) {
+                    return x.id === p.id;
+                  });
+                  if (t) {
+                    t.hidden = false;
+                    Community.save(all);
+                  }
+                }
+                render();
+                Toast.success(
+                  willHide ? "Post hidden." : "Post unhidden.",
+                  "Saved",
+                );
+              });
+            }
+
+            /* ---- Delete post ---- */
+            var deleteBtn = row.querySelector("[data-delete]");
+            if (deleteBtn) {
+              deleteBtn.addEventListener("click", async function () {
+                var ok = await Confirmation.confirm({
                   title: "Delete this post permanently?",
-                  message: "This action cannot be undone.",
+                  message:
+                    "The post and its comments will be removed from Campus Space. This cannot be undone.",
                   confirmLabel: "Delete",
                   variant: "danger",
-                })
-              ) {
-                const posts = Community.all().filter((x) => x.id !== p.id);
-                Community.save(posts);
-                row.remove();
+                });
+                if (!ok) return;
+                Community.remove(p.id);
+                render();
                 Toast.success("Post deleted.", "Removed");
-              }
+              });
+            }
+
+            listEl.appendChild(row);
+          });
+        }
+
+        /* ------------------------------------------------------------------
+           REVIEW MODAL — full post + reporter info
+           ------------------------------------------------------------------ */
+        function openReviewModal(p) {
+          var existing = document.getElementById("review-modal");
+          if (existing) existing.remove();
+
+          var status = getStatus(p);
+          var reasonMeta = getReasonMeta(p.reportReason);
+
+          var modal = document.createElement("div");
+          modal.className = "modal-backdrop";
+          modal.id = "review-modal";
+          modal.setAttribute("role", "dialog");
+          modal.setAttribute("aria-modal", "true");
+          modal.innerHTML =
+            '<div class="modal modal-lg">' +
+            '<div class="modal-head">' +
+            "<div>" +
+            "<h3>Report details</h3>" +
+            '<p style="font-size:var(--fs-xs); color:var(--text-tertiary); margin-top:2px;">' +
+            Util.escape(p.reportReason || "Other") +
+            " · " +
+            (status === "pending"
+              ? "Pending review"
+              : status === "resolved"
+                ? "Resolved"
+                : "Dismissed") +
+            "</p>" +
+            "</div>" +
+            '<button class="btn-icon" data-modal-close aria-label="Close">' +
+            '<i class="fa-solid fa-xmark"></i>' +
+            "</button>" +
+            "</div>" +
+            '<div class="modal-body">' +
+            '<div class="report-review-grid">' +
+            '<div class="report-review-section">' +
+            '<div class="report-review-label">Reported by</div>' +
+            '<div class="report-review-value">' +
+            Util.escape(p.reportedBy || "Anonymous") +
+            "</div>" +
+            '<div class="report-review-sub">' +
+            Util.relativeTime(p.reportedAt || p.time) +
+            "</div>" +
+            "</div>" +
+            '<div class="report-review-section">' +
+            '<div class="report-review-label">Reason</div>' +
+            '<div class="report-review-value" style="display:flex; align-items:center; gap:8px;">' +
+            '<span class="report-row-icon report-reason-' +
+            reasonMeta.color +
+            '" style="width:28px;height:28px;font-size:12px;">' +
+            '<i class="fa-solid ' +
+            reasonMeta.icon +
+            '"></i>' +
+            "</span>" +
+            Util.escape(p.reportReason || "Other") +
+            "</div>" +
+            "</div>" +
+            "</div>" +
+            '<div class="report-review-section report-review-post">' +
+            '<div class="report-review-label">Reported post</div>' +
+            '<div class="post-card" style="border:1px solid var(--border-subtle); border-radius:var(--radius-md); margin-top:10px;">' +
+            '<div class="post-head">' +
+            '<span class="avatar avatar-40 avatar-fallback">' +
+            Util.escape(p.initials || "??") +
+            "</span>" +
+            '<div class="post-author">' +
+            '<div class="post-author-name">' +
+            Util.escape(p.author) +
+            "</div>" +
+            '<div class="post-author-handle">@' +
+            Util.escape(p.handle) +
+            " · " +
+            Util.relativeTime(p.time) +
+            "</div>" +
+            "</div>" +
+            "</div>" +
+            '<div class="post-body">' +
+            Util.escape(p.text || "") +
+            "</div>" +
+            '<div class="post-actions" style="border-top:none; padding-top:0;">' +
+            '<span class="post-action" style="cursor:default;"><i class="fa-regular fa-heart"></i> ' +
+            p.likes +
+            "</span>" +
+            '<span class="post-action" style="cursor:default;"><i class="fa-regular fa-comment"></i> ' +
+            Community.countComments(p) +
+            "</span>" +
+            "</div>" +
+            "</div>" +
+            "</div>" +
+            (p.hidden
+              ? '<div class="report-review-notice" style="background:var(--warning-soft); border-left-color:var(--warning);">' +
+                '<i class="fa-solid fa-eye-slash"></i> This post is currently hidden from students.' +
+                "</div>"
+              : "") +
+            "</div>" +
+            '<div class="modal-foot">' +
+            '<button type="button" class="btn btn-secondary" data-modal-close>Close</button>' +
+            (canAct && status === "pending"
+              ? '<button type="button" class="btn btn-primary" id="rv-resolve">' +
+                '<i class="fa-solid fa-circle-check"></i> Mark as resolved' +
+                "</button>"
+              : "") +
+            "</div>" +
+            "</div>";
+
+          document.body.appendChild(modal);
+
+          var resolveBtn = document.getElementById("rv-resolve");
+          if (resolveBtn) {
+            resolveBtn.addEventListener("click", async function () {
+              var ok = await Confirmation.confirm({
+                title: "Resolve this report?",
+                message: "The report will be marked as resolved.",
+                confirmLabel: "Resolve",
+              });
+              if (!ok) return;
+              Community.resolveReport(p.id, "resolved");
+              Modal.close("review-modal");
+              render();
+              Toast.success("Report marked as resolved.", "Resolved");
             });
-          row
-            .querySelector("[data-suspend]")
-            .addEventListener("click", async () => {
-              if (
-                await Confirmation.confirm({
-                  title: "Suspend this author?",
-                  message:
-                    "They will lose access to Campus Space until reactivated by Admin.",
-                  confirmLabel: "Suspend",
-                  variant: "danger",
-                })
-              ) {
-                Toast.warning("Author suspended.", "Suspended");
-              }
-            });
-          listEl.appendChild(row);
+          }
+
+          Modal.open("review-modal");
+        }
+
+        /* ------------------------------------------------------------------
+           FILTER TABS
+           ------------------------------------------------------------------ */
+        filterBar.addEventListener("click", function (e) {
+          var btn = e.target.closest("[data-status]");
+          if (!btn) return;
+          filterBar.querySelectorAll(".chip").forEach(function (c) {
+            c.classList.remove("is-active");
+          });
+          btn.classList.add("is-active");
+          activeFilter = btn.getAttribute("data-status");
+          render();
         });
+
+        /* Initial render */
+        render();
       });
     </script>
   </body>

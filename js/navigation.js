@@ -2,6 +2,11 @@
    CAMPUS SPACE — navigation.js
    Sidebar, header and mobile navigation logic for authenticated pages.
    Admin navigation is role-aware (super_admin, senior_admin, academia, su_pro).
+
+   Super Admin pages are gated two ways:
+     1. Capability check via Permissions.can(session, "admins.manage")
+     2. Hard role check via `superAdminOnly: true` on the group + items
+   Either check failing keeps the group hidden.
    ========================================================================== */
 "use strict";
 
@@ -79,6 +84,10 @@ const STUDENT_NAV = [
 
 /* ==========================================================================
    ADMIN NAVIGATION — role-aware
+   ==========================================================================
+   Each item can carry:
+     requires: [capability]    → filtered by Permissions.can(session, cap)
+     superAdminOnly: true      → hidden unless session role is exactly super_admin
    ========================================================================== */
 const ADMIN_NAV_ITEMS = [
   {
@@ -197,51 +206,94 @@ const ADMIN_NAV_ITEMS = [
   },
   {
     group: "Super Admin",
+    superAdminOnly: true,
     items: [
       {
         href: "../super-admin/admins.html",
         icon: "fa-user-shield",
         label: "Admins",
         requires: ["admins.manage"],
+        superAdminOnly: true,
       },
       {
         href: "../super-admin/student-verification.html",
         icon: "fa-user-check",
         label: "Student Verification",
         requires: ["admins.manage"],
+        superAdminOnly: true,
       },
       {
         href: "../super-admin/admin-controls.html",
         icon: "fa-sliders",
         label: "Admin Controls",
         requires: ["admins.manage"],
+        superAdminOnly: true,
       },
       {
         href: "../super-admin/admin-profile-images.html",
         icon: "fa-image",
         label: "Admin Profile Images",
         requires: ["admins.manage"],
+        superAdminOnly: true,
       },
     ],
   },
 ];
 
-/* Filter the admin nav to the current session's capabilities. */
+/* ==========================================================================
+   ROLE RESOLVER
+   Safely reads the resolved role from Permissions, falling back to session.role.
+   ========================================================================== */
+function resolveRole(session) {
+  if (!session) return null;
+  if (typeof Permissions !== "undefined" && Permissions.getRole) {
+    return Permissions.getRole(session);
+  }
+  /* Legacy fallback */
+  if (session.role === "super_admin") return "super_admin";
+  if (session.role === "admin") return "senior_admin";
+  return session.role || null;
+}
+
+/* ==========================================================================
+   ADMIN NAV FILTER
+   Fail-closed: if Permissions isn't loaded, no capability-gated item passes.
+   Super Admin items are also gated by an explicit role check — two
+   independent guarantees against the group leaking to non-super-admins.
+   ========================================================================== */
 function getAdminNav(session) {
-  var canFn =
-    typeof Permissions !== "undefined" && Permissions.can
-      ? Permissions.can.bind(Permissions)
-      : function () {
-          return true;
-        };
+  var role = resolveRole(session);
+  var isSuperAdmin = role === "super_admin";
+
+  /* Capability checker — fail closed if Permissions isn't available */
+  var canFn;
+  if (typeof Permissions !== "undefined" && Permissions.can) {
+    canFn = Permissions.can.bind(Permissions);
+  } else {
+    canFn = function () {
+      return false;
+    };
+  }
 
   return ADMIN_NAV_ITEMS.map(function (group) {
+    /* Entire group blocked for non-super-admins */
+    if (group.superAdminOnly && !isSuperAdmin) {
+      return { group: group.group, items: [] };
+    }
+
     var items = group.items.filter(function (item) {
+      /* Individual item blocked for non-super-admins */
+      if (item.superAdminOnly && !isSuperAdmin) return false;
+
+      /* No capability requirement — visible to any admin */
       if (!item.requires || !item.requires.length) return true;
+
+      /* Every required capability must pass */
       return item.requires.every(function (cap) {
         return canFn(session, cap);
       });
     });
+
     return { group: group.group, items: items };
   }).filter(function (group) {
     return group.items.length > 0;
@@ -572,8 +624,6 @@ function initAppShell(role) {
 
   /* ---- Fix relative hrefs when on a Super Admin page ---- */
   if (isSuperAdminPage && role !== "student") {
-    /* Every `dashboard.html`, `registered-students.html`, etc. — paths that
-       assume the current folder is pages/admin/ — need a ../admin/ prefix. */
     document
       .querySelectorAll(
         ".sidebar-nav a, .sidebar-brand, .mobile-menu .nav-item",
@@ -581,9 +631,8 @@ function initAppShell(role) {
       .forEach(function (a) {
         var href = a.getAttribute("href");
         if (!href) return;
-        if (href.indexOf("../") === 0) return; // already relative-up
-        if (href.indexOf("http") === 0) return; // absolute external
-        /* Prepend ../admin/ so relative links resolve to pages/admin/ */
+        if (href.indexOf("../") === 0) return;
+        if (href.indexOf("http") === 0) return;
         a.setAttribute("href", "../admin/" + href);
       });
   }

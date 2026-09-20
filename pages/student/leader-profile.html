@@ -84,8 +84,11 @@
     <script src="../../js/leaders.js"></script>
     <script>
       /* ==========================================================================
-   Leader profile page — matches the profile.html v2 design language.
-   ========================================================================== */
+         Leader profile page — three states:
+           1. Active leader        → full profile
+           2. Deactivated leader   → profile with an "Inactive" banner
+           3. Not a leader / no id → "Leader not found" empty state
+         ========================================================================== */
       document.addEventListener("DOMContentLoaded", function () {
         if (window._leaderProfileInit) return;
         window._leaderProfileInit = true;
@@ -97,27 +100,35 @@
         }
         initAppShell("student");
 
-        var id = new URLSearchParams(location.search).get("id");
-        var list = typeof getLeaderList === "function" ? getLeaderList() : [];
-        var leader = list.find(function (l) {
-          return l.student && String(l.student.id) === String(id);
-        });
         var root = document.getElementById("leader-profile-root");
+        var leaderId = new URLSearchParams(location.search).get("id");
 
+        /* Resolve the leader — includeInactive so we can distinguish
+           "deactivated leader" from "no such leader". */
+        var leader =
+          typeof getLeaderById === "function" && leaderId
+            ? getLeaderById(leaderId, { includeInactive: true })
+            : null;
+
+        /* ---------- No leader found ---------- */
         if (!leader) {
           root.innerHTML =
             '<div class="empty-state">' +
             '<div class="empty-icon"><i class="fa-solid fa-user-tie"></i></div>' +
             "<h3>Leader not found</h3>" +
-            "<p>This leader profile may have been removed.</p>" +
-            '<a class="btn btn-secondary" href="student-leaders.html">Browse all leaders</a>' +
+            "<p>This leader profile may have been removed, or the link is incorrect.</p>" +
+            '<a class="btn btn-secondary" href="student-leaders.html">' +
+            '<i class="fa-solid fa-arrow-left"></i> Browse all leaders' +
+            "</a>" +
             "</div>";
           return;
         }
 
+        var isInactive = leader.active === false;
         var student = leader.student;
         var assoc = leader.assoc;
         var pos = leader.pos;
+
         var fullName = [student.firstName, student.otherName, student.lastName]
           .filter(Boolean)
           .join(" ");
@@ -130,8 +141,24 @@
             initials +
             "</span>";
 
+        var rootClass = isInactive ? "is-inactive-leader" : "";
+
         root.innerHTML =
-          '<div class="profile-hero-v2">' +
+          (isInactive
+            ? '<div class="leader-inactive-banner" role="alert">' +
+              '<i class="fa-solid fa-circle-pause"></i>' +
+              "<div>" +
+              "<strong>This leader is no longer active</strong>" +
+              "<p>" +
+              Util.escape(student.firstName) +
+              " is not currently holding a leadership position. Contact details below are for reference only." +
+              "</p>" +
+              "</div>" +
+              "</div>"
+            : "") +
+          '<div class="profile-hero-v2 ' +
+          rootClass +
+          '">' +
           '<div class="profile-cover-v2">' +
           '<div class="profile-cover-grain" aria-hidden="true"></div>' +
           '<div class="profile-cover-overlay" aria-hidden="true"></div>' +
@@ -147,16 +174,24 @@
           "<h1>" +
           Util.escape(fullName) +
           "</h1>" +
-          '<i class="fa-solid fa-circle-check tag-verified" aria-label="Verified leader"></i>' +
+          (!isInactive
+            ? '<i class="fa-solid fa-circle-check tag-verified" aria-label="Verified leader"></i>'
+            : '<span class="badge badge-neutral" style="font-size:11px;"><i class="fa-solid fa-circle-pause"></i> Inactive</span>') +
           "</div>" +
           '<div class="profile-hero-handle">@' +
           Util.escape(student.username) +
           "</div>" +
           '<div class="profile-hero-tags">' +
-          '<span class="badge badge-brand"><i class="fa-solid fa-ranking-star"></i> ' +
+          '<span class="badge ' +
+          (isInactive ? "badge-neutral" : "badge-brand") +
+          '">' +
+          '<i class="fa-solid fa-ranking-star"></i> ' +
           Util.escape(assoc.acronym) +
           "</span>" +
-          '<span class="badge badge-marine"><i class="fa-solid fa-user-tie"></i> ' +
+          '<span class="badge ' +
+          (isInactive ? "badge-neutral" : "badge-marine") +
+          '">' +
+          '<i class="fa-solid fa-user-tie"></i> ' +
           Util.escape(pos.name) +
           "</span>" +
           '<span class="badge badge-neutral"><i class="fa-solid fa-building-columns"></i> ' +
@@ -190,7 +225,9 @@
           '<div class="profile-v2-main">' +
           '<div class="card profile-v2-card">' +
           '<div class="card-head">' +
-          '<h3><i class="fa-solid fa-ranking-star" style="color:var(--brand-primary); margin-right:8px;"></i> Leadership Role</h3>' +
+          '<h3><i class="fa-solid fa-ranking-star" style="color:' +
+          (isInactive ? "var(--text-tertiary)" : "var(--brand-primary)") +
+          '; margin-right:8px;"></i> Leadership Role</h3>' +
           "</div>" +
           '<div class="profile-v2-info-grid">' +
           '<div class="profile-v2-info">' +
@@ -271,12 +308,18 @@
           "</div>" +
           '<div class="card profile-v2-card">' +
           '<div class="card-head">' +
-          '<h3><i class="fa-solid fa-shield-halved" style="color:var(--brand-primary); margin-right:8px;"></i> Verification</h3>' +
+          '<h3><i class="fa-solid ' +
+          (isInactive ? "fa-circle-pause" : "fa-shield-halved") +
+          '" style="color:' +
+          (isInactive ? "var(--text-tertiary)" : "var(--brand-primary)") +
+          '; margin-right:8px;"></i> Verification</h3>' +
           "</div>" +
           '<div class="profile-v2-side-list">' +
           '<div class="profile-v2-side-row">' +
           '<span class="label">Status</span>' +
-          '<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Verified</span>' +
+          (isInactive
+            ? '<span class="badge badge-neutral"><i class="fa-solid fa-circle-pause"></i> Inactive</span>'
+            : '<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Verified</span>') +
           "</div>" +
           '<div class="profile-v2-side-row">' +
           '<span class="label">Assigned by</span>' +
@@ -287,6 +330,7 @@
           "</aside>" +
           "</div>";
 
+        /* ---------- Copy contact button ---------- */
         var copyBtn = document.getElementById("copy-contact-btn");
         if (copyBtn) {
           copyBtn.addEventListener("click", function () {

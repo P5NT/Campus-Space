@@ -1,14 +1,63 @@
 /* ==========================================================================
    CAMPUS SPACE — auth.js
-   Frontend authentication simulation:
-     - Login (student / admin / super admin)
-     - Registration (with faculty → department cascade)
-     - Email verification (registration + password reset modes)
-     - Forgot password (email → code → verify → reset)
-     - Password reset (only after verification)
-     - Session handling, logout, role-based redirect
+   Frontend authentication simulation: login, register, verification,
+   password reset, session handling.
+
+   Admin lookup merges:
+     - DEMO_ADMINS from data/students.js (seed admins + seed student admins)
+     - cs_admins_overrides.created (dynamically created admins)
+     - Deactivations from cs_admins_overrides.deactivated are honored
    ========================================================================== */
 "use strict";
+
+/* -------------------------------------------------------------------------
+   ADMIN LOOKUP — merges seed + created admins, applies deactivations
+   ------------------------------------------------------------------------- */
+function getAllAdminsForAuth() {
+  var base = (typeof DEMO_ADMINS !== "undefined" ? DEMO_ADMINS : []).map(
+    function (a) {
+      return Object.assign({}, a);
+    },
+  );
+
+  var saved = null;
+  try {
+    saved = Store.get("admins_overrides", null);
+  } catch (e) {
+    saved = null;
+  }
+  if (!saved) return base;
+
+  /* Merge created admins */
+  if (Array.isArray(saved.created)) {
+    saved.created.forEach(function (a) {
+      if (
+        !base.some(function (x) {
+          return x.id === a.id;
+        })
+      ) {
+        base.push(a);
+      }
+    });
+  }
+
+  /* Apply edits */
+  if (saved.edits) {
+    base.forEach(function (a) {
+      var edit = saved.edits[a.id];
+      if (edit) Object.assign(a, edit);
+    });
+  }
+
+  /* Apply deactivations — set status to "deactivated" on matching records */
+  if (Array.isArray(saved.deactivated)) {
+    base.forEach(function (a) {
+      if (saved.deactivated.indexOf(a.id) !== -1) a.status = "deactivated";
+    });
+  }
+
+  return base;
+}
 
 /* -------------------------------------------------------------------------
    Auth — session helpers
@@ -26,6 +75,8 @@ const Auth = {
       id: user.id,
       username: user.username,
       role: user.role || "student",
+      adminRole: user.adminRole || null,
+      adminRoles: user.adminRoles || null,
       name:
         [user.firstName, user.lastName].filter(Boolean).join(" ") ||
         user.username,
@@ -50,14 +101,13 @@ const Auth = {
   },
 };
 
-/* ==========================================================================
-   LOGIN
-   ========================================================================== */
+/* -------------------------------------------------------------------------
+   Login page
+   ------------------------------------------------------------------------- */
 function initLoginPage() {
   const form = document.getElementById("login-form");
   if (!form) return;
 
-  /* Session-expired notice */
   if (new URLSearchParams(location.search).get("expired") === "1") {
     const notice = document.getElementById("expired-notice");
     if (notice) notice.style.display = "block";
@@ -75,10 +125,7 @@ function initLoginPage() {
         .toLowerCase();
       const pw = String(data.get("password") || "");
 
-      if (
-        typeof DEMO_STUDENTS === "undefined" ||
-        typeof DEMO_ADMINS === "undefined"
-      ) {
+      if (typeof DEMO_STUDENTS === "undefined") {
         Toast.error(
           "Demo data failed to load. Ensure data/students.js is loading correctly.",
           "Error",
@@ -93,27 +140,42 @@ function initLoginPage() {
       }
 
       setTimeout(() => {
+        /* ---- Try student first ---- */
         const student = DEMO_STUDENTS.find(
           (s) =>
             s.username.toLowerCase() === id || s.email.toLowerCase() === id,
         );
-        const admin = DEMO_ADMINS.find(
+
+        /* ---- Then try admin (merged with overrides) ---- */
+        const adminList = getAllAdminsForAuth();
+        const admin = adminList.find(
           (a) =>
             a.username.toLowerCase() === id || a.email.toLowerCase() === id,
         );
 
         let matched = null;
+
         if (student) {
           matched = {
             user: student,
-            expected: DEMO_CREDENTIALS.student.password,
+            expected:
+              typeof DEMO_CREDENTIALS !== "undefined" &&
+              DEMO_CREDENTIALS.student
+                ? DEMO_CREDENTIALS.student.password
+                : "Campus@2026",
           };
         } else if (admin) {
-          const creds =
-            admin.role === "super_admin"
-              ? DEMO_CREDENTIALS.superadmin
-              : DEMO_CREDENTIALS.admin;
-          matched = { user: admin, expected: creds.password };
+          /* Use the admin's own stored password (created admins have their own) */
+          const expected =
+            admin.password ||
+            (admin.adminRole === "super_admin"
+              ? DEMO_CREDENTIALS?.superadmin?.password || "Super@2026!"
+              : admin.adminRole === "academia"
+                ? DEMO_CREDENTIALS?.academia?.password || "Academia@2026!"
+                : admin.adminRole === "su_pro"
+                  ? DEMO_CREDENTIALS?.supro?.password || "Supro@2026!"
+                  : DEMO_CREDENTIALS?.admin?.password || "Admin@2026!");
+          matched = { user: admin, expected: expected };
         }
 
         if (btn) {
@@ -161,15 +223,17 @@ function initLoginPage() {
   );
 }
 
-/* ==========================================================================
-   REGISTER
-   ========================================================================== */
+/* -------------------------------------------------------------------------
+   Register
+   ------------------------------------------------------------------------- */
 function initRegisterPage() {
   const form = document.getElementById("register-form");
   if (!form) return;
 
   if (typeof DEMO_FACULTIES === "undefined") {
-    console.warn("[auth.js] DEMO_FACULTIES is not loaded.");
+    console.warn(
+      "[auth.js] DEMO_FACULTIES is not loaded — the faculty dropdown will be empty.",
+    );
     return;
   }
 
@@ -183,18 +247,6 @@ function initRegisterPage() {
     facultySelect.appendChild(opt);
   });
 
-  /* The custom-select dropdown was built by main.js before we populated
-     the native <select>. Rebuild it now so the 7 faculties show up. */
-  if (typeof initCustomSelects === "function") {
-    var stale = facultySelect.nextElementSibling;
-    if (stale && stale.classList.contains("cselect")) {
-      stale.remove();
-    }
-    facultySelect.classList.remove("cselect-native");
-    facultySelect.removeAttribute("data-customized");
-    initCustomSelects();
-  }
-
   facultySelect.addEventListener("change", () => {
     deptSelect.innerHTML = '<option value="">Select department</option>';
     const fac = DEMO_FACULTIES.find((f) => f.name === facultySelect.value);
@@ -206,17 +258,6 @@ function initRegisterPage() {
         deptSelect.appendChild(opt);
       });
     }
-
-    /* Rebuild the department custom dropdown with the new options */
-    if (typeof initCustomSelects === "function") {
-      var staleDept = deptSelect.nextElementSibling;
-      if (staleDept && staleDept.classList.contains("cselect")) {
-        staleDept.remove();
-      }
-      deptSelect.classList.remove("cselect-native");
-      deptSelect.removeAttribute("data-customized");
-      initCustomSelects();
-    }
   });
 
   const pw = form.querySelector('[name="password"]');
@@ -224,45 +265,12 @@ function initRegisterPage() {
   const strengthEl = form.querySelector(".pw-strength");
   initPasswordFeedback(pw, { reqsEl, strengthEl });
 
-  /* Manual guard for the mandatory agreement checkbox.
-     Runs at capture phase so it blocks the submit before anything else. */
-  const agreeInput = form.querySelector('[name="agree"]');
-  const agreeField = agreeInput ? agreeInput.closest(".field") : null;
-
-  function refreshAgreeState() {
-    if (!agreeField) return;
-    agreeField.classList.toggle("is-invalid", !agreeInput.checked);
-  }
-
-  if (agreeInput) {
-    agreeInput.addEventListener("change", refreshAgreeState);
-
-    form.addEventListener(
-      "submit",
-      function (e) {
-        if (!agreeInput.checked) {
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          refreshAgreeState();
-          if (agreeField)
-            agreeField.scrollIntoView({ behavior: "smooth", block: "center" });
-          Toast.error(
-            "Please agree to the Terms and Privacy Policy to continue.",
-            "Agreement required",
-          );
-        }
-      },
-      true,
-    );
-  }
-
   bindForm(
     form,
     {
       firstName: [Rules.required, Rules.name],
       lastName: [Rules.required, Rules.name],
       username: [Rules.required, Rules.username],
-      email: [Rules.required, Rules.email],
       phone: [Rules.required, Rules.phone],
       faculty: [Rules.required],
       department: [Rules.required],
@@ -270,7 +278,6 @@ function initRegisterPage() {
       matric: [Rules.required, Rules.matric],
       password: [Rules.required, Rules.password],
       confirm: [Rules.required, Rules.match(pw)],
-      agree: [(v) => v === true],
     },
     (data) => {
       const pending = {
@@ -278,7 +285,6 @@ function initRegisterPage() {
         otherName: data.get("otherName") || "",
         lastName: data.get("lastName"),
         username: data.get("username"),
-        email: data.get("email"),
         phone: data.get("phone"),
         faculty: data.get("faculty"),
         department: data.get("department"),
@@ -286,22 +292,12 @@ function initRegisterPage() {
         matric: data.get("matric"),
         password: data.get("password"),
         code: String(Math.floor(1000 + Math.random() * 9000)),
-        agree: [
-          (v) => {
-            const checkbox = form.querySelector('[name="agree"]');
-            return checkbox && checkbox.checked;
-          },
-        ],
       };
-
       Store.set("pending_registration", pending);
       Toast.info(
-        "A 4-digit verification code has been sent to " +
-          pending.email +
-          " (simulated).",
+        "A 4-digit verification code has been sent to your email (simulated).",
         "Check your email",
       );
-
       setTimeout(() => {
         window.location.href = "email-verification.html";
       }, 900);
@@ -309,74 +305,35 @@ function initRegisterPage() {
   );
 }
 
-/* ==========================================================================
-   EMAIL VERIFICATION
-   Handles two modes:
-     - Registration: no query param
-     - Password reset: ?mode=reset
-   ========================================================================== */
+/* -------------------------------------------------------------------------
+   Email verification
+   ------------------------------------------------------------------------- */
 function initEmailVerificationPage() {
   const container = document.getElementById("otp-container");
   if (!container) return;
 
-  const params = new URLSearchParams(location.search);
-  const mode = params.get("mode"); /* null or "reset" */
-
-  const pending =
-    mode === "reset"
-      ? Store.get("pending_password_reset")
-      : Store.get("pending_registration");
-
-  /* No pending record for this mode → bounce back */
+  const pending = Store.get("pending_registration");
   if (!pending) {
-    window.location.href =
-      mode === "reset" ? "forgot-password.html" : "register.html";
+    window.location.href = "register.html";
     return;
   }
 
-  /* Reset mode: swap the copy */
-  if (mode === "reset") {
-    const titleEl = document.getElementById("verify-title");
-    const subtitleEl = document.getElementById("verify-subtitle");
-    const asideTitle = document.getElementById("aside-title");
-    const asideCopy = document.getElementById("aside-copy");
-
-    if (titleEl) titleEl.textContent = "Enter verification code";
-    if (subtitleEl) {
-      subtitleEl.textContent =
-        "We sent a 4-digit code to " +
-        (pending.email || "your email") +
-        ". Enter it to reset your password.";
-    }
-    if (asideTitle) asideTitle.textContent = "Verify your identity.";
-    if (asideCopy) {
-      asideCopy.textContent =
-        "Enter the 4-digit code we just sent to your email to continue resetting your password.";
-    }
-  }
-
-  /* OTP inputs + demo hint */
   initOtpInputs(container);
+
   const hint = document.getElementById("otp-hint");
   if (hint) hint.textContent = pending.code;
 
-  /* Submit */
   const form = document.getElementById("verify-form");
   form.addEventListener("submit", (e) => {
     e.preventDefault();
-
     const entered = getOtpValue(container);
     const btn = document.getElementById("verify-submit");
-    if (btn) {
-      btn.classList.add("is-loading");
-      btn.disabled = true;
-    }
+    btn.classList.add("is-loading");
+    btn.disabled = true;
 
     setTimeout(() => {
-      if (btn) {
-        btn.classList.remove("is-loading");
-        btn.disabled = false;
-      }
+      btn.classList.remove("is-loading");
+      btn.disabled = false;
 
       if (entered !== pending.code) {
         Toast.error(
@@ -386,47 +343,31 @@ function initEmailVerificationPage() {
         return;
       }
 
-      if (mode === "reset") {
-        /* Mark the reset request as verified, then move to the reset form */
-        pending.verified = true;
-        pending.verifiedAt = Date.now();
-        Store.set("pending_password_reset", pending);
-
-        Toast.success("Email verified. Choose your new password.", "Verified");
-        setTimeout(() => {
-          window.location.href = "reset-password.html";
-        }, 700);
-      } else {
-        /* Registration: create session and go to dashboard */
-        Toast.success(
-          "Account verified. A welcome email has been sent (simulated).",
-          "Welcome to Campus Space",
-        );
-        Auth.save({
-          id: "STU-" + Date.now(),
-          username: pending.username,
-          firstName: pending.firstName,
-          lastName: pending.lastName,
-          role: "student",
-          avatar: "",
-        });
-        Store.remove("pending_registration");
-        setTimeout(() => {
-          window.location.href = "../student/dashboard.html";
-        }, 700);
-      }
+      Toast.success(
+        "Account verified. A welcome email has been sent (simulated).",
+        "Welcome to Campus Space",
+      );
+      Auth.save({
+        id: "STU-" + Date.now(),
+        username: pending.username,
+        firstName: pending.firstName,
+        lastName: pending.lastName,
+        role: "student",
+        avatar: "",
+      });
+      Store.remove("pending_registration");
+      setTimeout(() => {
+        window.location.href = "../student/dashboard.html";
+      }, 900);
     }, 600);
   });
 
-  /* Resend */
   const resend = document.getElementById("otp-resend");
   if (resend) {
     resend.addEventListener("click", (e) => {
       e.preventDefault();
       pending.code = String(Math.floor(1000 + Math.random() * 9000));
-      if (mode === "reset") Store.set("pending_password_reset", pending);
-      else Store.set("pending_registration", pending);
-
+      Store.set("pending_registration", pending);
       if (hint) hint.textContent = pending.code;
       Toast.info(
         "A new verification code has been sent (simulated).",
@@ -436,81 +377,31 @@ function initEmailVerificationPage() {
   }
 }
 
-/* ==========================================================================
-   FORGOT PASSWORD
-   ========================================================================== */
+/* -------------------------------------------------------------------------
+   Forgot password
+   ------------------------------------------------------------------------- */
 function initForgotPasswordPage() {
   const form = document.getElementById("forgot-form");
   if (!form) return;
 
   bindForm(form, { email: [Rules.required, Rules.email] }, (data) => {
-    const email = String(data.get("email")).trim();
-
-    const btn = document.getElementById("forgot-submit");
-    if (btn) {
-      btn.classList.add("is-loading");
-      btn.disabled = true;
-    }
-
+    Store.set("reset_email", data.get("email"));
+    Toast.success(
+      "A password reset link has been sent to your email (simulated).",
+      "Check your inbox",
+    );
     setTimeout(() => {
-      /* Generate and store the code */
-      const code = String(Math.floor(1000 + Math.random() * 9000));
-
-      Store.set("pending_password_reset", {
-        email: email,
-        code: code,
-        requestedAt: Date.now(),
-        verified: false,
-      });
-
-      if (btn) {
-        btn.classList.remove("is-loading");
-        btn.disabled = false;
-      }
-
-      Toast.info(
-        "A 4-digit code has been sent to " + email + " (simulated).",
-        "Check your email",
-      );
-
-      /* Route to the shared verification page in reset mode */
-      setTimeout(() => {
-        window.location.href = "email-verification.html?mode=reset";
-      }, 700);
-    }, 700);
+      window.location.href = "reset-password.html";
+    }, 900);
   });
 }
 
-/* ==========================================================================
-   RESET PASSWORD
-   Only accessible after email verification.
-   ========================================================================== */
+/* -------------------------------------------------------------------------
+   Reset password
+   ------------------------------------------------------------------------- */
 function initResetPasswordPage() {
   const form = document.getElementById("reset-form");
   if (!form) return;
-
-  /* Verify that a pending reset record was marked as verified */
-  const pending = Store.get("pending_password_reset");
-  if (!pending || !pending.verified) {
-    Toast.warning(
-      "Please verify your email before setting a new password.",
-      "Verification required",
-    );
-    window.location.href = "forgot-password.html";
-    return;
-  }
-
-  /* Guard against an old verification sitting around for too long */
-  const MAX_AGE = 15 * 60 * 1000; /* 15 minutes */
-  if (pending.verifiedAt && Date.now() - pending.verifiedAt > MAX_AGE) {
-    Store.remove("pending_password_reset");
-    Toast.warning(
-      "Your verification session expired. Please start again.",
-      "Session expired",
-    );
-    window.location.href = "forgot-password.html";
-    return;
-  }
 
   const pw = form.querySelector('[name="password"]');
   const reqsEl = form.querySelector(".pw-reqs");
@@ -524,29 +415,25 @@ function initResetPasswordPage() {
       confirm: [Rules.required, Rules.match(pw)],
     },
     () => {
-      /* Clear the pending record — the password is now (simulated) updated */
-      Store.remove("pending_password_reset");
-
       Toast.success(
         "Your password has been reset. You can now sign in.",
         "Password updated",
       );
       setTimeout(() => {
         window.location.href = "reset-success.html";
-      }, 800);
+      }, 900);
     },
   );
 }
 
-/* ==========================================================================
-   LOGOUT
-   ========================================================================== */
+/* -------------------------------------------------------------------------
+   Logout
+   ------------------------------------------------------------------------- */
 function initLogoutButtons() {
   document.addEventListener("click", async (e) => {
     const btn = e.target.closest("[data-logout]");
     if (!btn) return;
     e.preventDefault();
-
     const ok = await Confirmation.confirm({
       title: "Sign out of Campus Space?",
       message: "You will need to sign in again to continue.",
@@ -559,16 +446,40 @@ function initLogoutButtons() {
   });
 }
 
-/* ==========================================================================
-   PAGE GUARD
-   ========================================================================== */
+/* -------------------------------------------------------------------------
+   Page guard
+   Checks for a valid session, and — if the user is an admin — verifies
+   that their account hasn't been deactivated by a Super Admin since login.
+   Deactivated admins get signed out on their next page load.
+   ------------------------------------------------------------------------- */
 function guardPage(requiredRole) {
   const session = Auth.current();
   const base = window.location.pathname.includes("/pages/") ? "../../" : "";
+
   if (!session) {
     window.location.href = base + "pages/auth/login.html";
     return false;
   }
+
+  /* Admin deactivation check — Super Admin can revoke access mid-session */
+  if (session.role === "admin" || session.role === "super_admin") {
+    const adminList = getAllAdminsForAuth();
+    const record = adminList.find(
+      (a) => a.id === session.id || a.username === session.username,
+    );
+    if (record && record.status === "deactivated") {
+      Store.remove("session");
+      Toast.warning(
+        "Your admin account has been deactivated. You have been signed out.",
+        "Access revoked",
+      );
+      setTimeout(() => {
+        window.location.href = base + "pages/auth/login.html?deactivated=1";
+      }, 900);
+      return false;
+    }
+  }
+
   if (requiredRole && session.role !== requiredRole) {
     if (session.role === "student" && requiredRole !== "student") {
       window.location.href =
@@ -584,9 +495,9 @@ function guardPage(requiredRole) {
   return true;
 }
 
-/* ==========================================================================
-   PAGE INIT
-   ========================================================================== */
+/* -------------------------------------------------------------------------
+   Page init
+   ------------------------------------------------------------------------- */
 document.addEventListener("DOMContentLoaded", () => {
   initLoginPage();
   initRegisterPage();
@@ -594,4 +505,16 @@ document.addEventListener("DOMContentLoaded", () => {
   initForgotPasswordPage();
   initResetPasswordPage();
   initLogoutButtons();
+
+  /* Session-expired notice */
+  if (new URLSearchParams(location.search).get("deactivated") === "1") {
+    const notice = document.getElementById("expired-notice");
+    if (notice) {
+      notice.style.display = "block";
+      notice.querySelector("h5").innerHTML =
+        '<i class="fa-solid fa-user-slash"></i> Account deactivated';
+      notice.querySelector(".row").textContent =
+        "Your admin access has been revoked. Contact the Super Admin if this was a mistake.";
+    }
+  }
 });

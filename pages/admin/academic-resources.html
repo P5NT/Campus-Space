@@ -45,8 +45,13 @@
   </head>
   <body class="has-session admin-body">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
-      <aside class="sidebar admin-sidebar" id="app-sidebar"></aside>
+      <aside
+        class="sidebar admin-sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
       <div class="app-main">
         <header class="app-header" id="app-header"></header>
         <main class="app-content" id="main">
@@ -54,16 +59,25 @@
             <div class="page-head-text">
               <h1 class="page-title">Academic Resources</h1>
               <p class="page-subtitle">
-                Upload and manage timetables, past questions, materials and
-                calendars.
+                Upload files or build structured documents for students.
               </p>
             </div>
-            <button
-              class="btn btn-primary"
-              data-modal-open="upload-resource-modal"
-            >
-              <i class="fa-solid fa-upload"></i> Upload resource
-            </button>
+            <div class="cluster">
+              <button
+                class="btn btn-secondary"
+                type="button"
+                id="build-timetable-btn"
+              >
+                <i class="fa-solid fa-plus"></i> Build
+              </button>
+              <button
+                class="btn btn-primary"
+                data-modal-open="upload-resource-modal"
+                type="button"
+              >
+                <i class="fa-solid fa-upload"></i> Upload file
+              </button>
+            </div>
           </div>
 
           <div class="toolbar">
@@ -74,30 +88,44 @@
                 type="search"
                 id="res-search"
                 placeholder="Search resources…"
+                aria-label="Search resources"
               />
             </div>
-            <select class="select" id="res-cat">
+            <select class="select" id="res-cat" aria-label="Filter by category">
               <option value="">All categories</option>
-              <option>Lecture Timetable</option>
-              <option>Exam Timetable</option>
-              <option>Past Questions</option>
-              <option>Course Materials</option>
-              <option>Academic Calendar</option>
-              <option>Academic Resource</option>
             </select>
           </div>
 
-          <div class="card">
-            <div id="admin-resources-list"></div>
+          <div class="cluster-between" style="margin-bottom: 16px">
+            <p class="section-desc" style="margin: 0" id="res-count">
+              Loading…
+            </p>
+            <button
+              class="btn btn-ghost btn-sm"
+              id="clear-filters"
+              type="button"
+              style="display: none"
+            >
+              <i class="fa-solid fa-rotate-left"></i> Clear filters
+            </button>
           </div>
+
+          <div id="admin-resources-list"></div>
         </main>
       </div>
     </div>
 
-    <div class="modal-backdrop" id="upload-resource-modal">
+    <!-- ============ Upload file modal ============ -->
+    <div
+      class="modal-backdrop"
+      id="upload-resource-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ur-title"
+    >
       <div class="modal modal-lg">
         <div class="modal-head">
-          <h3>Upload academic resource</h3>
+          <h3 id="ur-title">Upload academic resource</h3>
           <button class="btn-icon" data-modal-close aria-label="Close">
             <i class="fa-solid fa-xmark"></i>
           </button>
@@ -105,37 +133,79 @@
         <form id="upload-resource-form" novalidate>
           <div class="modal-body">
             <div class="field">
-              <label class="label">File name <span class="req">*</span></label>
+              <label class="label" for="ur-name"
+                >File name <span class="req">*</span></label
+              >
               <input
                 class="input"
+                id="ur-name"
                 name="name"
-                placeholder="e.g. 200L – 500L 2026/2027 First Semester Timetable"
+                placeholder="e.g. CSC 401 — Complete Lecture Notes"
               />
               <div class="field-error">
                 <i class="fa-solid fa-circle-exclamation"></i
                 ><span>Please enter a file name.</span>
               </div>
             </div>
+
+            <!-- NEW — custom file picker -->
             <div class="field">
               <label class="label"
                 >File upload <span class="req">*</span></label
               >
-              <input class="input" type="file" name="file" id="res-file" />
+              <div class="file-picker" id="ur-file-picker">
+                <input
+                  type="file"
+                  id="ur-file"
+                  name="file"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                  hidden
+                />
+                <div class="file-picker-icon" id="ur-file-icon">
+                  <i class="fa-solid fa-cloud-arrow-up"></i>
+                </div>
+                <div class="file-picker-body">
+                  <div class="file-picker-title" id="ur-file-title">
+                    Choose a file…
+                  </div>
+                  <div class="file-picker-hint" id="ur-file-hint">
+                    PDF, Word, Excel, PowerPoint · up to 20 MB
+                  </div>
+                </div>
+                <div class="file-picker-actions">
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-sm"
+                    id="ur-file-browse"
+                  >
+                    <i class="fa-solid fa-folder-open"></i> Browse
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-ghost btn-sm file-picker-remove"
+                    id="ur-file-remove"
+                    aria-label="Remove file"
+                    style="display: none"
+                  >
+                    <i class="fa-solid fa-xmark"></i> Remove
+                  </button>
+                </div>
+              </div>
               <div class="field-error">
                 <i class="fa-solid fa-circle-exclamation"></i
                 ><span>Please choose a file.</span>
               </div>
             </div>
+
             <div class="grid grid-2" style="gap: 16px">
               <div class="field">
-                <label class="label">Category <span class="req">*</span></label>
-                <select class="select" name="category">
+                <label class="label" for="ur-category"
+                  >Category <span class="req">*</span></label
+                >
+                <select class="select" id="ur-category" name="category">
                   <option value="">Select category</option>
-                  <option>Lecture Timetable</option>
-                  <option>Exam Timetable</option>
                   <option>Past Questions</option>
                   <option>Course Materials</option>
-                  <option>Academic Calendar</option>
                   <option>Academic Resource</option>
                 </select>
                 <div class="field-error">
@@ -143,37 +213,64 @@
                   ><span>Please select a category.</span>
                 </div>
               </div>
+
               <div class="field">
-                <label class="label">Session</label>
-                <input class="input" name="session" placeholder="2026/2027" />
-              </div>
-              <div class="field">
-                <label class="label">Faculty</label>
+                <label class="label" for="ur-session">Session</label>
                 <input
                   class="input"
-                  name="faculty"
-                  placeholder="Leave blank if all"
+                  id="ur-session"
+                  name="session"
+                  placeholder="e.g. 2026/2027"
                 />
               </div>
+
               <div class="field">
-                <label class="label">Department</label>
+                <label class="label" for="ur-faculty">Faculty</label>
+                <select class="select" id="ur-faculty" name="faculty">
+                  <option value="">All faculties</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label class="label" for="ur-department">Department</label>
+                <select class="select" id="ur-department" name="department">
+                  <option value="">All departments</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label class="label" for="ur-level">Level</label>
+                <select class="select" id="ur-level" name="level">
+                  <option value="">All levels</option>
+                  <option value="100">100 Level</option>
+                  <option value="200">200 Level</option>
+                  <option value="300">300 Level</option>
+                  <option value="400">400 Level</option>
+                  <option value="500">500 Level</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label class="label" for="ur-course">Course</label>
                 <input
                   class="input"
-                  name="department"
-                  placeholder="Leave blank if all"
+                  id="ur-course"
+                  name="course"
+                  placeholder="e.g. CSC 401"
                 />
               </div>
-              <div class="field">
-                <label class="label">Level</label>
-                <input
-                  class="input"
-                  name="level"
-                  placeholder="Leave blank if all"
-                />
-              </div>
-              <div class="field">
-                <label class="label">Course</label>
-                <input class="input" name="course" placeholder="e.g. CSC 401" />
+            </div>
+
+            <div class="field" style="margin-top: 8px">
+              <label class="label">Notify audience</label>
+              <div class="cluster" style="gap: 16px; align-items: center">
+                <label class="checkbox">
+                  <input type="checkbox" name="notify" checked />
+                  <span
+                    >Send an in-app notification to students in the selected
+                    audience</span
+                  >
+                </label>
               </div>
             </div>
           </div>
@@ -181,9 +278,212 @@
             <button type="button" class="btn btn-secondary" data-modal-close>
               Cancel
             </button>
-            <button type="submit" class="btn btn-primary">Upload</button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fa-solid fa-upload"></i> Upload resource
+            </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- ============ Edit resource modal ============ -->
+    <div
+      class="modal-backdrop"
+      id="edit-resource-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="er-title"
+    >
+      <div class="modal modal-lg">
+        <div class="modal-head">
+          <h3 id="er-title">Edit resource</h3>
+          <button class="btn-icon" data-modal-close aria-label="Close">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <form id="edit-resource-form" novalidate>
+          <div class="modal-body">
+            <div class="field">
+              <label class="label" for="er-name"
+                >File name <span class="req">*</span></label
+              >
+              <input class="input" id="er-name" name="name" />
+              <div class="field-error">
+                <i class="fa-solid fa-circle-exclamation"></i
+                ><span>Please enter a file name.</span>
+              </div>
+            </div>
+
+            <div class="grid grid-2" style="gap: 16px">
+              <div class="field">
+                <label class="label" for="er-category"
+                  >Category <span class="req">*</span></label
+                >
+                <select class="select" id="er-category" name="category">
+                  <option>Past Questions</option>
+                  <option>Course Materials</option>
+                  <option>Academic Resource</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="label" for="er-session">Session</label>
+                <input class="input" id="er-session" name="session" />
+              </div>
+              <div class="field">
+                <label class="label" for="er-faculty">Faculty</label>
+                <select class="select" id="er-faculty" name="faculty">
+                  <option value="">All faculties</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="label" for="er-department">Department</label>
+                <select class="select" id="er-department" name="department">
+                  <option value="">All departments</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="label" for="er-level">Level</label>
+                <select class="select" id="er-level" name="level">
+                  <option value="">All levels</option>
+                  <option value="100">100 Level</option>
+                  <option value="200">200 Level</option>
+                  <option value="300">300 Level</option>
+                  <option value="400">400 Level</option>
+                  <option value="500">500 Level</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="label" for="er-course">Course</label>
+                <input class="input" id="er-course" name="course" />
+              </div>
+            </div>
+          </div>
+          <div class="modal-foot">
+            <button type="button" class="btn btn-secondary" data-modal-close>
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fa-solid fa-check"></i> Save changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ============ Build chooser modal ============ -->
+    <div
+      class="modal-backdrop"
+      id="build-timetable-modal"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="modal">
+        <div class="modal-head">
+          <h3>Build a document</h3>
+          <button class="btn-icon" data-modal-close aria-label="Close">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p
+            style="
+              font-size: var(--fs-sm);
+              color: var(--text-secondary);
+              margin-bottom: 20px;
+            "
+          >
+            Choose what you want to build. Timetable editors open with dropdowns
+            for faculty, department and level. The Academic Calendar editor
+            opens with sections for First and Second Semester.
+          </p>
+          <div class="stack">
+            <button type="button" class="tt-choice" id="choose-lecture">
+              <span
+                class="tt-choice-icon"
+                style="
+                  background: var(--brand-primary-soft);
+                  color: var(--brand-primary);
+                "
+              >
+                <i class="fa-solid fa-chalkboard"></i>
+              </span>
+              <span class="tt-choice-body">
+                <span class="tt-choice-title">Lecture Timetable</span>
+                <span class="tt-choice-sub"
+                  >Weekly schedule with days, times, venues and lecturers</span
+                >
+              </span>
+              <i class="fa-solid fa-chevron-right tt-choice-arrow"></i>
+            </button>
+            <button type="button" class="tt-choice" id="choose-exam">
+              <span
+                class="tt-choice-icon"
+                style="
+                  background: var(--brand-secondary-soft);
+                  color: var(--brand-secondary);
+                "
+              >
+                <i class="fa-solid fa-file-signature"></i>
+              </span>
+              <span class="tt-choice-body">
+                <span class="tt-choice-title">Exam Timetable</span>
+                <span class="tt-choice-sub"
+                  >Dated exam entries with times and venues</span
+                >
+              </span>
+              <i class="fa-solid fa-chevron-right tt-choice-arrow"></i>
+            </button>
+            <button type="button" class="tt-choice" id="choose-calendar">
+              <span
+                class="tt-choice-icon"
+                style="background: var(--warning-soft); color: var(--warning)"
+              >
+                <i class="fa-solid fa-calendar-days"></i>
+              </span>
+              <span class="tt-choice-body">
+                <span class="tt-choice-title">Academic Calendar</span>
+                <span class="tt-choice-sub"
+                  >Session dates grouped by First and Second Semester</span
+                >
+              </span>
+              <i class="fa-solid fa-chevron-right tt-choice-arrow"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ Preview resource modal ============ -->
+    <div
+      class="modal-backdrop"
+      id="preview-resource-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="pr-title"
+    >
+      <div class="modal modal-lg">
+        <div class="modal-head">
+          <div style="min-width: 0">
+            <h3 id="pr-title">Preview</h3>
+            <p
+              id="pr-subtitle"
+              style="
+                font-size: var(--fs-xs);
+                color: var(--text-tertiary);
+                margin-top: 2px;
+              "
+            ></p>
+          </div>
+          <button class="btn-icon" data-modal-close aria-label="Close">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="modal-body" id="pr-body" style="padding: 0"></div>
+        <div class="modal-foot" id="pr-foot">
+          <button type="button" class="btn btn-secondary" data-modal-close>
+            Close
+          </button>
+        </div>
       </div>
     </div>
 
@@ -195,122 +495,1599 @@
     ></aside>
 
     <script src="../../data/students.js"></script>
+    <script src="../../data/faculties.js"></script>
     <script src="../../data/courses.js"></script>
+    <script src="../../data/calendar-events.js"></script>
     <script src="../../js/main.js"></script>
     <script src="../../js/validation.js"></script>
     <script src="../../js/auth.js"></script>
+    <script src="../../js/permissions.js"></script>
+    <script src="../../js/timetable-admin.js"></script>
+    <script src="../../js/calendar-admin.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
     <script src="../../js/admin.js"></script>
+    <script src="../../js/pdf-generator.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
-        if (
-          !session ||
-          (session.role !== "admin" && session.role !== "super_admin")
-        ) {
+      /* ==========================================================================
+         Academic Resources — Admin workspace.
+         Handles three kinds of resources:
+           1. File uploads        (Past Questions, Course Materials, Academic Resource)
+           2. Timetables          (Lecture, Exam) — built via timetable-admin.js
+           3. Academic Calendar   — built via calendar-admin.js
+         ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
+        if (!session || !Permissions.isAdminRole(session)) {
           window.location.href = "../auth/login.html";
           return;
         }
+        if (!Permissions.can(session, "academics.view")) {
+          window.location.href = "dashboard.html";
+          return;
+        }
+
         initAppShell("admin");
 
-        let resources = DEMO_RESOURCES.slice();
-        const listEl = document.getElementById("admin-resources-list");
-        const search = document.getElementById("res-search");
-        const cat = document.getElementById("res-cat");
+        var canUpload = Permissions.can(session, "academics.upload");
+        var canDelete = Permissions.can(session, "academics.publish");
 
-        function render() {
-          listEl.innerHTML = "";
-          const q = search.value.trim().toLowerCase();
-          const c = cat.value;
-          let list = resources.slice();
-          if (q) list = list.filter((r) => r.name.toLowerCase().includes(q));
-          if (c) list = list.filter((r) => r.category === c);
-          if (!list.length) {
-            listEl.innerHTML =
-              '<div class="empty-state" style="padding:40px;"><div class="empty-icon"><i class="fa-solid fa-file-lines"></i></div><h3>No resources match</h3></div>';
-            return;
+        var SESSION_KEY = "2026/2027";
+
+        /* ------------------------------------------------------------------
+           FILE PICKER — custom control with Browse / Remove
+           ------------------------------------------------------------------ */
+        function initFilePicker() {
+          var picker = document.getElementById("ur-file-picker");
+          var input = document.getElementById("ur-file");
+          var icon = document.getElementById("ur-file-icon");
+          var title = document.getElementById("ur-file-title");
+          var hint = document.getElementById("ur-file-hint");
+          var browseBtn = document.getElementById("ur-file-browse");
+          var removeBtn = document.getElementById("ur-file-remove");
+          if (!picker || !input) return;
+
+          var DEFAULT_TITLE = "Choose a file…";
+          var DEFAULT_HINT = "PDF, Word, Excel, PowerPoint · up to 20 MB";
+
+          function getIconClass(filename) {
+            var ext = (filename.split(".").pop() || "").toLowerCase();
+            if (ext === "pdf") return "fa-file-pdf";
+            if (ext === "doc" || ext === "docx") return "fa-file-word";
+            if (ext === "xls" || ext === "xlsx") return "fa-file-excel";
+            if (ext === "ppt" || ext === "pptx") return "fa-file-powerpoint";
+            return "fa-file";
           }
-          list.forEach((r) => {
-            const el = document.createElement("div");
-            el.className = "resource-row";
-            el.innerHTML = `
-        <div class="resource-icon ${r.type}"><i class="fa-solid fa-file-pdf"></i></div>
-        <div class="resource-info">
-          <div class="resource-name">${Util.escape(r.name)}</div>
-          <div class="resource-meta">
-            <span><i class="fa-solid fa-tag"></i> ${Util.escape(r.category)}</span>
-            <span><i class="fa-regular fa-clock"></i> ${Util.relativeTime(r.uploaded)}</span>
-            <span><i class="fa-solid fa-user"></i> ${Util.escape(r.uploadedBy)}</span>
-          </div>
-        </div>
-        <button class="btn btn-ghost btn-sm" data-edit><i class="fa-solid fa-pen"></i></button>
-        <button class="btn btn-ghost btn-sm" data-del style="color:var(--danger);"><i class="fa-solid fa-trash"></i></button>`;
-            el.querySelector("[data-edit]").addEventListener("click", () => {
-              Toast.info(
-                'Editing "' + r.name + '" (simulated).',
-                "Edit resource",
+
+          function formatSize(bytes) {
+            if (bytes < 1024) return bytes + " B";
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+            return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+          }
+
+          function showFile(file) {
+            picker.classList.add("has-file");
+            icon.innerHTML =
+              '<i class="fa-solid ' + getIconClass(file.name) + '"></i>';
+            title.textContent = file.name;
+            hint.textContent = formatSize(file.size);
+            browseBtn.innerHTML =
+              '<i class="fa-solid fa-arrows-rotate"></i> Change';
+            removeBtn.style.display = "";
+          }
+
+          function resetFile() {
+            picker.classList.remove("has-file");
+            input.value = "";
+            icon.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i>';
+            title.textContent = DEFAULT_TITLE;
+            hint.textContent = DEFAULT_HINT;
+            browseBtn.innerHTML =
+              '<i class="fa-solid fa-folder-open"></i> Browse';
+            removeBtn.style.display = "none";
+          }
+
+          /* Click the picker body or Browse button → open file dialog */
+          function openDialog(e) {
+            if (e) e.stopPropagation();
+            input.click();
+          }
+          picker.addEventListener("click", function (e) {
+            /* Don't trigger dialog when clicking Remove */
+            if (e.target.closest("#ur-file-remove")) return;
+            openDialog(e);
+          });
+          browseBtn.addEventListener("click", openDialog);
+
+          /* Remove button */
+          removeBtn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            resetFile();
+            Toast.info("File removed.", "Cleared");
+          });
+
+          /* Native input change — file selected */
+          input.addEventListener("change", function () {
+            var file = input.files[0];
+            if (!file) {
+              resetFile();
+              return;
+            }
+            showFile(file);
+            /* Also clear any validation error on the field */
+            var field = input.closest(".field");
+            if (field) field.classList.remove("is-invalid");
+          });
+
+          /* Drag & drop */
+          picker.addEventListener("dragover", function (e) {
+            e.preventDefault();
+            picker.classList.add("is-dragover");
+          });
+          picker.addEventListener("dragleave", function () {
+            picker.classList.remove("is-dragover");
+          });
+          picker.addEventListener("drop", function (e) {
+            e.preventDefault();
+            picker.classList.remove("is-dragover");
+            var file = e.dataTransfer.files[0];
+            if (!file) return;
+            /* Assign to the native input — works in modern browsers */
+            try {
+              var dt = new DataTransfer();
+              dt.items.add(file);
+              input.files = dt.files;
+              showFile(file);
+              var field = input.closest(".field");
+              if (field) field.classList.remove("is-invalid");
+            } catch (err) {
+              Toast.error(
+                "Could not accept that file. Please use Browse.",
+                "Upload",
               );
-            });
-            el.querySelector("[data-del]").addEventListener(
-              "click",
-              async () => {
-                if (
-                  await Confirmation.confirm({
-                    title: "Delete this resource?",
-                    message:
-                      '"' +
-                      r.name +
-                      '" will be removed from Campus Space. Students will no longer be able to download it.',
-                    confirmLabel: "Delete",
-                    variant: "danger",
-                  })
-                ) {
-                  resources = resources.filter((x) => x.id !== r.id);
-                  render();
-                  Toast.success("Resource deleted.", "Removed");
-                }
-              },
-            );
-            listEl.appendChild(el);
+            }
+          });
+
+          /* Expose reset for external calls (after form submit) */
+          picker._reset = resetFile;
+        }
+
+        initFilePicker();
+
+        /* ------------------------------------------------------------------
+           WORKING COPY — file resources only
+           ------------------------------------------------------------------ */
+        var resources = (
+          typeof DEMO_RESOURCES !== "undefined" ? DEMO_RESOURCES : []
+        ).map(function (r) {
+          return Object.assign({}, r);
+        });
+
+        var saved = Store.get("resources_overrides", null);
+        if (saved && Array.isArray(saved.added)) {
+          saved.added.forEach(function (r) {
+            if (
+              !resources.some(function (x) {
+                return x.id === r.id;
+              })
+            ) {
+              resources.unshift(r);
+            }
           });
         }
-        search.addEventListener("input", render);
-        cat.addEventListener("change", render);
-        render();
+        if (saved && Array.isArray(saved.deleted)) {
+          resources = resources.filter(function (r) {
+            return saved.deleted.indexOf(r.id) === -1;
+          });
+        }
+        if (saved && saved.edits) {
+          resources.forEach(function (r) {
+            var edit = saved.edits[r.id];
+            if (edit) Object.assign(r, edit);
+          });
+        }
 
-        bindForm(
-          document.getElementById("upload-resource-form"),
-          {
-            name: [Rules.required],
-            file: [Rules.required],
-            category: [Rules.required],
-          },
-          (data) => {
-            resources.unshift({
-              id: "res-" + Date.now(),
-              name: data.get("name"),
-              category: data.get("category"),
-              faculty: data.get("faculty") || "All",
-              department: data.get("department") || "All",
-              level: data.get("level") || "All",
-              course: data.get("course") || "",
-              semester: "First",
-              session: data.get("session") || "2026/2027",
-              type: "pdf",
-              size: "1.0 MB",
-              uploaded: new Date().toISOString().slice(0, 10),
-              uploadedBy: session.name || session.username,
+        /* ------------------------------------------------------------------
+           ELEMENTS
+           ------------------------------------------------------------------ */
+        var listEl = document.getElementById("admin-resources-list");
+        var searchEl = document.getElementById("res-search");
+        var catSel = document.getElementById("res-cat");
+        var countEl = document.getElementById("res-count");
+        var clearBtn = document.getElementById("clear-filters");
+
+        var CATEGORIES = [
+          "Lecture Timetable",
+          "Exam Timetable",
+          "Academic Calendar",
+          "Past Questions",
+          "Course Materials",
+          "Academic Resource",
+        ];
+        CATEGORIES.forEach(function (c) {
+          var opt = document.createElement("option");
+          opt.value = c;
+          opt.textContent = c;
+          catSel.appendChild(opt);
+        });
+        if (typeof initCustomSelects === "function") {
+          var sn = catSel.nextElementSibling;
+          if (sn && sn.classList.contains("cselect")) sn.remove();
+          var sp = catSel.previousElementSibling;
+          if (sp && sp.classList.contains("cselect")) sp.remove();
+          catSel.classList.remove("cselect-native");
+          catSel.removeAttribute("data-customized");
+          initCustomSelects();
+        }
+
+        /* Faculty / department dropdowns in file-based modals */
+        var facSelects = [
+          document.getElementById("ur-faculty"),
+          document.getElementById("er-faculty"),
+        ];
+
+        var faculties =
+          typeof DEMO_FACULTIES !== "undefined" ? DEMO_FACULTIES : [];
+
+        faculties.forEach(function (f) {
+          facSelects.forEach(function (sel) {
+            var opt = document.createElement("option");
+            opt.value = f.name;
+            opt.textContent = f.name;
+            sel.appendChild(opt);
+          });
+        });
+        if (typeof initCustomSelects === "function") {
+          facSelects.forEach(function (sel) {
+            var sn = sel.nextElementSibling;
+            if (sn && sn.classList.contains("cselect")) sn.remove();
+            var sp = sel.previousElementSibling;
+            if (sp && sp.classList.contains("cselect")) sp.remove();
+            sel.classList.remove("cselect-native");
+            sel.removeAttribute("data-customized");
+          });
+          initCustomSelects();
+        }
+
+        function populateDepartments(facName, targetSelects) {
+          targetSelects.forEach(function (sel) {
+            sel.innerHTML = '<option value="">All departments</option>';
+            var fac = faculties.find(function (f) {
+              return f.name === facName;
             });
-            render();
-            Modal.close("upload-resource-modal");
-            document.getElementById("upload-resource-form").reset();
-            Toast.success(
-              "Resource uploaded. Students will be notified.",
-              "Uploaded",
+            if (fac) {
+              fac.departments.forEach(function (d) {
+                var opt = document.createElement("option");
+                opt.value = d.name;
+                opt.textContent = d.name;
+                sel.appendChild(opt);
+              });
+            }
+          });
+          if (typeof initCustomSelects === "function") {
+            targetSelects.forEach(function (sel) {
+              var sn = sel.nextElementSibling;
+              if (sn && sn.classList.contains("cselect")) sn.remove();
+              var sp = sel.previousElementSibling;
+              if (sp && sp.classList.contains("cselect")) sp.remove();
+              sel.classList.remove("cselect-native");
+              sel.removeAttribute("data-customized");
+            });
+            initCustomSelects();
+          }
+        }
+
+        facSelects.forEach(function (sel) {
+          sel.addEventListener("change", function () {
+            var deptSel = sel.parentElement.parentElement.querySelector(
+              'select[name="department"]',
             );
-          },
-        );
+            if (deptSel) populateDepartments(sel.value, [deptSel]);
+          });
+        });
+
+        /* ------------------------------------------------------------------
+           BUILD chooser + editor open
+           ------------------------------------------------------------------ */
+        var buildBtn = document.getElementById("build-timetable-btn");
+        if (buildBtn) {
+          if (!canUpload) {
+            buildBtn.style.display = "none";
+          } else {
+            buildBtn.addEventListener("click", function () {
+              Modal.open("build-timetable-modal");
+            });
+          }
+        }
+
+        var chooseLecture = document.getElementById("choose-lecture");
+        if (chooseLecture) {
+          chooseLecture.addEventListener("click", function () {
+            Modal.close("build-timetable-modal");
+            TimetableAdmin.openLectureEditor(null);
+          });
+        }
+
+        var chooseExam = document.getElementById("choose-exam");
+        if (chooseExam) {
+          chooseExam.addEventListener("click", function () {
+            Modal.close("build-timetable-modal");
+            TimetableAdmin.openExamEditor(null);
+          });
+        }
+
+        var chooseCalendar = document.getElementById("choose-calendar");
+        if (chooseCalendar) {
+          chooseCalendar.addEventListener("click", function () {
+            Modal.close("build-timetable-modal");
+            CalendarAdmin.openEditor(SESSION_KEY);
+          });
+        }
+
+        window.onTimetableSaved = function () {
+          render();
+        };
+        window.onCalendarSaved = function () {
+          render();
+        };
+
+        /* ------------------------------------------------------------------
+           PERSIST helpers for file resources
+           ------------------------------------------------------------------ */
+        function persist() {
+          var existing = Store.get("resources_overrides", {}) || {};
+          var deleted = existing.deleted || [];
+          var edits = existing.edits || {};
+          var added = existing.added || [];
+
+          resources.forEach(function (r) {
+            if (
+              !DEMO_RESOURCES.some(function (x) {
+                return x.id === r.id;
+              })
+            ) {
+              if (
+                !added.some(function (x) {
+                  return x.id === r.id;
+                })
+              )
+                added.unshift(r);
+            }
+          });
+
+          Store.set("resources_overrides", {
+            added: added,
+            deleted: deleted,
+            edits: edits,
+          });
+        }
+
+        /* ------------------------------------------------------------------
+           BUILD STRUCTURED ROWS — timetables + academic calendar
+           ------------------------------------------------------------------ */
+        function buildStructuredRows() {
+          var rows = [];
+
+          if (typeof TimetableAdmin !== "undefined") {
+            var lectures = TimetableAdmin.getMergedLectureTimetables();
+            lectures.forEach(function (t) {
+              var count = 0;
+              (t.slots || []).forEach(function (s) {
+                count += Object.keys(s.periods || {}).length;
+              });
+              rows.push({
+                id:
+                  "tt-lecture-" +
+                  t.faculty +
+                  "-" +
+                  t.department +
+                  "-" +
+                  t.level,
+                name:
+                  "Lecture Timetable — " +
+                  t.department +
+                  " · " +
+                  t.level +
+                  " Level",
+                category: "Lecture Timetable",
+                faculty: t.faculty,
+                department: t.department,
+                level: t.level,
+                session: t.session || SESSION_KEY,
+                semester: t.semester || "First",
+                type: "timetable",
+                kind: "lecture",
+                entries: count,
+                data: t,
+                uploaded: new Date().toISOString().slice(0, 10),
+                uploadedBy: "Admin",
+              });
+            });
+
+            var exams = TimetableAdmin.getMergedExamTimetables();
+            exams.forEach(function (t) {
+              rows.push({
+                id: "tt-exam-" + t.faculty + "-" + t.department + "-" + t.level,
+                name:
+                  "Exam Timetable — " +
+                  t.department +
+                  " · " +
+                  t.level +
+                  " Level",
+                category: "Exam Timetable",
+                faculty: t.faculty,
+                department: t.department,
+                level: t.level,
+                session: t.session || SESSION_KEY,
+                semester: t.semester || "First",
+                type: "timetable",
+                kind: "exam",
+                entries: (t.exams || []).length,
+                data: t,
+                uploaded: new Date().toISOString().slice(0, 10),
+                uploadedBy: "Admin",
+              });
+            });
+          }
+
+          if (typeof CalendarAdmin !== "undefined") {
+            var split = CalendarAdmin.getSplitEvents(SESSION_KEY);
+            var totalEvents = split.first.length + split.second.length;
+
+            if (totalEvents > 0) {
+              rows.push({
+                id: "cal-" + SESSION_KEY,
+                name: "Academic Calendar — " + SESSION_KEY + " Session",
+                category: "Academic Calendar",
+                faculty: "All",
+                department: "All",
+                level: "All",
+                session: SESSION_KEY,
+                semester: "Full Session",
+                type: "calendar",
+                kind: "calendar",
+                entries: totalEvents,
+                data: split,
+                uploaded: new Date().toISOString().slice(0, 10),
+                uploadedBy: "Admin",
+              });
+            }
+          }
+
+          return rows;
+        }
+
+        /* ------------------------------------------------------------------
+           RENDER
+           ------------------------------------------------------------------ */
+        function render() {
+          var q = searchEl.value.trim().toLowerCase();
+          var cat = catSel.value;
+
+          var fileResources = resources.filter(function (r) {
+            if (cat && r.category !== cat) return false;
+            if (
+              q &&
+              r.name.toLowerCase().indexOf(q) === -1 &&
+              (r.course || "").toLowerCase().indexOf(q) === -1
+            )
+              return false;
+            return true;
+          });
+
+          var structured = buildStructuredRows().filter(function (r) {
+            if (cat && r.category !== cat) return false;
+            if (q && r.name.toLowerCase().indexOf(q) === -1) return false;
+            return true;
+          });
+
+          var filtered = fileResources.concat(structured);
+
+          var byCat = {};
+          filtered.forEach(function (r) {
+            if (!byCat[r.category]) byCat[r.category] = [];
+            byCat[r.category].push(r);
+          });
+
+          listEl.innerHTML = "";
+
+          if (!filtered.length) {
+            listEl.innerHTML =
+              '<div class="card">' +
+              '<div class="empty-state">' +
+              '<div class="empty-icon"><i class="fa-solid fa-file-lines"></i></div>' +
+              "<h3>No resources match</h3>" +
+              "<p>Try a different search or category.</p>" +
+              '<button class="btn btn-secondary" id="reset-from-empty" type="button">' +
+              '<i class="fa-solid fa-rotate-left"></i> Clear filters' +
+              "</button>" +
+              "</div>" +
+              "</div>";
+            var rb = document.getElementById("reset-from-empty");
+            if (rb) rb.addEventListener("click", clearFilters);
+            countEl.textContent = "No resources";
+            clearBtn.style.display = q || cat ? "inline-flex" : "none";
+            return;
+          }
+
+          Object.keys(byCat).forEach(function (category) {
+            var group = document.createElement("div");
+            group.className = "card";
+            group.style.marginBottom = "16px";
+
+            group.innerHTML =
+              '<div class="card-head" style="background:var(--bg-subtle);">' +
+              '<h3 style="font-size:var(--fs-sm); display:flex; align-items:center; gap:8px; margin:0;">' +
+              '<i class="fa-solid fa-folder-open" style="color:var(--brand-secondary);"></i> ' +
+              Util.escape(category) +
+              "</h3>" +
+              '<span class="badge badge-neutral">' +
+              byCat[category].length +
+              "</span>" +
+              "</div>";
+
+            var body = document.createElement("div");
+
+            byCat[category].forEach(function (r) {
+              var row = document.createElement("div");
+              row.className = "resource-row";
+
+              var isTimetable = r.type === "timetable";
+              var isCalendar = r.type === "calendar";
+              var isStructured = isTimetable || isCalendar;
+
+              var iconClass = isCalendar
+                ? "fa-calendar-days"
+                : isTimetable
+                  ? r.kind === "lecture"
+                    ? "fa-chalkboard"
+                    : "fa-file-signature"
+                  : "fa-file-pdf";
+
+              var iconBg = isCalendar
+                ? "warning"
+                : isTimetable
+                  ? r.kind === "lecture"
+                    ? "brand"
+                    : "marine"
+                  : r.type || "pdf";
+
+              row.innerHTML =
+                '<div class="resource-icon ' +
+                iconBg +
+                '">' +
+                '<i class="fa-solid ' +
+                iconClass +
+                '"></i>' +
+                "</div>" +
+                '<div class="resource-info">' +
+                '<div class="resource-name" title="' +
+                Util.escape(r.name) +
+                '">' +
+                Util.escape(r.name) +
+                (isStructured
+                  ? ' <span class="badge badge-brand" style="margin-left:6px; font-size:10px;">Structured</span>'
+                  : "") +
+                "</div>" +
+                '<div class="resource-meta">' +
+                (r.faculty && r.faculty !== "All"
+                  ? '<span><i class="fa-solid fa-building-columns"></i> ' +
+                    Util.escape(r.faculty) +
+                    "</span>"
+                  : "") +
+                (r.department && r.department !== "All"
+                  ? '<span><i class="fa-solid fa-diagram-project"></i> ' +
+                    Util.escape(r.department) +
+                    "</span>"
+                  : "") +
+                (r.level && r.level !== "All"
+                  ? '<span><i class="fa-solid fa-graduation-cap"></i> ' +
+                    Util.escape(r.level) +
+                    "L</span>"
+                  : "") +
+                (isStructured
+                  ? '<span><i class="fa-solid fa-list-check"></i> ' +
+                    r.entries +
+                    " entr" +
+                    (r.entries === 1 ? "y" : "ies") +
+                    "</span>"
+                  : '<span><i class="fa-regular fa-clock"></i> ' +
+                    Util.relativeTime(r.uploaded) +
+                    "</span>") +
+                (!isStructured
+                  ? '<span><i class="fa-solid fa-user"></i> ' +
+                    Util.escape(r.uploadedBy) +
+                    "</span>"
+                  : "") +
+                "</div>" +
+                "</div>" +
+                '<button class="btn btn-ghost btn-sm" data-view type="button" aria-label="Preview resource">' +
+                '<i class="fa-solid fa-eye"></i>' +
+                "</button>" +
+                (canUpload
+                  ? '<button class="btn btn-ghost btn-sm" data-edit type="button" aria-label="' +
+                    (isCalendar
+                      ? "Edit calendar"
+                      : isTimetable
+                        ? "Edit timetable"
+                        : "Edit resource") +
+                    '"><i class="fa-solid fa-pen"></i></button>'
+                  : "") +
+                (canDelete
+                  ? '<button class="btn btn-ghost btn-sm" data-del type="button" aria-label="Delete" style="color:var(--danger);"><i class="fa-solid fa-trash"></i></button>'
+                  : "");
+
+              var viewBtn = row.querySelector("[data-view]");
+              if (viewBtn) {
+                viewBtn.addEventListener("click", function () {
+                  openPreviewModal(r);
+                });
+              }
+
+              var editBtn = row.querySelector("[data-edit]");
+              if (editBtn) {
+                editBtn.addEventListener("click", function () {
+                  if (isCalendar) {
+                    CalendarAdmin.openEditor(SESSION_KEY);
+                  } else if (isTimetable) {
+                    var override = TimetableAdmin.findOverride(
+                      r.kind,
+                      r.faculty,
+                      r.department,
+                      r.level,
+                    );
+                    if (r.kind === "lecture")
+                      TimetableAdmin.openLectureEditor(override);
+                    else TimetableAdmin.openExamEditor(override);
+                  } else {
+                    openEditModal(r);
+                  }
+                });
+              }
+
+              var delBtn = row.querySelector("[data-del]");
+              if (delBtn) {
+                delBtn.addEventListener("click", async function () {
+                  var ok = await Confirmation.confirm({
+                    title: isCalendar
+                      ? "Reset the Academic Calendar?"
+                      : isTimetable
+                        ? "Delete this timetable?"
+                        : "Delete this resource?",
+                    message: isCalendar
+                      ? "All admin edits to the academic calendar will be discarded. The default seed dates will return."
+                      : '"' +
+                        r.name +
+                        '" will be removed. Students will no longer see it.',
+                    confirmLabel: isCalendar ? "Reset" : "Delete",
+                    variant: "danger",
+                  });
+                  if (!ok) return;
+
+                  if (isCalendar) {
+                    CalendarAdmin.resetSession(SESSION_KEY);
+                  } else if (isTimetable) {
+                    var existing = TimetableAdmin.findOverride(
+                      r.kind,
+                      r.faculty,
+                      r.department,
+                      r.level,
+                    );
+                    if (existing) {
+                      if (r.kind === "lecture")
+                        TimetableAdmin.deleteLecture(
+                          r.faculty,
+                          r.department,
+                          r.level,
+                        );
+                      else
+                        TimetableAdmin.deleteExam(
+                          r.faculty,
+                          r.department,
+                          r.level,
+                        );
+                    } else {
+                      if (r.kind === "lecture") {
+                        TimetableAdmin.deleteLecture(
+                          r.faculty,
+                          r.department,
+                          r.level,
+                        );
+                        var stub = {
+                          faculty: r.faculty,
+                          department: r.department,
+                          level: r.level,
+                          session: r.session,
+                          semester: r.semester,
+                          slots: [],
+                        };
+                        var all =
+                          Store.get("lecture_timetables_overrides", []) || [];
+                        all = all.filter(function (o) {
+                          return !(
+                            o.faculty === r.faculty &&
+                            o.department === r.department &&
+                            o.level === r.level
+                          );
+                        });
+                        all.push(stub);
+                        Store.set("lecture_timetables_overrides", all);
+                      } else {
+                        TimetableAdmin.deleteExam(
+                          r.faculty,
+                          r.department,
+                          r.level,
+                        );
+                        var stubE = {
+                          faculty: r.faculty,
+                          department: r.department,
+                          level: r.level,
+                          session: r.session,
+                          semester: r.semester,
+                          exams: [],
+                        };
+                        var allE =
+                          Store.get("exam_timetables_overrides", []) || [];
+                        allE = allE.filter(function (o) {
+                          return !(
+                            o.faculty === r.faculty &&
+                            o.department === r.department &&
+                            o.level === r.level
+                          );
+                        });
+                        allE.push(stubE);
+                        Store.set("exam_timetables_overrides", allE);
+                      }
+                    }
+                  } else {
+                    resources = resources.filter(function (x) {
+                      return x.id !== r.id;
+                    });
+                    var ex = Store.get("resources_overrides", {}) || {};
+                    var del = ex.deleted || [];
+                    if (del.indexOf(r.id) === -1) del.push(r.id);
+                    ex.deleted = del;
+                    Store.set("resources_overrides", ex);
+                  }
+
+                  render();
+                  Toast.success(
+                    isCalendar
+                      ? "Calendar reset."
+                      : isTimetable
+                        ? "Timetable removed."
+                        : "Resource deleted.",
+                    isCalendar ? "Reset" : "Removed",
+                  );
+                });
+              }
+
+              body.appendChild(row);
+            });
+
+            group.appendChild(body);
+            listEl.appendChild(group);
+          });
+
+          countEl.textContent =
+            filtered.length + " item" + (filtered.length === 1 ? "" : "s");
+          clearBtn.style.display = q || cat ? "inline-flex" : "none";
+        }
+
+        function clearFilters() {
+          searchEl.value = "";
+          catSel.value = "";
+          render();
+        }
+
+        /* ==================================================================
+           PREVIEW MODAL
+           ================================================================== */
+        var prTitle = document.getElementById("pr-title");
+        var prSubtitle = document.getElementById("pr-subtitle");
+        var prBody = document.getElementById("pr-body");
+        var prFoot = document.getElementById("pr-foot");
+
+        function openPreviewModal(r) {
+          prTitle.textContent = r.name;
+          prSubtitle.textContent =
+            r.category +
+            (r.faculty && r.faculty !== "All" ? " · " + r.faculty : "") +
+            (r.department && r.department !== "All"
+              ? " · " + r.department
+              : "") +
+            (r.level && r.level !== "All" ? " · " + r.level + " Level" : "");
+
+          if (r.type === "timetable") {
+            if (r.kind === "lecture") renderLecturePreview(r);
+            else renderExamPreview(r);
+          } else if (r.type === "calendar") {
+            renderCalendarPreview(r);
+          } else {
+            renderFilePreview(r);
+          }
+
+          Modal.open("preview-resource-modal");
+        }
+
+        /* -------- FILE PREVIEW -------- */
+        function renderFilePreview(r) {
+          var ICONS = {
+            pdf: "fa-file-pdf",
+            doc: "fa-file-word",
+            xls: "fa-file-excel",
+          };
+          var iconClass = ICONS[r.type] || "fa-file";
+
+          prBody.innerHTML =
+            '<div class="preview-file">' +
+            '<div class="preview-file-hero">' +
+            '<div class="preview-file-icon ' +
+            (r.type || "pdf") +
+            '">' +
+            '<i class="fa-solid ' +
+            iconClass +
+            '"></i>' +
+            "</div>" +
+            '<h4 class="preview-file-name">' +
+            Util.escape(r.name) +
+            "</h4>" +
+            '<p class="preview-file-meta">' +
+            Util.escape(r.category) +
+            (r.size ? " · " + Util.escape(r.size) : "") +
+            "</p>" +
+            "</div>" +
+            '<div class="preview-info-grid">' +
+            infoCell("Category", r.category) +
+            (r.faculty && r.faculty !== "All"
+              ? infoCell("Faculty", r.faculty)
+              : "") +
+            (r.department && r.department !== "All"
+              ? infoCell("Department", r.department)
+              : "") +
+            (r.level && r.level !== "All"
+              ? infoCell("Level", r.level + " Level")
+              : "") +
+            (r.course ? infoCell("Course", r.course) : "") +
+            (r.session ? infoCell("Session", r.session) : "") +
+            (r.semester ? infoCell("Semester", r.semester) : "") +
+            infoCell("Uploaded", Util.formatDate(r.uploaded)) +
+            (r.uploadedBy ? infoCell("Uploaded by", r.uploadedBy) : "") +
+            "</div>" +
+            '<div class="preview-file-actions">' +
+            '<button type="button" class="btn btn-primary" id="pr-download-btn">' +
+            '<i class="fa-solid fa-download"></i> Download "' +
+            Util.escape(r.name) +
+            '"' +
+            "</button>" +
+            "</div>" +
+            "</div>";
+
+          var dlBtn = document.getElementById("pr-download-btn");
+          if (dlBtn) {
+            dlBtn.addEventListener("click", function () {
+              if (typeof downloadResourceFile === "function") {
+                downloadResourceFile(r);
+              } else {
+                Toast.success(
+                  'Downloading "' + r.name + '"',
+                  "Download started",
+                );
+              }
+            });
+          }
+
+          prFoot.innerHTML =
+            '<button type="button" class="btn btn-secondary" data-modal-close>Close</button>';
+        }
+
+        function infoCell(label, value) {
+          return (
+            '<div class="preview-info-cell">' +
+            '<div class="preview-info-label">' +
+            Util.escape(label) +
+            "</div>" +
+            '<div class="preview-info-value">' +
+            Util.escape(value) +
+            "</div>" +
+            "</div>"
+          );
+        }
+
+        /* -------- LECTURE TIMETABLE PREVIEW -------- */
+        function renderLecturePreview(r) {
+          var t = r.data;
+          var slots = (t && t.slots) || [];
+          var DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+
+          if (!slots.length) {
+            prBody.innerHTML =
+              '<div class="preview-empty">' +
+              '<i class="fa-regular fa-calendar-xmark"></i>' +
+              "<p>No entries in this timetable yet.</p>" +
+              "</div>";
+            prFoot.innerHTML =
+              '<button type="button" class="btn btn-secondary" data-modal-close>Close</button>' +
+              (canUpload
+                ? '<button type="button" class="btn btn-primary" id="pr-edit-timetable">' +
+                  '<i class="fa-solid fa-pen"></i> Edit timetable' +
+                  "</button>"
+                : "");
+            wireEditTimetableButton(r);
+            return;
+          }
+
+          var totalEntries = 0;
+          slots.forEach(function (s) {
+            totalEntries += Object.keys(s.periods || {}).length;
+          });
+
+          var statsHtml =
+            '<div class="preview-stats">' +
+            '<div class="preview-stat"><div class="preview-stat-k">Sessions</div>' +
+            '<div class="preview-stat-v">' +
+            slots.length +
+            "</div></div>" +
+            '<div class="preview-stat"><div class="preview-stat-k">Course slots</div>' +
+            '<div class="preview-stat-v">' +
+            totalEntries +
+            "</div></div>" +
+            '<div class="preview-stat"><div class="preview-stat-k">Audience</div>' +
+            '<div class="preview-stat-v" style="font-size:var(--fs-sm);">' +
+            Util.escape(r.level) +
+            "L</div></div>" +
+            "</div>";
+
+          var gridHtml =
+            '<div class="preview-tt-desktop"><div class="preview-tt-grid">' +
+            '<div class="preview-tt-head">' +
+            '<div class="preview-tt-cell preview-tt-time">Time</div>' +
+            DAYS.map(function (d) {
+              return '<div class="preview-tt-cell">' + d + "</div>";
+            }).join("") +
+            "</div>";
+
+          slots.forEach(function (slot) {
+            gridHtml += '<div class="preview-tt-row">';
+            gridHtml +=
+              '<div class="preview-tt-cell preview-tt-time">' +
+              Util.escape(slot.time) +
+              "</div>";
+            DAYS.forEach(function (day) {
+              var p = slot.periods[day];
+              if (!p) {
+                gridHtml +=
+                  '<div class="preview-tt-cell preview-tt-empty"></div>';
+              } else {
+                gridHtml +=
+                  '<div class="preview-tt-cell">' +
+                  '<div class="class-block class-block-' +
+                  (p.color || "brand") +
+                  '">' +
+                  "<strong>" +
+                  Util.escape(p.code) +
+                  "</strong>" +
+                  '<span><i class="fa-solid fa-location-dot"></i> ' +
+                  Util.escape(p.venue || "TBA") +
+                  "</span>" +
+                  '<span><i class="fa-solid fa-user"></i> ' +
+                  Util.escape(p.lecturer || "TBA") +
+                  "</span>" +
+                  "</div>" +
+                  "</div>";
+              }
+            });
+            gridHtml += "</div>";
+          });
+          gridHtml += "</div></div>";
+
+          var mobileHtml = '<div class="preview-tt-mobile">';
+          DAYS.forEach(function (day) {
+            var daySlots = slots.filter(function (s) {
+              return s.periods[day];
+            });
+            mobileHtml +=
+              '<div class="preview-tt-day">' +
+              '<div class="preview-tt-day-head">' +
+              "<h4>" +
+              day +
+              "</h4>" +
+              '<span class="preview-tt-day-count">' +
+              (daySlots.length === 0
+                ? "No lectures"
+                : daySlots.length +
+                  " lecture" +
+                  (daySlots.length === 1 ? "" : "s")) +
+              "</span>" +
+              "</div>" +
+              '<div class="preview-tt-day-body">';
+            if (daySlots.length === 0) {
+              mobileHtml +=
+                '<div class="preview-tt-day-empty"><i class="fa-regular fa-circle-check"></i> No lectures scheduled</div>';
+            } else {
+              daySlots.forEach(function (s) {
+                var p = s.periods[day];
+                mobileHtml +=
+                  '<div class="preview-tt-slot">' +
+                  '<div class="preview-tt-slot-time">' +
+                  Util.escape(s.time) +
+                  "</div>" +
+                  '<div class="class-block class-block-' +
+                  (p.color || "brand") +
+                  '">' +
+                  "<strong>" +
+                  Util.escape(p.code) +
+                  "</strong>" +
+                  '<span><i class="fa-solid fa-location-dot"></i> ' +
+                  Util.escape(p.venue || "TBA") +
+                  "</span>" +
+                  '<span><i class="fa-solid fa-user"></i> ' +
+                  Util.escape(p.lecturer || "TBA") +
+                  "</span>" +
+                  "</div>" +
+                  "</div>";
+              });
+            }
+            mobileHtml += "</div></div>";
+          });
+          mobileHtml += "</div>";
+
+          prBody.innerHTML =
+            '<div class="preview-timetable">' +
+            statsHtml +
+            gridHtml +
+            mobileHtml +
+            "</div>";
+
+          prFoot.innerHTML =
+            '<button type="button" class="btn btn-secondary" data-modal-close>Close</button>' +
+            '<button type="button" class="btn btn-secondary" id="pr-download-timetable">' +
+            '<i class="fa-solid fa-download"></i> Download' +
+            "</button>" +
+            (canUpload
+              ? '<button type="button" class="btn btn-primary" id="pr-edit-timetable">' +
+                '<i class="fa-solid fa-pen"></i> Edit timetable' +
+                "</button>"
+              : "");
+          wireEditTimetableButton(r);
+          wireDownloadTimetableButton(r, "lectures");
+        }
+
+        /* -------- EXAM TIMETABLE PREVIEW -------- */
+        function renderExamPreview(r) {
+          var t = r.data;
+          var exams = (t && t.exams) || [];
+
+          if (!exams.length) {
+            prBody.innerHTML =
+              '<div class="preview-empty">' +
+              '<i class="fa-regular fa-calendar-xmark"></i>' +
+              "<p>No exams in this timetable yet.</p>" +
+              "</div>";
+            prFoot.innerHTML =
+              '<button type="button" class="btn btn-secondary" data-modal-close>Close</button>' +
+              (canUpload
+                ? '<button type="button" class="btn btn-primary" id="pr-edit-timetable">' +
+                  '<i class="fa-solid fa-pen"></i> Edit timetable' +
+                  "</button>"
+                : "");
+            wireEditTimetableButton(r);
+            return;
+          }
+
+          var sorted = exams.slice().sort(function (a, b) {
+            return new Date(a.date) - new Date(b.date);
+          });
+
+          var statsHtml =
+            '<div class="preview-stats">' +
+            '<div class="preview-stat"><div class="preview-stat-k">Total exams</div>' +
+            '<div class="preview-stat-v">' +
+            sorted.length +
+            "</div></div>" +
+            '<div class="preview-stat"><div class="preview-stat-k">First exam</div>' +
+            '<div class="preview-stat-v" style="font-size:var(--fs-sm);">' +
+            Util.formatDate(sorted[0].date) +
+            "</div></div>" +
+            '<div class="preview-stat"><div class="preview-stat-k">Audience</div>' +
+            '<div class="preview-stat-v" style="font-size:var(--fs-sm);">' +
+            Util.escape(r.level) +
+            "L</div></div>" +
+            "</div>";
+
+          var tableHtml =
+            '<div class="preview-exam-desktop"><div class="preview-exam-table">' +
+            '<div class="preview-exam-head"><div>Date</div><div>Time</div><div>Course</div><div>Venue</div></div>';
+          sorted.forEach(function (e) {
+            tableHtml +=
+              '<div class="preview-exam-row">' +
+              '<div class="preview-exam-date">' +
+              Util.formatDate(e.date) +
+              "</div>" +
+              '<div class="preview-exam-time">' +
+              Util.escape(e.time) +
+              "</div>" +
+              '<div class="preview-exam-course">' +
+              '<span class="preview-exam-code">' +
+              Util.escape(e.course) +
+              "</span>" +
+              '<span class="preview-exam-title">' +
+              Util.escape(e.title || "") +
+              "</span>" +
+              "</div>" +
+              '<div class="preview-exam-venue"><i class="fa-solid fa-location-dot"></i> ' +
+              Util.escape(e.venue || "TBA") +
+              "</div>" +
+              "</div>";
+          });
+          tableHtml += "</div></div>";
+
+          var mobileHtml = '<div class="preview-exam-mobile">';
+          sorted.forEach(function (e) {
+            var d = new Date(e.date);
+            var day = d.getDate();
+            var month = d
+              .toLocaleDateString("en-GB", { month: "short" })
+              .toUpperCase();
+            var weekday = d.toLocaleDateString("en-GB", { weekday: "long" });
+            mobileHtml +=
+              '<div class="preview-exam-card">' +
+              '<div class="preview-exam-card-head">' +
+              '<div class="preview-exam-card-date">' +
+              '<div class="preview-exam-card-day">' +
+              day +
+              "</div>" +
+              '<div class="preview-exam-card-month">' +
+              month +
+              "</div>" +
+              "</div>" +
+              '<div class="preview-exam-card-meta">' +
+              '<div class="preview-exam-card-weekday">' +
+              weekday +
+              "</div>" +
+              '<div class="preview-exam-card-course">' +
+              Util.escape(e.course) +
+              " — " +
+              Util.escape(e.title || "") +
+              "</div>" +
+              "</div>" +
+              "</div>" +
+              '<div class="preview-exam-card-body">' +
+              '<div class="preview-exam-card-info"><i class="fa-regular fa-clock"></i> ' +
+              Util.escape(e.time) +
+              "</div>" +
+              '<div class="preview-exam-card-info"><i class="fa-solid fa-location-dot"></i> ' +
+              Util.escape(e.venue || "TBA") +
+              "</div>" +
+              "</div>" +
+              "</div>";
+          });
+          mobileHtml += "</div>";
+
+          prBody.innerHTML =
+            '<div class="preview-timetable">' +
+            statsHtml +
+            tableHtml +
+            mobileHtml +
+            "</div>";
+
+          prFoot.innerHTML =
+            '<button type="button" class="btn btn-secondary" data-modal-close>Close</button>' +
+            '<button type="button" class="btn btn-secondary" id="pr-download-timetable">' +
+            '<i class="fa-solid fa-download"></i> Download' +
+            "</button>" +
+            (canUpload
+              ? '<button type="button" class="btn btn-primary" id="pr-edit-timetable">' +
+                '<i class="fa-solid fa-pen"></i> Edit timetable' +
+                "</button>"
+              : "");
+          wireEditTimetableButton(r);
+          wireDownloadTimetableButton(r, "exams");
+        }
+
+        /* -------- ACADEMIC CALENDAR PREVIEW -------- */
+        function renderCalendarPreview(r) {
+          var split = (r && r.data) || { first: [], second: [] };
+          var first = split.first || [];
+          var second = split.second || [];
+          var total = first.length + second.length;
+
+          if (!total) {
+            prBody.innerHTML =
+              '<div class="preview-empty">' +
+              '<i class="fa-regular fa-calendar-xmark"></i>' +
+              "<p>No events in the academic calendar yet.</p>" +
+              "</div>";
+            prFoot.innerHTML =
+              '<button type="button" class="btn btn-secondary" data-modal-close>Close</button>' +
+              (canUpload
+                ? '<button type="button" class="btn btn-primary" id="pr-edit-calendar">' +
+                  '<i class="fa-solid fa-pen"></i> Edit calendar' +
+                  "</button>"
+                : "");
+            wireEditCalendarButton(r);
+            return;
+          }
+
+          var statsHtml =
+            '<div class="preview-stats">' +
+            '<div class="preview-stat"><div class="preview-stat-k">Total events</div>' +
+            '<div class="preview-stat-v">' +
+            total +
+            "</div></div>" +
+            '<div class="preview-stat"><div class="preview-stat-k">First Semester</div>' +
+            '<div class="preview-stat-v">' +
+            first.length +
+            "</div></div>" +
+            '<div class="preview-stat"><div class="preview-stat-k">Second Semester</div>' +
+            '<div class="preview-stat-v">' +
+            second.length +
+            "</div></div>" +
+            "</div>";
+
+          function renderSection(title, dotColor, list) {
+            if (!list.length) return "";
+            return (
+              '<div class="preview-cal-section">' +
+              '<div class="preview-cal-heading">' +
+              '<span class="preview-cal-dot" style="background:' +
+              dotColor +
+              ';"></span>' +
+              Util.escape(title) +
+              "</div>" +
+              list
+                .map(function (e) {
+                  return (
+                    '<div class="preview-cal-row">' +
+                    '<div class="preview-cal-date">' +
+                    Util.escape(
+                      e.displayDate ||
+                        Util.formatDate(e.isoDate, {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        }),
+                    ) +
+                    "</div>" +
+                    '<div class="preview-cal-body">' +
+                    '<div class="preview-cal-title">' +
+                    Util.escape(e.title) +
+                    "</div>" +
+                    (e.desc
+                      ? '<div class="preview-cal-desc">' +
+                        Util.escape(e.desc) +
+                        "</div>"
+                      : "") +
+                    "</div>" +
+                    "</div>"
+                  );
+                })
+                .join("") +
+              "</div>"
+            );
+          }
+
+          prBody.innerHTML =
+            '<div class="preview-calendar">' +
+            statsHtml +
+            renderSection("First Semester", "var(--brand-primary)", first) +
+            renderSection("Second Semester", "var(--brand-secondary)", second) +
+            "</div>";
+
+          prFoot.innerHTML =
+            '<button type="button" class="btn btn-secondary" data-modal-close>Close</button>' +
+            '<button type="button" class="btn btn-secondary" id="pr-download-calendar">' +
+            '<i class="fa-solid fa-download"></i> Download' +
+            "</button>" +
+            (canUpload
+              ? '<button type="button" class="btn btn-primary" id="pr-edit-calendar">' +
+                '<i class="fa-solid fa-pen"></i> Edit calendar' +
+                "</button>"
+              : "");
+          wireEditCalendarButton(r);
+          wireDownloadCalendarButton(r);
+        }
+
+        /* -------- WIRING -------- */
+        function wireEditTimetableButton(r) {
+          var btn = document.getElementById("pr-edit-timetable");
+          if (!btn) return;
+          btn.addEventListener("click", function () {
+            Modal.close("preview-resource-modal");
+            var override = TimetableAdmin.findOverride(
+              r.kind,
+              r.faculty,
+              r.department,
+              r.level,
+            );
+            if (r.kind === "lecture")
+              TimetableAdmin.openLectureEditor(override);
+            else TimetableAdmin.openExamEditor(override);
+          });
+        }
+
+        function wireEditCalendarButton(r) {
+          var btn = document.getElementById("pr-edit-calendar");
+          if (!btn) return;
+          btn.addEventListener("click", function () {
+            Modal.close("preview-resource-modal");
+            CalendarAdmin.openEditor(SESSION_KEY);
+          });
+        }
+
+        function wireDownloadTimetableButton(r, type) {
+          var btn = document.getElementById("pr-download-timetable");
+          if (!btn) return;
+          btn.addEventListener("click", function () {
+            if (typeof PdfGenerator === "undefined") {
+              Toast.error("Document generator not loaded.", "Error");
+              return;
+            }
+            var t = r.data || {};
+            var subtitle =
+              r.department +
+              " · " +
+              r.level +
+              " Level · " +
+              (r.semester || "First") +
+              " Semester " +
+              (r.session || SESSION_KEY);
+
+            if (type === "lectures") {
+              var DAYS = [
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+              ];
+              PdfGenerator.open({
+                type: "lectures",
+                title: "Lecture Timetable",
+                subtitle: subtitle,
+                data: { days: DAYS, slots: t.slots || [] },
+              });
+            } else {
+              var MONTHS = [
+                "JAN",
+                "FEB",
+                "MAR",
+                "APR",
+                "MAY",
+                "JUN",
+                "JUL",
+                "AUG",
+                "SEP",
+                "OCT",
+                "NOV",
+                "DEC",
+              ];
+              var data = (t.exams || []).map(function (e) {
+                var d = new Date(e.date);
+                return {
+                  day: String(d.getDate()).padStart(2, "0"),
+                  month: MONTHS[d.getMonth()],
+                  course: e.course,
+                  title: e.title,
+                  time: e.time,
+                  venue: e.venue,
+                };
+              });
+              PdfGenerator.open({
+                type: "exams",
+                title: "Exam Timetable",
+                subtitle: subtitle,
+                data: data,
+              });
+            }
+          });
+        }
+
+        function wireDownloadCalendarButton(r) {
+          var btn = document.getElementById("pr-download-calendar");
+          if (!btn) return;
+          btn.addEventListener("click", function () {
+            if (typeof PdfGenerator === "undefined") {
+              Toast.error("Document generator not loaded.", "Error");
+              return;
+            }
+            var split = (r && r.data) || { first: [], second: [] };
+            var all = (split.first || []).concat(split.second || []);
+            var data = all.map(function (e) {
+              return {
+                date:
+                  e.displayDate ||
+                  Util.formatDate(e.isoDate, {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  }),
+                title: e.title,
+                desc: e.desc || "",
+                semester: e.semester,
+              };
+            });
+            PdfGenerator.open({
+              type: "calendar",
+              title: "Academic Calendar",
+              subtitle: "2026/2027 Academic Session",
+              data: data,
+            });
+          });
+        }
+
+        /* ------------------------------------------------------------------
+           Upload form
+           ------------------------------------------------------------------ */
+        if (canUpload) {
+          var uploadForm = document.getElementById("upload-resource-form");
+          var fileInput = document.getElementById("ur-file");
+
+          bindForm(
+            uploadForm,
+            {
+              name: [Rules.required, Rules.minLen(3)],
+              file: [Rules.required],
+              category: [Rules.required],
+            },
+            function (data) {
+              var file = fileInput.files[0];
+              var type = "pdf";
+              if (file) {
+                if (file.name.match(/\.(doc|docx)$/i)) type = "doc";
+                else if (file.name.match(/\.(xls|xlsx)$/i)) type = "xls";
+              }
+
+              var newRes = {
+                id: "res-" + Date.now(),
+                name: data.get("name").trim(),
+                category: data.get("category"),
+                faculty: data.get("faculty") || "All",
+                department: data.get("department") || "All",
+                level: data.get("level") || "All",
+                course: data.get("course") || "",
+                semester: "First",
+                session: data.get("session") || SESSION_KEY,
+                type: type,
+                size: file
+                  ? (file.size / (1024 * 1024)).toFixed(2) + " MB"
+                  : "1.0 MB",
+                uploaded: new Date().toISOString().slice(0, 10),
+                uploadedBy: session.name || session.username,
+              };
+
+              resources.unshift(newRes);
+              persist();
+
+              if (data.get("notify")) {
+                var notifs = Store.get("notifications", []) || [];
+                notifs.unshift({
+                  id: "n-" + Date.now(),
+                  type: "academic_resource",
+                  icon: "fa-file-pdf",
+                  tone: "marine",
+                  title: "New Academic Resource Available",
+                  body:
+                    "A new " +
+                    newRes.category +
+                    " has been uploaded to Campus Space.",
+                  link: "academics.html",
+                  time: Date.now(),
+                  read: false,
+                });
+                Store.set("notifications", notifs);
+              }
+
+              render();
+              Modal.close("upload-resource-modal");
+              uploadForm.reset();
+              var picker = document.getElementById("ur-file-picker");
+              if (picker && typeof picker._reset === "function")
+                picker._reset();
+              Toast.success(
+                "Resource uploaded. Students will be notified.",
+                "Uploaded",
+              );
+            },
+          );
+        } else {
+          var uploadBtn = document.querySelector(
+            '[data-modal-open="upload-resource-modal"]',
+          );
+          if (uploadBtn) uploadBtn.style.display = "none";
+        }
+
+        /* Reset picker when upload modal opens */
+        document.addEventListener("click", function (e) {
+          if (e.target.closest('[data-modal-open="upload-resource-modal"]')) {
+            var picker = document.getElementById("ur-file-picker");
+            if (picker && typeof picker._reset === "function") picker._reset();
+          }
+        });
+
+        /* ------------------------------------------------------------------
+           Edit form
+           ------------------------------------------------------------------ */
+        var currentEdit = null;
+
+        function openEditModal(r) {
+          currentEdit = r;
+          var form = document.getElementById("edit-resource-form");
+          form.querySelector('[name="name"]').value = r.name || "";
+          form.querySelector('[name="category"]').value = r.category || "";
+          form.querySelector('[name="session"]').value = r.session || "";
+          form.querySelector('[name="faculty"]').value = r.faculty || "";
+          form.querySelector('[name="course"]').value = r.course || "";
+
+          var deptSel = document.getElementById("er-department");
+          if (r.faculty && r.faculty !== "All") {
+            populateDepartments(r.faculty, [deptSel]);
+            deptSel.value = r.department || "";
+          } else {
+            populateDepartments("", [deptSel]);
+          }
+
+          var levelSel = document.getElementById("er-level");
+          levelSel.value = r.level || "";
+
+          form.querySelectorAll(".field").forEach(function (field) {
+            field.classList.remove("is-invalid", "is-valid");
+          });
+
+          Modal.open("edit-resource-modal");
+        }
+
+        if (canUpload) {
+          bindForm(
+            document.getElementById("edit-resource-form"),
+            {
+              name: [Rules.required, Rules.minLen(3)],
+              category: [Rules.required],
+            },
+            function (data) {
+              if (!currentEdit) return;
+
+              currentEdit.name = data.get("name").trim();
+              currentEdit.category = data.get("category");
+              currentEdit.session = data.get("session") || SESSION_KEY;
+              currentEdit.faculty = data.get("faculty") || "All";
+              currentEdit.department = data.get("department") || "All";
+              currentEdit.level = data.get("level") || "All";
+              currentEdit.course = data.get("course") || "";
+
+              var existing = Store.get("resources_overrides", {}) || {};
+              existing.edits = existing.edits || {};
+              existing.edits[currentEdit.id] = {
+                name: currentEdit.name,
+                category: currentEdit.category,
+                session: currentEdit.session,
+                faculty: currentEdit.faculty,
+                department: currentEdit.department,
+                level: currentEdit.level,
+                course: currentEdit.course,
+              };
+              Store.set("resources_overrides", existing);
+
+              Modal.close("edit-resource-modal");
+              currentEdit = null;
+              render();
+              Toast.success("Resource updated.", "Saved");
+            },
+          );
+        }
+
+        /* ------------------------------------------------------------------
+           EVENTS
+           ------------------------------------------------------------------ */
+        var debounce;
+        searchEl.addEventListener("input", function () {
+          clearTimeout(debounce);
+          debounce = setTimeout(render, 120);
+        });
+        catSel.addEventListener("change", render);
+        clearBtn.addEventListener("click", clearFilters);
+
+        render();
       });
     </script>
   </body>

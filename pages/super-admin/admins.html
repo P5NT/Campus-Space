@@ -45,8 +45,13 @@
   </head>
   <body class="has-session admin-body">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
-      <aside class="sidebar admin-sidebar" id="app-sidebar"></aside>
+      <aside
+        class="sidebar admin-sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
       <div class="app-main">
         <header class="app-header" id="app-header"></header>
         <main class="app-content" id="main">
@@ -54,18 +59,20 @@
             <div class="page-head-text">
               <h1 class="page-title">Admins</h1>
               <p class="page-subtitle">
-                Manage Admin accounts. Super Admin only.
+                Manage Super Admin, Senior Admin, and student Admin accounts.
               </p>
             </div>
-            <button class="btn btn-primary" data-modal-open="add-admin-modal">
+            <button class="btn btn-primary" id="add-admin-btn" type="button">
               <i class="fa-solid fa-user-shield"></i> Add Admin
             </button>
           </div>
 
-          <div class="grid grid-3">
+          <!-- Stat cards -->
+          <div class="grid grid-4" style="margin-bottom: 24px">
             <div class="stat">
               <div class="stat-label">Total Admins</div>
               <div class="stat-value" id="ad-total">—</div>
+              <div class="stat-meta">All roles</div>
             </div>
             <div class="stat">
               <div class="stat-label">Active</div>
@@ -76,6 +83,18 @@
               >
                 —
               </div>
+              <div class="stat-meta">Full access</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Deactivated</div>
+              <div
+                class="stat-value"
+                id="ad-deactivated"
+                style="color: var(--danger)"
+              >
+                —
+              </div>
+              <div class="stat-meta">Access revoked</div>
             </div>
             <div class="stat">
               <div class="stat-label">Super Admins</div>
@@ -86,77 +105,282 @@
               >
                 —
               </div>
+              <div class="stat-meta">Highest access</div>
             </div>
           </div>
 
-          <div class="card" style="margin-top: 24px">
+          <!-- Search -->
+          <div class="toolbar">
+            <div class="input-wrap">
+              <i class="fa-solid fa-magnifying-glass input-icon"></i>
+              <input
+                class="input"
+                type="search"
+                id="admins-search"
+                placeholder="Search by name, username or email…"
+                aria-label="Search admins"
+              />
+            </div>
+          </div>
+
+          <!-- Role filter tabs -->
+          <div class="filter-bar" id="admins-filter" role="tablist">
+            <button class="chip is-active" data-role="all" role="tab">
+              All
+            </button>
+            <button class="chip" data-role="super_admin" role="tab">
+              Super Admin
+            </button>
+            <button class="chip" data-role="senior_admin" role="tab">
+              Senior Admin
+            </button>
+            <button class="chip" data-role="academia" role="tab">
+              Academia
+            </button>
+            <button class="chip" data-role="su_pro" role="tab">SU PRO</button>
+          </div>
+
+          <div class="cluster-between" style="margin-bottom: 12px">
+            <p class="section-desc" style="margin: 0" id="admins-count">
+              Loading…
+            </p>
+          </div>
+
+          <div class="card">
             <div id="admins-list"></div>
           </div>
         </main>
       </div>
     </div>
 
-    <div class="modal-backdrop" id="add-admin-modal">
-      <div class="modal">
+    <!-- ============ Add Admin modal ============ -->
+    <div
+      class="modal-backdrop"
+      id="add-admin-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="add-admin-title"
+    >
+      <div class="modal modal-lg">
         <div class="modal-head">
-          <h3>Add Admin account</h3>
+          <h3 id="add-admin-title">Add Admin account</h3>
           <button class="btn-icon" data-modal-close aria-label="Close">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
         <form id="add-admin-form" novalidate>
           <div class="modal-body">
-            <div class="field">
-              <label class="label">First name <span class="req">*</span></label>
-              <input class="input" name="firstName" />
-              <div class="field-error">
-                <i class="fa-solid fa-circle-exclamation"></i
-                ><span>Required</span>
+            <div class="grid grid-2" style="gap: 16px">
+              <div class="field">
+                <label class="label" for="aa-first"
+                  >First name <span class="req">*</span></label
+                >
+                <input
+                  class="input"
+                  id="aa-first"
+                  name="firstName"
+                  autocomplete="given-name"
+                />
+                <div class="field-error">
+                  <i class="fa-solid fa-circle-exclamation"></i
+                  ><span>Required</span>
+                </div>
+              </div>
+              <div class="field">
+                <label class="label" for="aa-last"
+                  >Last name <span class="req">*</span></label
+                >
+                <input
+                  class="input"
+                  id="aa-last"
+                  name="lastName"
+                  autocomplete="family-name"
+                />
+                <div class="field-error">
+                  <i class="fa-solid fa-circle-exclamation"></i
+                  ><span>Required</span>
+                </div>
               </div>
             </div>
+
             <div class="field">
-              <label class="label">Last name <span class="req">*</span></label>
-              <input class="input" name="lastName" />
-              <div class="field-error">
-                <i class="fa-solid fa-circle-exclamation"></i
-                ><span>Required</span>
-              </div>
-            </div>
-            <div class="field">
-              <label class="label">Username <span class="req">*</span></label>
+              <label class="label" for="aa-username"
+                >Username <span class="req">*</span></label
+              >
               <input
                 class="input"
+                id="aa-username"
                 name="username"
                 placeholder="admin.username"
+                autocomplete="off"
               />
+              <div class="field-help">
+                3–20 characters — letters, numbers, underscore only.
+              </div>
               <div class="field-error">
                 <i class="fa-solid fa-circle-exclamation"></i
-                ><span>Letters, numbers, underscore only</span>
+                ><span>Enter a valid username.</span>
               </div>
             </div>
+
             <div class="field">
-              <label class="label">Email <span class="req">*</span></label>
-              <input class="input" type="email" name="email" />
+              <label class="label" for="aa-email"
+                >Email <span class="req">*</span></label
+              >
+              <input
+                class="input"
+                type="email"
+                id="aa-email"
+                name="email"
+                autocomplete="off"
+              />
+              <div class="field-help">
+                The recipient will be emailed instructions to sign in.
+              </div>
               <div class="field-error">
                 <i class="fa-solid fa-circle-exclamation"></i
-                ><span>Enter a valid email</span>
+                ><span>Enter a valid email.</span>
               </div>
             </div>
+
             <div class="field">
-              <label class="label">Role <span class="req">*</span></label>
-              <select class="select" name="role">
-                <option value="admin">Admin</option>
-                <option value="super_admin">Super Admin</option>
+              <label class="label" for="aa-role"
+                >Role <span class="req">*</span></label
+              >
+              <select class="select" id="aa-role" name="role">
+                <option value="senior_admin">Senior Admin</option>
+                <option value="academia">
+                  Academia (student admin — academics only)
+                </option>
+                <option value="su_pro">
+                  SU PRO (student admin — content + complaints)
+                </option>
               </select>
+              <div class="field-help">
+                Choose the access level for this admin.
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="label" for="aa-password"
+                >Temporary password <span class="req">*</span></label
+              >
+              <div class="input-wrap">
+                <i class="fa-solid fa-lock input-icon"></i>
+                <input
+                  class="input"
+                  type="password"
+                  id="aa-password"
+                  name="password"
+                  autocomplete="new-password"
+                  style="padding-right: 44px"
+                />
+                <button
+                  type="button"
+                  class="input-suffix"
+                  data-toggle-password="aa-password"
+                  aria-label="Show password"
+                >
+                  <i class="fa-solid fa-eye"></i>
+                </button>
+              </div>
+              <div class="pw-strength" data-level="0">
+                <span></span><span></span><span></span><span></span>
+              </div>
+              <ul class="pw-reqs">
+                <li data-req="length">
+                  <i class="fa-solid fa-xmark"></i> At least 8 characters
+                </li>
+                <li data-req="upper">
+                  <i class="fa-solid fa-xmark"></i> One uppercase letter
+                </li>
+                <li data-req="lower">
+                  <i class="fa-solid fa-xmark"></i> One lowercase letter
+                </li>
+                <li data-req="number">
+                  <i class="fa-solid fa-xmark"></i> One number
+                </li>
+                <li data-req="special">
+                  <i class="fa-solid fa-xmark"></i> One special character
+                </li>
+              </ul>
+              <div class="field-help">
+                The new admin will be prompted to change this on first login.
+              </div>
+              <div class="field-error">
+                <i class="fa-solid fa-circle-exclamation"></i
+                ><span>Password does not meet requirements.</span>
+              </div>
             </div>
           </div>
           <div class="modal-foot">
             <button type="button" class="btn btn-secondary" data-modal-close>
               Cancel
             </button>
-            <button type="submit" class="btn btn-primary">Add Admin</button>
+            <button type="submit" class="btn btn-primary" id="add-admin-submit">
+              <i class="fa-solid fa-paper-plane"></i> Create Admin &amp; Send
+              Invite
+            </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- ============ Activity modal ============ -->
+    <div
+      class="modal-backdrop"
+      id="activity-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="activity-title"
+    >
+      <div class="modal modal-lg">
+        <div class="modal-head">
+          <div style="min-width: 0">
+            <h3 id="activity-title">Activity log</h3>
+            <p
+              id="activity-sub"
+              style="
+                font-size: var(--fs-xs);
+                color: var(--text-tertiary);
+                margin-top: 2px;
+              "
+            ></p>
+          </div>
+          <button class="btn-icon" data-modal-close aria-label="Close">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="modal-body" id="activity-body"></div>
+        <div class="modal-foot">
+          <button type="button" class="btn btn-secondary" data-modal-close>
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ Invite sent confirmation modal ============ -->
+    <div
+      class="modal-backdrop"
+      id="invite-sent-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="invite-title"
+    >
+      <div class="modal">
+        <div class="modal-head">
+          <h3 id="invite-title">Admin created</h3>
+          <button class="btn-icon" data-modal-close aria-label="Close">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="modal-body" id="invite-body"></div>
+        <div class="modal-foot">
+          <button type="button" class="btn btn-primary" data-modal-close>
+            Got it
+          </button>
+        </div>
       </div>
     </div>
 
@@ -171,103 +395,880 @@
     <script src="../../js/main.js"></script>
     <script src="../../js/validation.js"></script>
     <script src="../../js/auth.js"></script>
+    <script src="../../js/permissions.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
     <script src="../../js/admin.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
+      /* ==========================================================================
+         Admins — Super Admin workspace.
+         Manages:
+           - Super Admin (only one, cannot self-deactivate)
+           - Senior Admin (full admin)
+           - Academia (student admin — academics only)
+           - SU PRO (student admin — content + complaints)
+
+         Data merges:
+           - DEMO_ADMINS from data/students.js
+           - cs_admins_overrides.created   (new admins created here)
+           - cs_admins_overrides.deactivated (deactivated IDs)
+           - cs_admins_overrides.edits     (edits to existing records)
+
+         Audit trail:
+           - cs_admin_audit — array of actions taken by the Super Admin
+         ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
         if (!session || session.role !== "super_admin") {
           window.location.href = "../auth/login.html";
           return;
         }
         initAppShell("admin");
 
-        let admins = DEMO_ADMINS.slice();
+        var STORAGE_KEY = "admins_overrides";
+        var AUDIT_KEY = "admin_audit";
+
+        /* ------------------------------------------------------------------
+           LOAD — merge demo admins with overrides
+           ------------------------------------------------------------------ */
+        function loadAdmins() {
+          var base = (
+            typeof DEMO_ADMINS !== "undefined" ? DEMO_ADMINS : []
+          ).map(function (a) {
+            return Object.assign({}, a);
+          });
+
+          var saved = Store.get(STORAGE_KEY, null);
+          if (saved && Array.isArray(saved.created)) {
+            saved.created.forEach(function (a) {
+              if (
+                !base.some(function (x) {
+                  return x.id === a.id;
+                })
+              ) {
+                base.push(a);
+              }
+            });
+          }
+          if (saved && saved.edits) {
+            base.forEach(function (a) {
+              var edit = saved.edits[a.id];
+              if (edit) Object.assign(a, edit);
+            });
+          }
+          if (saved && Array.isArray(saved.deactivated)) {
+            base.forEach(function (a) {
+              if (saved.deactivated.indexOf(a.id) !== -1) {
+                a.status = "deactivated";
+              }
+            });
+          }
+          return base;
+        }
+
+        /* ------------------------------------------------------------------
+           PERSIST
+           ------------------------------------------------------------------ */
+        function persistCreated(record) {
+          var existing = Store.get(STORAGE_KEY, {}) || {};
+          existing.created = existing.created || [];
+          if (
+            !existing.created.some(function (x) {
+              return x.id === record.id;
+            })
+          ) {
+            existing.created.push(record);
+          }
+          Store.set(STORAGE_KEY, existing);
+        }
+
+        function persistDeactivated(id, deactivating) {
+          var existing = Store.get(STORAGE_KEY, {}) || {};
+          existing.deactivated = existing.deactivated || [];
+          if (deactivating) {
+            if (existing.deactivated.indexOf(id) === -1)
+              existing.deactivated.push(id);
+          } else {
+            existing.deactivated = existing.deactivated.filter(function (x) {
+              return x !== id;
+            });
+          }
+          Store.set(STORAGE_KEY, existing);
+        }
+
+        /* ------------------------------------------------------------------
+           AUDIT — record an action
+           ------------------------------------------------------------------ */
+        function recordAudit(action, targetId, targetName, detail) {
+          var log = Store.get(AUDIT_KEY, []) || [];
+          log.unshift({
+            id: "aud-" + Date.now(),
+            at: Date.now(),
+            actorId: session.id,
+            actorName: session.name || session.username,
+            actorUsername: session.username,
+            action: action /* "create" | "deactivate" | "reactivate" */,
+            targetId: targetId,
+            targetName: targetName,
+            detail: detail || "",
+          });
+          Store.set(AUDIT_KEY, log);
+        }
+
+        function getAudit() {
+          return Store.get(AUDIT_KEY, []) || [];
+        }
+
+        /* ------------------------------------------------------------------
+           ROLE HELPERS
+           ------------------------------------------------------------------ */
+        function resolveRole(admin) {
+          if (!admin) return "senior_admin";
+          if (admin.role === "super_admin") return "super_admin";
+          if (admin.adminRole) return admin.adminRole;
+          if (Array.isArray(admin.adminRoles)) {
+            if (admin.adminRoles.indexOf("academia") !== -1) return "academia";
+            if (admin.adminRoles.indexOf("su_pro") !== -1) return "su_pro";
+          }
+          return "senior_admin";
+        }
+
+        function roleLabel(role) {
+          return (
+            {
+              super_admin: "Super Admin",
+              senior_admin: "Senior Admin",
+              academia: "Academia",
+              su_pro: "SU PRO",
+            }[role] || "Admin"
+          );
+        }
+
+        function roleIcon(role) {
+          return (
+            {
+              super_admin: "fa-crown",
+              senior_admin: "fa-shield-halved",
+              academia: "fa-graduation-cap",
+              su_pro: "fa-bullhorn",
+            }[role] || "fa-user-shield"
+          );
+        }
+
+        function roleChipClass(role) {
+          return (
+            {
+              super_admin: "role-super",
+              senior_admin: "role-admin",
+              academia: "role-academia",
+              su_pro: "role-supro",
+            }[role] || "role-admin"
+          );
+        }
+
+        function isSelf(admin) {
+          return admin.id === session.id || admin.username === session.username;
+        }
+
+        /* ------------------------------------------------------------------
+           STATE
+           ------------------------------------------------------------------ */
+        var admins = loadAdmins();
+        var activeFilter = "all";
+
+        var listEl = document.getElementById("admins-list");
+        var countEl = document.getElementById("admins-count");
+        var searchEl = document.getElementById("admins-search");
+        var filterBar = document.getElementById("admins-filter");
+        var addForm = document.getElementById("add-admin-form");
+
+        /* ------------------------------------------------------------------
+           RENDER
+           ------------------------------------------------------------------ */
         function render() {
+          var q = searchEl.value.trim().toLowerCase();
+
+          var visible = admins.filter(function (a) {
+            var role = resolveRole(a);
+            if (activeFilter !== "all" && role !== activeFilter) return false;
+            if (!q) return true;
+            var full = (a.firstName + " " + a.lastName).toLowerCase();
+            return (
+              full.indexOf(q) !== -1 ||
+              (a.username || "").toLowerCase().indexOf(q) !== -1 ||
+              (a.email || "").toLowerCase().indexOf(q) !== -1
+            );
+          });
+
+          /* Update stats */
           document.getElementById("ad-total").textContent = admins.length;
           document.getElementById("ad-active").textContent = admins.filter(
-            (a) => a.status === "active",
+            function (a) {
+              return a.status === "active";
+            },
+          ).length;
+          document.getElementById("ad-deactivated").textContent = admins.filter(
+            function (a) {
+              return a.status !== "active";
+            },
           ).length;
           document.getElementById("ad-super").textContent = admins.filter(
-            (a) => a.role === "super_admin",
+            function (a) {
+              return resolveRole(a) === "super_admin";
+            },
           ).length;
 
-          const list = document.getElementById("admins-list");
-          list.innerHTML = "";
-          admins.forEach((a) => {
-            const el = document.createElement("div");
-            el.className = "resource-row";
-            el.innerHTML = `
-        <span class="avatar avatar-40 avatar-fallback">${Util.initials(a.firstName + " " + a.lastName)}</span>
-        <div class="resource-info">
-          <div class="resource-name">${Util.escape(a.firstName + " " + a.lastName)}</div>
-          <div class="resource-meta">
-            <span>@${Util.escape(a.username)}</span>
-            <span class="role-chip ${a.role === "super_admin" ? "role-super" : "role-admin"}">
-              <i class="fa-solid ${a.role === "super_admin" ? "fa-crown" : "fa-shield-halved"}"></i>
-              ${a.role === "super_admin" ? "Super Admin" : "Admin"}
-            </span>
-            <span class="badge ${a.status === "active" ? "badge-success" : "badge-warning"}">${a.status}</span>
-          </div>
-        </div>
-        <button class="btn btn-ghost btn-sm" data-toggle style="color:${a.status === "active" ? "var(--danger)" : "var(--success)"};">
-          ${a.status === "active" ? '<i class="fa-solid fa-ban"></i> Deactivate' : '<i class="fa-solid fa-circle-check"></i> Reactivate'}
-        </button>`;
-            el.querySelector("[data-toggle]").addEventListener(
-              "click",
-              async () => {
-                const deactivating = a.status === "active";
-                if (
-                  await Confirmation.confirm({
-                    title: deactivating
-                      ? "Deactivate this Admin?"
-                      : "Reactivate this Admin?",
-                    message: deactivating
-                      ? a.firstName +
-                        " will no longer be able to access the Admin workspace."
-                      : a.firstName + " will regain Admin access.",
-                    confirmLabel: deactivating ? "Deactivate" : "Reactivate",
-                    variant: deactivating ? "danger" : "primary",
-                  })
-                ) {
-                  a.status = deactivating ? "deactivated" : "active";
-                  render();
-                  Toast.success("Admin account updated.", "Saved");
-                }
-              },
-            );
-            list.appendChild(el);
+          countEl.textContent =
+            visible.length +
+            " admin" +
+            (visible.length === 1 ? "" : "s") +
+            (q || activeFilter !== "all" ? " matching" : "");
+
+          listEl.innerHTML = "";
+
+          if (!visible.length) {
+            listEl.innerHTML =
+              '<div class="empty-state" style="padding: 48px 24px;">' +
+              '<div class="empty-icon"><i class="fa-solid fa-user-shield"></i></div>' +
+              "<h3>" +
+              (q ? "No admins match" : "No admins here") +
+              "</h3>" +
+              "<p>" +
+              (q
+                ? "Try a different name, username or email."
+                : "Try a different filter.") +
+              "</p>" +
+              "</div>";
+            return;
+          }
+
+          /* Sort: Super Admin first, then Senior, then student admins */
+          var order = {
+            super_admin: 0,
+            senior_admin: 1,
+            academia: 2,
+            su_pro: 3,
+          };
+          visible.sort(function (a, b) {
+            var ra =
+              order[resolveRole(a)] !== undefined ? order[resolveRole(a)] : 9;
+            var rb =
+              order[resolveRole(b)] !== undefined ? order[resolveRole(b)] : 9;
+            if (ra !== rb) return ra - rb;
+            return (a.firstName || "").localeCompare(b.firstName || "");
+          });
+
+          visible.forEach(function (a) {
+            var role = resolveRole(a);
+            var isActive = a.status === "active";
+            var self = isSelf(a);
+
+            var el = document.createElement("div");
+            el.className = "admin-row" + (isActive ? "" : " is-inactive");
+
+            /* Role badge */
+            var roleBadge =
+              '<span class="role-chip ' +
+              roleChipClass(role) +
+              '">' +
+              '<i class="fa-solid ' +
+              roleIcon(role) +
+              '"></i> ' +
+              roleLabel(role) +
+              "</span>";
+
+            /* Status badge */
+            var statusBadge = isActive
+              ? '<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Active</span>'
+              : '<span class="badge badge-neutral"><i class="fa-solid fa-ban"></i> Deactivated</span>';
+
+            /* Self badge */
+            var selfBadge = self
+              ? ' <span class="badge badge-brand" style="margin-left:6px;"><i class="fa-solid fa-user"></i> You</span>'
+              : "";
+
+            el.innerHTML =
+              '<div class="admin-row-avatar">' +
+              '<span class="avatar avatar-48 avatar-fallback">' +
+              Util.initials(a.firstName + " " + a.lastName) +
+              "</span>" +
+              "</div>" +
+              '<div class="admin-row-body">' +
+              '<div class="admin-row-name">' +
+              Util.escape(a.firstName + " " + a.lastName) +
+              selfBadge +
+              "</div>" +
+              '<div class="admin-row-handle">@' +
+              Util.escape(a.username) +
+              " · " +
+              Util.escape(a.email || "") +
+              "</div>" +
+              '<div class="admin-row-meta">' +
+              roleBadge +
+              statusBadge +
+              (a.lastActive
+                ? '<span class="admin-last-active"><i class="fa-regular fa-clock"></i> Last active ' +
+                  Util.relativeTime(a.lastActive) +
+                  "</span>"
+                : "") +
+              "</div>" +
+              "</div>" +
+              '<div class="admin-row-actions">' +
+              '<button class="btn btn-secondary btn-sm" data-activity type="button" aria-label="View activity">' +
+              '<i class="fa-solid fa-list-check"></i> <span>Activity</span>' +
+              "</button>" +
+              (self
+                ? '<button class="btn btn-ghost btn-sm" type="button" disabled title="You cannot deactivate your own account" style="opacity:0.5; cursor:not-allowed;">' +
+                  '<i class="fa-solid fa-lock"></i> <span>Protected</span>' +
+                  "</button>"
+                : isActive
+                  ? '<button class="btn btn-ghost btn-sm" data-deactivate type="button" style="color:var(--danger);">' +
+                    '<i class="fa-solid fa-ban"></i> <span>Deactivate</span>' +
+                    "</button>"
+                  : '<button class="btn btn-secondary btn-sm" data-reactivate type="button" style="color:var(--success);">' +
+                    '<i class="fa-solid fa-circle-check"></i> <span>Reactivate</span>' +
+                    "</button>") +
+              "</div>";
+
+            /* ---- Activity ---- */
+            var activityBtn = el.querySelector("[data-activity]");
+            if (activityBtn) {
+              activityBtn.addEventListener("click", function () {
+                openActivityModal(a);
+              });
+            }
+
+            /* ---- Deactivate ---- */
+            var deactBtn = el.querySelector("[data-deactivate]");
+            if (deactBtn) {
+              deactBtn.addEventListener("click", async function () {
+                var ok = await Confirmation.confirm({
+                  title: "Deactivate this admin?",
+                  message:
+                    a.firstName +
+                    " " +
+                    a.lastName +
+                    " will lose access to the Admin workspace immediately. If they're signed in, they'll be signed out on their next page load.",
+                  confirmLabel: "Deactivate",
+                  variant: "danger",
+                });
+                if (!ok) return;
+
+                a.status = "deactivated";
+                persistDeactivated(a.id, true);
+                recordAudit(
+                  "deactivate",
+                  a.id,
+                  a.firstName + " " + a.lastName,
+                  "",
+                );
+                render();
+                Toast.success("Admin deactivated.", "Saved");
+              });
+            }
+
+            /* ---- Reactivate ---- */
+            var reactBtn = el.querySelector("[data-reactivate]");
+            if (reactBtn) {
+              reactBtn.addEventListener("click", async function () {
+                var ok = await Confirmation.confirm({
+                  title: "Reactivate this admin?",
+                  message:
+                    a.firstName +
+                    " " +
+                    a.lastName +
+                    " will regain Admin access.",
+                  confirmLabel: "Reactivate",
+                });
+                if (!ok) return;
+
+                a.status = "active";
+                persistDeactivated(a.id, false);
+                recordAudit(
+                  "reactivate",
+                  a.id,
+                  a.firstName + " " + a.lastName,
+                  "",
+                );
+                render();
+                Toast.success("Admin reactivated.", "Saved");
+              });
+            }
+
+            listEl.appendChild(el);
           });
         }
-        render();
+
+        /* ------------------------------------------------------------------
+           ACTIVITY MODAL — audit entries for this admin (if Super Admin)
+           or generic mock activity for other admins
+           ------------------------------------------------------------------ */
+        function openActivityModal(a) {
+          var role = resolveRole(a);
+          var self = isSelf(a);
+
+          document.getElementById("activity-title").textContent =
+            a.firstName + " " + a.lastName + " — Activity";
+          document.getElementById("activity-sub").textContent =
+            roleLabel(role) + " · @" + a.username;
+
+          var body = document.getElementById("activity-body");
+
+          /* Metadata strip */
+          var metaHtml =
+            '<div class="activity-meta-grid">' +
+            "<div>" +
+            '<div class="activity-meta-label">Username</div>' +
+            '<div class="activity-meta-value">@' +
+            Util.escape(a.username) +
+            "</div>" +
+            "</div>" +
+            "<div>" +
+            '<div class="activity-meta-label">Email</div>' +
+            '<div class="activity-meta-value" style="word-break:break-all;">' +
+            Util.escape(a.email || "—") +
+            "</div>" +
+            "</div>" +
+            "<div>" +
+            '<div class="activity-meta-label">Role</div>' +
+            '<div class="activity-meta-value"><span class="role-chip ' +
+            roleChipClass(role) +
+            '"><i class="fa-solid ' +
+            roleIcon(role) +
+            '"></i> ' +
+            roleLabel(role) +
+            "</span></div>" +
+            "</div>" +
+            "<div>" +
+            '<div class="activity-meta-label">Status</div>' +
+            '<div class="activity-meta-value">' +
+            (a.status === "active"
+              ? '<span class="badge badge-success">Active</span>'
+              : '<span class="badge badge-neutral">Deactivated</span>') +
+            "</div>" +
+            "</div>" +
+            "<div>" +
+            '<div class="activity-meta-label">Created</div>' +
+            '<div class="activity-meta-value">' +
+            (a.createdAt ? Util.formatDate(a.createdAt) : "—") +
+            "</div>" +
+            "</div>" +
+            "<div>" +
+            '<div class="activity-meta-label">Created by</div>' +
+            '<div class="activity-meta-value">' +
+            Util.escape(a.createdBy || "system") +
+            "</div>" +
+            "</div>" +
+            "</div>";
+
+          /* Audit entries specific to this admin — for the Super Admin who
+             acted on them, and for the target admin themselves. */
+          var audit = getAudit();
+          var relevantAudit = audit
+            .filter(function (entry) {
+              if (self) {
+                /* Their own row → show everything they did */
+                return (
+                  entry.actorId === a.id || entry.actorUsername === a.username
+                );
+              }
+              /* Other rows → show actions taken AGAINST them */
+              return entry.targetId === a.id;
+            })
+            .slice(0, 10);
+
+          var auditHtml = "";
+          if (relevantAudit.length) {
+            auditHtml =
+              '<div style="margin-top:24px;">' +
+              '<div class="activity-meta-label" style="margin-bottom:10px;">Audit trail</div>' +
+              relevantAudit
+                .map(function (entry) {
+                  return (
+                    '<div class="activity-log-item">' +
+                    '<span class="activity-log-icon activity-log-' +
+                    entry.action +
+                    '">' +
+                    '<i class="fa-solid ' +
+                    (entry.action === "create"
+                      ? "fa-user-plus"
+                      : entry.action === "deactivate"
+                        ? "fa-ban"
+                        : "fa-circle-check") +
+                    '"></i>' +
+                    "</span>" +
+                    '<div class="activity-log-body">' +
+                    '<div class="activity-log-action">' +
+                    (entry.action === "create"
+                      ? "Created admin account"
+                      : entry.action === "deactivate"
+                        ? "Deactivated admin account"
+                        : "Reactivated admin account") +
+                    (self ? "" : " — by " + Util.escape(entry.actorName)) +
+                    "</div>" +
+                    '<div class="activity-log-time">' +
+                    Util.relativeTime(entry.at) +
+                    "</div>" +
+                    "</div>" +
+                    "</div>"
+                  );
+                })
+                .join("") +
+              "</div>";
+          } else {
+            auditHtml =
+              '<div style="margin-top:24px; padding:16px; text-align:center; color:var(--text-tertiary); font-size:var(--fs-sm); background:var(--bg-subtle); border-radius:var(--radius-md);">' +
+              "No recorded actions for this account yet." +
+              "</div>";
+          }
+
+          /* Recent activity — generic mock entries per role.
+             Deterministic per admin so the same admin always shows
+             the same log. */
+          var mockActivity = getMockActivity(a, role);
+          var mockHtml =
+            '<div style="margin-top:24px;">' +
+            '<div class="activity-meta-label" style="margin-bottom:10px;">Recent activity</div>' +
+            mockActivity
+              .map(function (item) {
+                return (
+                  '<div class="activity-log-item">' +
+                  '<span class="activity-log-icon"><i class="fa-solid ' +
+                  item.icon +
+                  '"></i></span>' +
+                  '<div class="activity-log-body">' +
+                  '<div class="activity-log-action">' +
+                  Util.escape(item.text) +
+                  "</div>" +
+                  '<div class="activity-log-time">' +
+                  item.when +
+                  "</div>" +
+                  "</div>" +
+                  "</div>"
+                );
+              })
+              .join("") +
+            "</div>";
+
+          body.innerHTML = metaHtml + auditHtml + mockHtml;
+          Modal.open("activity-modal");
+        }
+
+        /* Deterministic mock activity based on admin id + role */
+        function getMockActivity(a, role) {
+          var seed = (a.id || a.username || "x").split("").reduce(function (
+            s,
+            c,
+          ) {
+            return s + c.charCodeAt(0);
+          }, 0);
+          var daysAgo = function (n) {
+            var d = new Date(Date.now() - n * 86400000);
+            return Util.relativeTime(d.getTime());
+          };
+
+          var pools = {
+            super_admin: [
+              {
+                icon: "fa-user-plus",
+                text: "Created a new admin account",
+                when: daysAgo(3),
+              },
+              {
+                icon: "fa-sliders",
+                text: "Adjusted system controls",
+                when: daysAgo(9),
+              },
+              {
+                icon: "fa-shield-halved",
+                text: "Reviewed moderation reports",
+                when: daysAgo(15),
+              },
+              {
+                icon: "fa-file-shield",
+                text: "Approved student verification records",
+                when: daysAgo(22),
+              },
+            ],
+            senior_admin: [
+              {
+                icon: "fa-bullhorn",
+                text: "Published an announcement",
+                when: daysAgo(1),
+              },
+              {
+                icon: "fa-file-lines",
+                text: "Uploaded an academic resource",
+                when: daysAgo(4),
+              },
+              {
+                icon: "fa-user-tie",
+                text: "Assigned a student leader",
+                when: daysAgo(8),
+              },
+              {
+                icon: "fa-shield-halved",
+                text: "Reviewed a reported post",
+                when: daysAgo(14),
+              },
+            ],
+            academia: [
+              {
+                icon: "fa-file-lines",
+                text: "Uploaded a lecture timetable",
+                when: daysAgo(2),
+              },
+              {
+                icon: "fa-file-pdf",
+                text: "Uploaded past questions",
+                when: daysAgo(5),
+              },
+              {
+                icon: "fa-calendar-days",
+                text: "Updated the academic calendar",
+                when: daysAgo(12),
+              },
+              {
+                icon: "fa-book",
+                text: "Added a course to the catalog",
+                when: daysAgo(19),
+              },
+            ],
+            su_pro: [
+              {
+                icon: "fa-bullhorn",
+                text: "Published a campus announcement",
+                when: daysAgo(1),
+              },
+              {
+                icon: "fa-newspaper",
+                text: "Published a news article",
+                when: daysAgo(4),
+              },
+              {
+                icon: "fa-file-shield",
+                text: "Responded to a complaint",
+                when: daysAgo(7),
+              },
+              {
+                icon: "fa-briefcase",
+                text: "Added an opportunity",
+                when: daysAgo(11),
+              },
+            ],
+          };
+
+          var pool = pools[role] || pools.senior_admin;
+          /* Rotate the pool based on the seed so different admins get different mixes */
+          var rotated = [];
+          for (var i = 0; i < pool.length; i++) {
+            rotated.push(pool[(seed + i) % pool.length]);
+          }
+          return rotated;
+        }
+
+        /* ------------------------------------------------------------------
+           ADD ADMIN
+           ------------------------------------------------------------------ */
+        var passwordInput = document.getElementById("aa-password");
+        var reqsEl = addForm.querySelector(".pw-reqs");
+        var strengthEl = addForm.querySelector(".pw-strength");
+        initPasswordFeedback(passwordInput, {
+          reqsEl: reqsEl,
+          strengthEl: strengthEl,
+        });
 
         bindForm(
-          document.getElementById("add-admin-form"),
+          addForm,
           {
             firstName: [Rules.required, Rules.name],
             lastName: [Rules.required, Rules.name],
             username: [Rules.required, Rules.username],
             email: [Rules.required, Rules.email],
             role: [Rules.required],
+            password: [Rules.required, Rules.password],
           },
-          (data) => {
-            admins.push({
+          function (data) {
+            var firstName = data.get("firstName").trim();
+            var lastName = data.get("lastName").trim();
+            var username = data.get("username").trim();
+            var email = data.get("email").trim().toLowerCase();
+            var role = data.get("role");
+            var password = data.get("password");
+
+            /* ---- Duplicate checks ---- */
+            var dupUsername = admins.find(function (a) {
+              return a.username.toLowerCase() === username.toLowerCase();
+            });
+            if (dupUsername) {
+              Toast.error(
+                "Username @" + username + " is already in use.",
+                "Duplicate username",
+              );
+              return;
+            }
+            var dupEmail = admins.find(function (a) {
+              return (a.email || "").toLowerCase() === email;
+            });
+            if (dupEmail) {
+              Toast.error("That email is already in use.", "Duplicate email");
+              return;
+            }
+
+            /* ---- Build the new admin record ---- */
+            var newAdmin = {
               id: "ADM" + Date.now(),
-              firstName: data.get("firstName"),
-              lastName: data.get("lastName"),
-              username: data.get("username"),
-              email: data.get("email"),
-              role: data.get("role"),
+              firstName: firstName,
+              lastName: lastName,
+              username: username,
+              email: email,
+              role: "admin",
+              adminRole: role,
+              adminRoles:
+                role === "academia" || role === "su_pro" ? [role] : null,
+              avatar: "",
               status: "active",
               lastActive: new Date().toISOString().slice(0, 10),
-            });
+              createdBy: session.username,
+              createdAt: new Date().toISOString().slice(0, 10),
+              password: password,
+              mustChangePassword: true,
+            };
+
+            admins.push(newAdmin);
+            persistCreated(newAdmin);
+            recordAudit(
+              "create",
+              newAdmin.id,
+              firstName + " " + lastName,
+              "Role: " + roleLabel(role),
+            );
+
+            /* ---- Simulated email ---- */
+            var inviteEmail = buildInviteEmail(newAdmin, session);
+
+            /* ---- UI updates ---- */
             render();
             Modal.close("add-admin-modal");
-            document.getElementById("add-admin-form").reset();
-            Toast.success("Admin account created.", "Saved");
+            addForm.reset();
+            if (reqsEl)
+              reqsEl.querySelectorAll("li").forEach(function (li) {
+                li.classList.remove("met");
+              });
+            if (strengthEl) strengthEl.setAttribute("data-level", "0");
+
+            /* ---- Confirmation modal showing the simulated email ---- */
+            showInviteSent(newAdmin, inviteEmail);
           },
         );
+
+        /* Build the simulated email that would be sent */
+        function buildInviteEmail(newAdmin, superAdmin) {
+          return (
+            "Subject: Your Campus Space Admin account has been created\n\n" +
+            "Hi " +
+            newAdmin.firstName +
+            ",\n\n" +
+            "A Campus Space Admin account has been created for you by " +
+            (superAdmin.name || superAdmin.username) +
+            " (" +
+            roleLabel(newAdmin.adminRole) +
+            " role).\n\n" +
+            "Use the credentials below to sign in:\n\n" +
+            "  Username: " +
+            newAdmin.username +
+            "\n" +
+            "  Email:    " +
+            newAdmin.email +
+            "\n" +
+            "  Password: " +
+            newAdmin.password +
+            "\n\n" +
+            "For security, please change your password after your first login. " +
+            "You can do this from Settings → Security inside Campus Space.\n\n" +
+            "Sign in at: https://campus-space.demo/pages/auth/login.html\n\n" +
+            "Welcome aboard,\n" +
+            "The Campus Space Team"
+          );
+        }
+
+        function showInviteSent(newAdmin, emailText) {
+          var body = document.getElementById("invite-body");
+          body.innerHTML =
+            '<div style="display:flex; align-items:flex-start; gap:14px; margin-bottom:20px;">' +
+            '<span class="avatar avatar-56 avatar-fallback" style="background:var(--brand-secondary); flex-shrink:0;">' +
+            Util.initials(newAdmin.firstName + " " + newAdmin.lastName) +
+            "</span>" +
+            '<div style="min-width:0;">' +
+            '<h4 style="font-size:var(--fs-md); font-weight:700; margin-bottom:2px;">' +
+            Util.escape(newAdmin.firstName + " " + newAdmin.lastName) +
+            "</h4>" +
+            '<div style="font-size:var(--fs-xs); color:var(--text-tertiary);">@' +
+            Util.escape(newAdmin.username) +
+            " · " +
+            Util.escape(newAdmin.email) +
+            "</div>" +
+            '<div style="margin-top:8px;"><span class="role-chip ' +
+            roleChipClass(newAdmin.adminRole) +
+            '"><i class="fa-solid ' +
+            roleIcon(newAdmin.adminRole) +
+            '"></i> ' +
+            roleLabel(newAdmin.adminRole) +
+            "</span></div>" +
+            "</div>" +
+            "</div>" +
+            '<div style="background:var(--info-soft); border-left:3px solid var(--info); padding:14px; border-radius:var(--radius-md); margin-bottom:16px; font-size:var(--fs-sm); color:var(--text-secondary);">' +
+            '<i class="fa-solid fa-envelope" style="color:var(--info); margin-right:6px;"></i> ' +
+            "An invite email has been sent to <strong>" +
+            Util.escape(newAdmin.email) +
+            "</strong> with their login credentials and instructions to change their password." +
+            "</div>" +
+            '<div class="activity-meta-label" style="margin-bottom:8px;">Email preview (simulated)</div>' +
+            '<pre style="font-family: SFMono-Regular, Consolas, monospace; font-size:12px; line-height:1.55; color:var(--text-primary); background:var(--bg-subtle); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:14px; white-space:pre-wrap; word-break:break-word; max-height:280px; overflow-y:auto; margin:0;">' +
+            Util.escape(emailText) +
+            "</pre>" +
+            '<div style="font-size:var(--fs-xs); color:var(--text-tertiary); margin-top:14px;">' +
+            '<i class="fa-solid fa-circle-info"></i> In the live product, this email would arrive in the new admin’s inbox within a few seconds.' +
+            "</div>";
+          Modal.open("invite-sent-modal");
+        }
+
+        /* ------------------------------------------------------------------
+           TRIGGERS
+           ------------------------------------------------------------------ */
+        document
+          .getElementById("add-admin-btn")
+          .addEventListener("click", function () {
+            addForm.reset();
+            addForm.querySelectorAll(".field").forEach(function (f) {
+              f.classList.remove("is-invalid", "is-valid");
+            });
+            if (reqsEl)
+              reqsEl.querySelectorAll("li").forEach(function (li) {
+                li.classList.remove("met");
+              });
+            if (strengthEl) strengthEl.setAttribute("data-level", "0");
+            Modal.open("add-admin-modal");
+          });
+
+        filterBar.addEventListener("click", function (e) {
+          var btn = e.target.closest("[data-role]");
+          if (!btn) return;
+          filterBar.querySelectorAll(".chip").forEach(function (c) {
+            c.classList.remove("is-active");
+          });
+          btn.classList.add("is-active");
+          activeFilter = btn.getAttribute("data-role");
+          render();
+        });
+
+        var debounce;
+        searchEl.addEventListener("input", function () {
+          clearTimeout(debounce);
+          debounce = setTimeout(render, 120);
+        });
+
+        render();
       });
     </script>
   </body>

@@ -8763,3 +8763,4312 @@ p {
     width: 100%;
   }
 }
+
+/* ==========================================================================
+   TIMETABLE ADMIN — structured editor
+   Layout only. Inputs and selects inherit the base .input / .select styles.
+   ========================================================================== */
+
+.tt-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.tt-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 12px;
+}
+
+.tt-hint {
+  font-size: var(--fs-sm);
+  color: var(--text-tertiary);
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+
+.tt-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+/* Choice modal cards */
+.tt-choice {
+  display: grid;
+  grid-template-columns: 52px 1fr 24px;
+  align-items: center;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    border-color 120ms ease,
+    transform 120ms ease,
+    box-shadow 120ms ease;
+  font-family: inherit;
+  width: 100%;
+}
+.tt-choice:hover {
+  border-color: var(--brand-primary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+.tt-choice-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.tt-choice-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.tt-choice-title {
+  font-family: var(--font-heading);
+  font-size: var(--fs-base);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.tt-choice-sub {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+.tt-choice-arrow {
+  color: var(--text-tertiary);
+  font-size: 14px;
+}
+
+/* Editor rows */
+.tt-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.tt-row {
+  padding: 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-subtle);
+  transition: border-color 120ms ease;
+}
+.tt-row:hover {
+  border-color: var(--border-default);
+}
+
+.tt-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.tt-row-num {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.tt-row-del {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+.tt-row-del:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.tt-row-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+.tt-row-grid .field {
+  margin: 0;
+  min-width: 0;
+}
+
+/* Compact labels inside the row — inputs and selects use base styling */
+.tt-row-grid .label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.tt-add {
+  margin-top: 4px;
+}
+
+.tt-notify {
+  padding-top: 20px;
+  border-top: 1px solid var(--border-subtle);
+  margin-top: 8px;
+}
+
+/* Resource list — structured badge */
+.resource-icon.brand {
+  background: var(--brand-primary-soft);
+  color: var(--brand-primary);
+}
+.resource-icon.marine {
+  background: var(--brand-secondary-soft);
+  color: var(--brand-secondary);
+}
+
+/* ---------------- Responsive ---------------- */
+@media (max-width: 860px) {
+  .tt-grid-3 {
+    grid-template-columns: 1fr;
+  }
+  .tt-row-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .tt-row-grid {
+    grid-template-columns: 1fr;
+  }
+  .tt-choice {
+    grid-template-columns: 44px 1fr 20px;
+    padding: 16px;
+    gap: 12px;
+  }
+  .tt-choice-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 17px;
+  }
+  .tt-editor {
+    gap: 22px;
+  }
+}
+
+/* ==========================================================================
+   ACADEMIC RESOURCES — Admin page mobile responsiveness
+   ========================================================================== */
+
+/* ---------- Page header actions ---------- */
+/* On tablet and below, stack buttons below the title, full-width */
+@media (max-width: 640px) {
+  /* Page head: title, subtitle, actions column */
+  #main > .page-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  #main > .page-head .page-head-text {
+    min-width: 0;
+  }
+  #main > .page-head .cluster {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+  #main > .page-head .cluster .btn {
+    width: 100%;
+    justify-content: center;
+    padding: 11px 12px;
+    font-size: 13px;
+  }
+  /* If only one button is visible (non-uploading admin), let it span full width */
+  #main > .page-head .cluster .btn:only-child {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ---------- Toolbar: search + category filter ---------- */
+@media (max-width: 640px) {
+  /* Toolbar becomes vertical: search on top, filter below */
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .toolbar .input-wrap {
+    width: 100%;
+    min-width: 0;
+  }
+  /* The category filter wrapper (.cselect) is inside the toolbar */
+  .toolbar > .cselect,
+  .toolbar > select.select {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+}
+
+/* ---------- Item count + Clear filters row ---------- */
+@media (max-width: 640px) {
+  #main > .cluster-between {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  #main > .cluster-between #clear-filters {
+    align-self: flex-start;
+  }
+}
+
+/* ---------- Resource rows become stacked cards ---------- */
+@media (max-width: 640px) {
+  /* Group card wrapper */
+  #admin-resources-list .card {
+    border-radius: var(--radius-lg);
+  }
+
+  /* Group header: bump the icon size and title slightly for touch */
+  #admin-resources-list .card-head h3 {
+    font-size: 13px !important;
+  }
+
+  /* Each resource row → stacked layout */
+  #admin-resources-list .resource-row {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    grid-template-areas:
+      "icon info"
+      "actions actions";
+    gap: 12px 12px;
+    align-items: start;
+    padding: 14px 16px;
+  }
+
+  #admin-resources-list .resource-row > .resource-icon {
+    grid-area: icon;
+    width: 44px;
+    height: 44px;
+    font-size: 17px;
+  }
+
+  #admin-resources-list .resource-row > .resource-info {
+    grid-area: info;
+    min-width: 0;
+    width: 100%;
+  }
+
+  /* Resource name: allow wrapping to 2 lines instead of truncating */
+  #admin-resources-list .resource-row .resource-name {
+    font-size: 13.5px;
+    line-height: 1.35;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+
+  /* Meta line — allow wrapping */
+  #admin-resources-list .resource-row .resource-meta {
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    font-size: 11.5px;
+  }
+
+  #admin-resources-list .resource-row .resource-meta > span {
+    white-space: nowrap;
+  }
+
+  /* The "Structured" badge in the name — inline-friendly on mobile */
+  #admin-resources-list .resource-row .resource-name .badge {
+    margin-left: 4px !important;
+    font-size: 9.5px;
+    padding: 3px 6px;
+    vertical-align: middle;
+  }
+
+  /* Edit + Delete buttons — full-width two-column grid at the bottom */
+  #admin-resources-list .resource-row > .btn-icon {
+    grid-area: actions;
+    width: auto;
+    height: 40px;
+    border-radius: var(--radius-md);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--bg-subtle);
+    border: 1px solid var(--border-subtle);
+  }
+
+  /* Lay out the two buttons in a 2-col grid at the bottom */
+  #admin-resources-list .resource-row {
+    grid-template-columns: 44px 1fr;
+    grid-template-areas:
+      "icon info"
+      "edit edit"
+      "del  del";
+  }
+
+  /* Simpler: put edit and del side-by-side using a wrapper-free technique */
+  /* We'll instead let them flow as siblings after the icon+info */
+
+  /* Remove the two-column area above; use flex fallback below */
+  #admin-resources-list .resource-row {
+    grid-template-areas:
+      "icon info"
+      "actions actions";
+    grid-template-columns: 44px 1fr;
+  }
+
+  /* Now — the actions container needs a wrapper, but there's none in the markup.
+     Fallback: use flex for the whole row on mobile and let buttons wrap. */
+}
+
+/* ---------- Simpler, robust mobile layout (overrides the grid above) ---------- */
+@media (max-width: 640px) {
+  #admin-resources-list .resource-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+
+  #admin-resources-list .resource-row > .resource-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 17px;
+    flex-shrink: 0;
+  }
+
+  #admin-resources-list .resource-row > .resource-info {
+    flex: 1 1 calc(100% - 60px);
+    min-width: 0;
+  }
+
+  /* Buttons wrap to a new line, full width of the row */
+  #admin-resources-list .resource-row > .btn-icon {
+    flex: 1 1 auto;
+    width: auto;
+    height: 40px;
+    border-radius: var(--radius-md);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--bg-subtle);
+    border: 1px solid var(--border-subtle);
+  }
+
+  /* Style the buttons as labelled rows */
+  #admin-resources-list .resource-row > .btn-icon::after {
+    margin-left: 6px;
+  }
+
+  #admin-resources-list .resource-row > .btn-icon[data-edit]::after {
+    content: "Edit";
+  }
+
+  #admin-resources-list .resource-row > .btn-icon[data-del]::after {
+    content: "Delete";
+  }
+
+  /* Destructive button color */
+  #admin-resources-list .resource-row > .btn-icon[data-del] {
+    color: var(--danger) !important;
+    background: var(--danger-soft);
+    border-color: transparent;
+  }
+
+  /* Override the inline style="color:var(--danger)" that's on delete buttons */
+  #admin-resources-list .resource-row > .btn-icon[data-del] i {
+    color: var(--danger);
+  }
+}
+
+/* ---------- Empty state on mobile ---------- */
+@media (max-width: 640px) {
+  #admin-resources-list .empty-state {
+    padding: 40px 16px;
+  }
+  #admin-resources-list .empty-state h3 {
+    font-size: 15px;
+  }
+  #admin-resources-list .empty-state p {
+    font-size: 13px;
+  }
+}
+
+/* ---------- Very narrow phones (< 420px) ---------- */
+@media (max-width: 420px) {
+  #main > .page-head .cluster {
+    grid-template-columns: 1fr;
+  }
+
+  #admin-resources-list .resource-row {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+
+  #admin-resources-list .resource-row > .resource-name {
+    font-size: 13px;
+  }
+
+  #admin-resources-list .resource-row .resource-meta {
+    font-size: 11px;
+    gap: 3px 8px;
+  }
+
+  #admin-resources-list .resource-row > .btn-icon {
+    height: 38px;
+    font-size: 12.5px;
+  }
+}
+
+/* ---------- Very narrow (< 375px) ---------- */
+@media (max-width: 375px) {
+  #admin-resources-list .resource-row {
+    padding: 11px 12px;
+  }
+
+  #admin-resources-list .resource-row > .resource-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+
+  #admin-resources-list .resource-row > .btn-icon {
+    height: 36px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+
+  #admin-resources-list .resource-row > .btn-icon::after {
+    margin-left: 4px;
+  }
+}
+
+/* ==========================================================================
+   ADMIN PREVIEW MODAL — read-only view for resources & timetables
+   ========================================================================== */
+
+/* Make the preview modal wider for timetable views */
+#preview-resource-modal .modal {
+  max-width: 900px;
+}
+
+/* The body has zero padding by default so each preview type controls its own spacing */
+#preview-resource-modal #pr-body {
+  padding: 0;
+}
+
+/* ---------- File preview ---------- */
+.preview-file {
+  padding: 24px;
+}
+.preview-file-hero {
+  text-align: center;
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 20px;
+}
+.preview-file-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-lg);
+  background: var(--brand-primary-soft);
+  color: var(--brand-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  margin: 0 auto 16px;
+}
+.preview-file-icon.doc {
+  background: var(--brand-secondary-soft);
+  color: var(--brand-secondary);
+}
+.preview-file-icon.xls {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.preview-file-name {
+  font-family: var(--font-heading);
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+  line-height: 1.3;
+  word-break: break-word;
+}
+.preview-file-meta {
+  font-size: var(--fs-sm);
+  color: var(--text-tertiary);
+}
+
+.preview-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px 20px;
+  padding: 0 4px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 20px;
+}
+
+.preview-info-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 4px;
+}
+.preview-info-value {
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.preview-file-actions {
+  display: flex;
+  justify-content: center;
+}
+.preview-file-actions .btn {
+  padding: 12px 22px;
+  font-size: var(--fs-sm);
+}
+
+/* ---------- Timetable preview (shared) ---------- */
+.preview-timetable {
+  padding: 20px 24px 24px;
+}
+
+.preview-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.preview-stat {
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+}
+.preview-stat-k {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 4px;
+}
+.preview-stat-v {
+  font-family: var(--font-heading);
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.preview-empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text-tertiary);
+}
+.preview-empty i {
+  font-size: 36px;
+  margin-bottom: 12px;
+  display: block;
+}
+.preview-empty p {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+}
+
+/* ---------- Lecture preview grid (desktop) ---------- */
+.preview-tt-grid {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--bg-surface);
+}
+.preview-tt-head {
+  display: grid;
+  grid-template-columns: 120px repeat(5, 1fr);
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.preview-tt-row {
+  display: grid;
+  grid-template-columns: 120px repeat(5, 1fr);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.preview-tt-row:last-child {
+  border-bottom: 0;
+}
+
+.preview-tt-cell {
+  padding: 10px 12px;
+  font-size: var(--fs-xs);
+  border-right: 1px solid var(--border-subtle);
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+}
+.preview-tt-cell:last-child {
+  border-right: 0;
+}
+.preview-tt-head .preview-tt-cell {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  min-height: 40px;
+}
+.preview-tt-time {
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-subtle);
+  font-size: 11.5px;
+}
+.preview-tt-empty {
+  background: transparent;
+}
+.preview-tt-cell .class-block {
+  width: 100%;
+  padding: 8px 10px;
+}
+
+/* ---------- Lecture preview (mobile day cards) ---------- */
+.preview-tt-mobile {
+  display: none;
+}
+.preview-tt-day {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.preview-tt-day:last-child {
+  border-bottom: 0;
+}
+.preview-tt-day-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.preview-tt-day-head h4 {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  margin: 0;
+}
+.preview-tt-day-count {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-weight: 600;
+}
+.preview-tt-day-empty {
+  padding: 12px;
+  text-align: center;
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  background: var(--bg-subtle);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.preview-tt-slot {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 8px 0;
+}
+.preview-tt-slot-time {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  padding-top: 6px;
+}
+
+/* ---------- Exam preview (desktop) ---------- */
+.preview-exam-table {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--bg-surface);
+}
+.preview-exam-head {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1.6fr 1fr;
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.preview-exam-head > div {
+  padding: 10px 14px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.preview-exam-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1.6fr 1fr;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.preview-exam-row:last-child {
+  border-bottom: 0;
+}
+.preview-exam-row > div {
+  padding: 12px 14px;
+  font-size: var(--fs-xs);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+}
+.preview-exam-row > div:last-child {
+  border-right: 0;
+}
+.preview-exam-date {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.preview-exam-time {
+  color: var(--text-secondary);
+}
+.preview-exam-course {
+  flex-direction: column;
+  align-items: flex-start !important;
+  gap: 2px;
+}
+.preview-exam-code {
+  font-weight: 700;
+  color: var(--brand-secondary);
+  font-size: var(--fs-xs);
+}
+.preview-exam-title {
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+}
+.preview-exam-venue {
+  color: var(--text-secondary);
+  gap: 6px;
+}
+.preview-exam-venue i {
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+
+/* ---------- Exam preview (mobile cards) ---------- */
+.preview-exam-mobile {
+  display: none;
+}
+.preview-exam-card {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.preview-exam-card:last-child {
+  border-bottom: 0;
+}
+.preview-exam-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.preview-exam-card-date {
+  background: var(--brand-primary-soft);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  text-align: center;
+  flex-shrink: 0;
+  min-width: 52px;
+}
+.preview-exam-card-day {
+  font-family: var(--font-heading);
+  font-size: var(--fs-lg);
+  font-weight: 800;
+  color: var(--brand-primary);
+  line-height: 1;
+}
+.preview-exam-card-month {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--brand-primary);
+  margin-top: 3px;
+}
+.preview-exam-card-meta {
+  flex: 1;
+  min-width: 0;
+}
+.preview-exam-card-weekday {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.preview-exam-card-course {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.35;
+  word-break: break-word;
+}
+.preview-exam-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-left: 64px;
+}
+.preview-exam-card-info {
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.preview-exam-card-info i {
+  color: var(--text-tertiary);
+  width: 14px;
+  text-align: center;
+}
+
+/* ---------- Responsive: switch to mobile previews ---------- */
+@media (max-width: 860px) {
+  /* Hide desktop grids, show mobile */
+  .preview-tt-desktop,
+  .preview-exam-desktop {
+    display: none;
+  }
+  .preview-tt-mobile,
+  .preview-exam-mobile {
+    display: block;
+  }
+
+  /* Tighter padding */
+  .preview-timetable {
+    padding: 16px 16px 20px;
+  }
+  .preview-file {
+    padding: 20px 16px;
+  }
+
+  /* Stats become 2 columns on tablet, then 3 stays OK — leave at 3 */
+  .preview-stats {
+    gap: 10px;
+  }
+  .preview-stat {
+    padding: 10px 12px;
+  }
+  .preview-stat-v {
+    font-size: var(--fs-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .preview-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+  .preview-stat:last-child {
+    grid-column: 1 / -1;
+  }
+  .preview-info-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 16px;
+  }
+  .preview-file-hero {
+    padding: 20px 12px 16px;
+  }
+  .preview-file-icon {
+    width: 60px;
+    height: 60px;
+    font-size: 26px;
+  }
+  .preview-file-name {
+    font-size: var(--fs-md);
+  }
+  .preview-tt-slot {
+    grid-template-columns: 80px 1fr;
+    gap: 10px;
+  }
+  .preview-exam-card-body {
+    padding-left: 0;
+  }
+}
+
+@media (max-width: 375px) {
+  .preview-info-grid {
+    grid-template-columns: 1fr;
+  }
+  .preview-stat {
+    padding: 9px 11px;
+  }
+}
+
+/* ==========================================================================
+   ACADEMIC CALENDAR — Admin page
+   ========================================================================== */
+
+/* Sections on the admin calendar page */
+.cal-admin-section {
+  margin-bottom: 28px;
+}
+.cal-admin-section:last-child {
+  margin-bottom: 0;
+}
+
+.cal-admin-section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.cal-admin-section-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cal-admin-section-title {
+  font-family: var(--font-heading);
+  font-size: var(--fs-lg);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.cal-admin-section-count {
+  margin-left: auto;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--text-tertiary);
+  background: var(--bg-subtle);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+}
+
+/* Row: date | body | actions */
+.cal-admin-row {
+  display: grid;
+  grid-template-columns: 160px 1fr auto;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 120ms ease;
+}
+.cal-admin-row:last-child {
+  border-bottom: 0;
+}
+.cal-admin-row:hover {
+  background: var(--bg-subtle);
+}
+
+.cal-admin-date {
+  font-family: var(--font-heading);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--brand-primary);
+  letter-spacing: 0.01em;
+}
+
+.cal-admin-body {
+  min-width: 0;
+}
+
+.cal-admin-title {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 3px;
+  line-height: 1.4;
+}
+
+.cal-admin-desc {
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.cal-admin-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+/* ---------- Editor modal (calendar-editor-modal) ---------- */
+.cal-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.cal-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cal-section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--border-subtle);
+}
+
+.cal-section-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cal-section-title {
+  font-family: var(--font-heading);
+  font-size: var(--fs-md);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.cal-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Individual event row inside editor */
+.cal-row-editor {
+  padding: 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-subtle);
+  transition: border-color 120ms ease;
+}
+.cal-row-editor:hover {
+  border-color: var(--border-default);
+}
+
+.cal-row-editor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.cal-row-editor-num {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.cal-row-editor-del {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+.cal-row-editor-del:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.cal-row-editor-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 14px;
+}
+.cal-row-editor-grid .field {
+  margin: 0;
+}
+.cal-row-editor-grid .label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+.cal-row-editor-full {
+  grid-column: 1 / -1;
+}
+
+.cal-add-btn {
+  margin-top: 4px;
+}
+
+/* ---------- Editor modal responsive ---------- */
+@media (max-width: 860px) {
+  .cal-row-editor-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Admin calendar page responsive ---------- */
+@media (max-width: 768px) {
+  .cal-admin-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 14px 16px;
+  }
+  .cal-admin-date {
+    font-size: var(--fs-xs);
+  }
+  .cal-admin-actions {
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 480px) {
+  .cal-admin-section-head {
+    flex-wrap: wrap;
+  }
+  .cal-admin-section-title {
+    font-size: var(--fs-md);
+  }
+  .cal-admin-section-count {
+    margin-left: 0;
+    width: 100%;
+    text-align: center;
+  }
+}
+
+/* ==========================================================================
+   ADMIN PREVIEW — Academic Calendar preview in the modal
+   ========================================================================== */
+
+.preview-calendar {
+  padding: 20px 24px 24px;
+}
+
+.preview-cal-section {
+  margin-bottom: 24px;
+}
+.preview-cal-section:last-child {
+  margin-bottom: 0;
+}
+
+.preview-cal-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-heading);
+  font-size: var(--fs-lg);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+  border-bottom: 2px solid var(--border-subtle);
+}
+
+.preview-cal-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.preview-cal-row {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.preview-cal-row:last-child {
+  border-bottom: 0;
+}
+
+.preview-cal-date {
+  font-family: var(--font-heading);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--brand-primary);
+}
+
+.preview-cal-body {
+  min-width: 0;
+}
+.preview-cal-title {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 3px;
+  line-height: 1.4;
+}
+.preview-cal-desc {
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .preview-calendar {
+    padding: 16px;
+  }
+  .preview-cal-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    padding: 10px 0;
+  }
+  .preview-cal-heading {
+    font-size: var(--fs-md);
+  }
+}
+
+.resource-icon.brand {
+  background: var(--brand-primary-soft);
+  color: var(--brand-primary);
+}
+.resource-icon.marine {
+  background: var(--brand-secondary-soft);
+  color: var(--brand-secondary);
+}
+.resource-icon.warning {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+/* ==========================================================================
+   FILE INPUT — styled to match the Campus Space design system
+   Keeps the native <input type="file"> working but replaces the default
+   OS chrome with a proper "Browse" button and filename display.
+   ========================================================================== */
+
+input[type="file"].input {
+  padding: 0;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    background 120ms ease;
+  display: block;
+  width: 100%;
+  min-height: 46px;
+  color: var(--text-secondary);
+  font-size: var(--fs-sm);
+  overflow: hidden;
+}
+
+input[type="file"].input:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-subtle);
+}
+
+input[type="file"].input:focus,
+input[type="file"].input:focus-visible {
+  outline: none;
+  border-color: var(--brand-primary);
+  box-shadow: var(--shadow-focus);
+}
+
+/* The native "Choose File" / "Browse" button */
+input[type="file"].input::file-selector-button {
+  font-family: var(--font-body);
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  line-height: 1;
+  padding: 14px 18px;
+  margin-right: 16px;
+  border: none;
+  border-right: 1px solid var(--border-default);
+  border-radius: 0;
+  background: var(--brand-primary);
+  color: #ffffff;
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+  vertical-align: middle;
+}
+
+input[type="file"].input::file-selector-button:hover {
+  background: var(--brand-primary-hover);
+}
+
+input[type="file"].input::file-selector-button:active {
+  background: var(--brand-primary-active);
+}
+
+/* Firefox uses -moz-file-selector-button — mirror the same styling */
+input[type="file"].input::-moz-file-selector-button {
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  padding: 14px 18px;
+  margin-right: 16px;
+  border: none;
+  border-right: 1px solid var(--border-default);
+  background: var(--brand-primary);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+input[type="file"].input::-moz-file-selector-button:hover {
+  background: var(--brand-primary-hover);
+}
+
+/* The filename text that follows the button */
+input[type="file"].input {
+  /* Vertically center the filename text next to the button */
+  align-items: center;
+  display: flex;
+}
+
+/* When the input is invalid (submitted without a file) */
+.field.is-invalid input[type="file"].input {
+  border-color: var(--danger);
+}
+
+.field.is-invalid input[type="file"].input:focus {
+  box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.18);
+}
+
+/* ==========================================================================
+   FILE PICKER — custom upload control for admin modals
+   ========================================================================== */
+
+.file-picker {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-subtle);
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease,
+    box-shadow 120ms ease;
+  min-height: 68px;
+}
+
+.file-picker:hover {
+  border-color: var(--brand-primary);
+  background: var(--bg-surface);
+}
+
+.file-picker.is-dragover {
+  border-color: var(--brand-primary);
+  border-style: solid;
+  background: var(--brand-primary-soft);
+  box-shadow: var(--shadow-focus);
+}
+
+.file-picker.has-file {
+  border-style: solid;
+  border-color: var(--border-default);
+  background: var(--bg-surface);
+}
+
+.file-picker-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: var(--brand-primary-soft);
+  color: var(--brand-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.file-picker.has-file .file-picker-icon {
+  background: var(--brand-secondary-soft);
+  color: var(--brand-secondary);
+}
+
+.file-picker-body {
+  min-width: 0;
+}
+
+.file-picker-title {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-picker.has-file .file-picker-title {
+  font-weight: 700;
+}
+
+.file-picker-hint {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-picker-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.file-picker-remove {
+  color: var(--danger) !important;
+}
+.file-picker-remove:hover {
+  background: var(--danger-soft) !important;
+}
+
+/* Invalid state — when the parent .field is marked invalid */
+.field.is-invalid .file-picker {
+  border-color: var(--danger);
+  background: var(--danger-soft);
+}
+.field.is-invalid .file-picker:hover {
+  border-color: var(--danger);
+}
+.field.is-invalid .file-picker-icon {
+  background: var(--danger);
+  color: #ffffff;
+}
+
+/* Responsive — stack actions below on narrow screens */
+@media (max-width: 520px) {
+  .file-picker {
+    grid-template-columns: 40px 1fr;
+    grid-template-areas:
+      "icon body"
+      "actions actions";
+    gap: 12px;
+  }
+  .file-picker-icon {
+    grid-area: icon;
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+  .file-picker-body {
+    grid-area: body;
+  }
+  .file-picker-actions {
+    grid-area: actions;
+    justify-content: flex-end;
+    width: 100%;
+  }
+  .file-picker-title {
+    white-space: normal;
+  }
+}
+
+/* ==========================================================================
+   STUDENT ASSOCIATIONS — admin list rows
+   Desktop: horizontal row. Mobile: stacked card with full-width actions.
+   ========================================================================== */
+
+.assoc-row {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 120ms ease;
+}
+.assoc-row:last-child {
+  border-bottom: 0;
+}
+.assoc-row:hover {
+  background: var(--bg-subtle);
+}
+
+.assoc-row-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: var(--brand-secondary-soft);
+  color: var(--brand-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.assoc-row-body {
+  min-width: 0;
+}
+
+.assoc-row-name {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+.assoc-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+
+.assoc-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+  color: var(--brand-secondary);
+}
+.assoc-tag i {
+  font-size: 10px;
+  opacity: 0.75;
+}
+
+.assoc-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Hide text labels on desktop — icons only */
+.assoc-row-actions .btn span {
+  display: none;
+}
+
+/* ---------- Mobile: stacked card ---------- */
+@media (max-width: 640px) {
+  .assoc-row {
+    grid-template-columns: 44px 1fr;
+    grid-template-areas:
+      "icon body"
+      "actions actions";
+    row-gap: 14px;
+    padding: 16px;
+  }
+  .assoc-row-icon {
+    grid-area: icon;
+  }
+  .assoc-row-body {
+    grid-area: body;
+  }
+
+  .assoc-row-actions {
+    grid-area: actions;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .assoc-row-actions .btn {
+    width: 100%;
+    justify-content: center;
+    padding: 11px 14px;
+    font-size: 13px;
+  }
+
+  /* Show text labels on mobile */
+  .assoc-row-actions .btn span {
+    display: inline;
+    margin-left: 6px;
+  }
+}
+
+@media (max-width: 420px) {
+  .assoc-row {
+    padding: 14px;
+  }
+  .assoc-row-name {
+    font-size: 13.5px;
+  }
+  .assoc-row-actions {
+    gap: 6px;
+  }
+  .assoc-row-actions .btn {
+    padding: 10px 12px;
+    font-size: 12.5px;
+  }
+}
+
+/* Leadership Positions — icon variant */
+.assoc-row-icon.pos-icon {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+/* ==========================================================================
+   STUDENT LEADERS — admin list rows
+   Three actions per row. Stacks to full-width buttons on mobile.
+   ========================================================================== */
+
+.leader-row {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 120ms ease;
+}
+.leader-row:last-child {
+  border-bottom: 0;
+}
+.leader-row:hover {
+  background: var(--bg-subtle);
+}
+
+/* Inactive state — dim slightly */
+.leader-row.is-inactive {
+  opacity: 0.68;
+}
+.leader-row.is-inactive .leader-row-avatar {
+  filter: grayscale(0.6);
+}
+
+.leader-row-avatar {
+  flex-shrink: 0;
+}
+.leader-row-avatar .avatar {
+  display: block;
+}
+
+.leader-row-body {
+  min-width: 0;
+}
+
+.leader-row-name {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 2px;
+  line-height: 1.35;
+}
+
+.leader-row-handle {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  margin-bottom: 6px;
+}
+
+.leader-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px 14px;
+  flex-wrap: wrap;
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+}
+
+.leader-meta-tag,
+.leader-meta-pos {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+}
+.leader-meta-tag i,
+.leader-meta-pos i {
+  font-size: 10px;
+  opacity: 0.75;
+}
+.leader-meta-tag {
+  color: var(--brand-secondary);
+}
+.leader-meta-pos {
+  color: var(--brand-primary);
+}
+
+.leader-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Hide text labels on desktop — icons only */
+.leader-row-actions .btn span {
+  display: none;
+}
+
+/* ---------- Edit modal — student display ---------- */
+.leader-edit-student {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-subtle);
+}
+.leader-edit-student-info {
+  min-width: 0;
+}
+.leader-edit-student-name {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+.leader-edit-student-handle {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+
+/* ==========================================================================
+   STUDENT LEADERS — mobile action layout (override)
+   Ensures all three buttons are always visible on small screens.
+   ========================================================================== */
+
+@media (max-width: 640px) {
+  /* Row: avatar + body on top, actions row below */
+  .leader-row {
+    grid-template-columns: 56px 1fr;
+    grid-template-areas:
+      "avatar body"
+      "actions actions";
+    row-gap: 14px;
+    padding: 16px;
+  }
+  .leader-row-avatar {
+    grid-area: avatar;
+  }
+  .leader-row-body {
+    grid-area: body;
+  }
+
+  /* Actions become a vertical stack of full-width buttons */
+  .leader-row-actions {
+    grid-area: actions;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .leader-row-actions .btn {
+    width: 100%;
+    justify-content: center;
+    padding: 11px 14px;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* Show text labels */
+  .leader-row-actions .btn span {
+    display: inline;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 420px) {
+  .leader-row {
+    padding: 14px;
+    grid-template-columns: 48px 1fr;
+  }
+  .leader-row-avatar .avatar {
+    width: 48px;
+    height: 48px;
+  }
+  .leader-row-name {
+    font-size: 13.5px;
+  }
+  .leader-row-actions .btn {
+    padding: 10px 12px;
+    font-size: 12.5px;
+  }
+}
+
+/* ==========================================================================
+   LEADER PROFILE — inactive leader states
+   ========================================================================== */
+
+/* Inactive banner at the top of the profile */
+.leader-inactive-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 20px;
+  background: var(--warning-soft);
+  border-left: 4px solid var(--warning);
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+  color: var(--text-primary);
+}
+
+.leader-inactive-banner > i {
+  font-size: 22px;
+  color: var(--warning);
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.leader-inactive-banner strong {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: var(--fs-md);
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: var(--text-primary);
+}
+
+.leader-inactive-banner p {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Dim the cover + avatar when inactive */
+.profile-hero-v2.is-inactive-leader .profile-cover-v2 {
+  filter: grayscale(0.85) brightness(0.85);
+}
+
+.profile-hero-v2.is-inactive-leader .profile-avatar-slot {
+  filter: grayscale(0.6);
+}
+
+/* Slightly mute the tags row when inactive */
+.profile-hero-v2.is-inactive-leader .profile-hero-tags .badge {
+  opacity: 0.85;
+}
+
+/* Leader card on the directory page — inactive variant */
+.leader-card.is-inactive {
+  opacity: 0.72;
+  filter: grayscale(0.5);
+}
+.leader-card .leader-inactive-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
+  background: var(--bg-subtle);
+  color: var(--text-tertiary);
+  margin-bottom: 12px;
+}
+
+@media (max-width: 640px) {
+  .leader-inactive-banner {
+    padding: 14px 16px;
+    gap: 12px;
+  }
+  .leader-inactive-banner > i {
+    font-size: 18px;
+  }
+  .leader-inactive-banner strong {
+    font-size: var(--fs-sm);
+  }
+  .leader-inactive-banner p {
+    font-size: var(--fs-xs);
+  }
+}
+
+/* ==========================================================================
+   MODERATION & REPORTS — admin workspace
+   ========================================================================== */
+
+.report-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto;
+  gap: 20px;
+  align-items: flex-start;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 120ms ease;
+}
+.report-row:last-child {
+  border-bottom: 0;
+}
+.report-row:hover {
+  background: var(--bg-subtle);
+}
+
+/* Dim resolved/dismissed rows slightly */
+.report-row-resolved,
+.report-row-dismissed {
+  opacity: 0.75;
+}
+
+/* --- Left column: report metadata --- */
+.report-row-main {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 12px;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.report-row-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.report-reason-danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.report-reason-warning {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.report-reason-neutral {
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+}
+
+.report-row-body {
+  min-width: 0;
+}
+
+.report-row-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.report-reason {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.report-row-meta {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+.report-row-meta i {
+  font-size: 10px;
+  margin-right: 3px;
+  opacity: 0.75;
+}
+
+/* --- Middle column: the reported post --- */
+.report-row-post {
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+}
+
+.report-post-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.report-post-author {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.report-post-name {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.report-post-handle {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+
+.report-post-text {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0;
+}
+
+.report-post-hidden {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--warning-soft);
+  color: var(--warning);
+  border-radius: var(--radius-sm);
+}
+
+/* --- Right column: actions --- */
+.report-row-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+  min-width: 130px;
+}
+
+.report-row-actions .btn {
+  justify-content: flex-start;
+}
+
+/* --- Review modal grid --- */
+.report-review-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.report-review-section {
+  min-width: 0;
+}
+
+.report-review-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 6px;
+}
+
+.report-review-value {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.report-review-sub {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+.report-review-post {
+  margin-top: 20px;
+}
+
+.report-review-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-left: 4px solid var(--info);
+  background: var(--info-soft);
+  color: var(--text-primary);
+  font-size: var(--fs-sm);
+  border-radius: var(--radius-sm);
+}
+
+/* --- Responsive --- */
+@media (max-width: 1080px) {
+  .report-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) auto;
+    gap: 14px;
+    padding: 16px 20px;
+  }
+}
+
+@media (max-width: 860px) {
+  .report-row {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 16px;
+  }
+  .report-row-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    min-width: 0;
+    width: 100%;
+  }
+  .report-row-actions .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .report-row {
+    padding: 14px;
+  }
+  .report-row-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .report-row-actions .btn {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  .report-review-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 420px) {
+  .report-row-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================================================================
+   NEWS ADMIN — list rows
+   Desktop: horizontal row with status badge and three actions.
+   Mobile: stacked card with full-width action buttons.
+   ========================================================================== */
+
+.news-admin-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto auto;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 120ms ease;
+}
+.news-admin-row:last-child {
+  border-bottom: 0;
+}
+.news-admin-row:hover {
+  background: var(--bg-subtle);
+}
+
+.news-admin-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: var(--brand-primary-soft);
+  color: var(--brand-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.news-admin-body {
+  min-width: 0;
+}
+
+.news-admin-name {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.35;
+  margin-bottom: 6px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.news-admin-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px 14px;
+  flex-wrap: wrap;
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+.news-admin-meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.news-admin-meta i {
+  font-size: 10px;
+  opacity: 0.75;
+}
+
+.news-admin-cat {
+  font-weight: 700;
+  color: var(--brand-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 10.5px;
+}
+
+.news-admin-status {
+  flex-shrink: 0;
+}
+
+.news-admin-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Hide text labels on desktop — icons only */
+.news-admin-actions .btn span {
+  display: none;
+}
+
+/* ---------- Mobile: stacked card with full-width actions ---------- */
+@media (max-width: 860px) {
+  .news-admin-row {
+    grid-template-columns: 44px 1fr;
+    grid-template-areas:
+      "icon  body"
+      "status status"
+      "actions actions";
+    row-gap: 12px;
+    padding: 16px;
+  }
+  .news-admin-icon {
+    grid-area: icon;
+  }
+  .news-admin-body {
+    grid-area: body;
+  }
+  .news-admin-status {
+    grid-area: status;
+    align-self: start;
+    margin-top: 2px;
+  }
+
+  .news-admin-actions {
+    grid-area: actions;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+
+  /* Delete button spans both columns on the second row */
+  .news-admin-actions .btn[data-delete] {
+    grid-column: 1 / -1;
+  }
+
+  .news-admin-actions .btn {
+    width: 100%;
+    justify-content: center;
+    padding: 11px 14px;
+    font-size: 13px;
+  }
+
+  /* Show text labels on mobile */
+  .news-admin-actions .btn span {
+    display: inline;
+    margin-left: 6px;
+  }
+
+  .news-admin-name {
+    font-size: 13.5px;
+  }
+}
+
+@media (max-width: 420px) {
+  .news-admin-row {
+    padding: 14px;
+    grid-template-columns: 40px 1fr;
+  }
+  .news-admin-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+  .news-admin-actions {
+    gap: 6px;
+  }
+  .news-admin-actions .btn {
+    padding: 10px 12px;
+    font-size: 12.5px;
+  }
+}
+
+/* ==========================================================================
+   COVER IMAGE PICKER — News admin
+   Uploaded as a base64 data URL so it persists in localStorage.
+   ========================================================================== */
+
+.cover-picker {
+  display: grid;
+  grid-template-columns: 120px 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px;
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-subtle);
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease,
+    box-shadow 120ms ease;
+  min-height: 108px;
+}
+.cover-picker:hover {
+  border-color: var(--brand-primary);
+  background: var(--bg-surface);
+}
+.cover-picker.is-dragover {
+  border-color: var(--brand-primary);
+  border-style: solid;
+  background: var(--brand-primary-soft);
+  box-shadow: var(--shadow-focus);
+}
+.cover-picker.has-file {
+  border-style: solid;
+  border-color: var(--border-default);
+  background: var(--bg-surface);
+}
+
+.cover-picker-preview {
+  width: 120px;
+  height: 84px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--bg-subtle);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cover-picker-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  font-size: 26px;
+}
+
+.cover-picker-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cover-picker-body {
+  min-width: 0;
+}
+
+.cover-picker-title {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cover-picker.has-file .cover-picker-title {
+  font-weight: 700;
+}
+
+.cover-picker-hint {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+
+.cover-picker-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.cover-picker-remove:hover {
+  background: var(--danger-soft) !important;
+}
+
+/* Thumbnail on the admin news row */
+.news-admin-thumb {
+  overflow: hidden;
+  padding: 0;
+  background: var(--bg-subtle);
+}
+.news-admin-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Responsive — stack the picker on narrow screens */
+@media (max-width: 640px) {
+  .cover-picker {
+    grid-template-columns: 90px 1fr;
+    grid-template-areas:
+      "preview body"
+      "actions actions";
+    gap: 12px;
+    padding: 12px;
+    min-height: 0;
+  }
+  .cover-picker-preview {
+    grid-area: preview;
+    width: 90px;
+    height: 66px;
+  }
+  .cover-picker-body {
+    grid-area: body;
+  }
+  .cover-picker-actions {
+    grid-area: actions;
+    justify-content: flex-end;
+    width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .cover-picker {
+    grid-template-columns: 72px 1fr;
+  }
+  .cover-picker-preview {
+    width: 72px;
+    height: 54px;
+  }
+  .cover-picker-title {
+    font-size: 13px;
+  }
+}
+
+/* ==========================================================================
+   NEWS — Branded placeholder for articles without a cover image
+   Renders a subtle Brick Red → Marine Blue gradient with the
+   Campus Space icon, so cards and article heroes stay visually uniform.
+   ========================================================================== */
+
+.news-card-media.is-placeholder,
+.news-detail-media.is-placeholder {
+  position: relative;
+  background: linear-gradient(
+    135deg,
+    var(--brand-primary) 0%,
+    #8e2c2c 45%,
+    var(--brand-secondary) 100%
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Subtle grain / texture layer */
+.news-card-media.is-placeholder::before,
+.news-detail-media.is-placeholder::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(
+      circle at 25% 30%,
+      rgba(255, 255, 255, 0.16),
+      transparent 45%
+    ),
+    radial-gradient(
+      circle at 80% 75%,
+      rgba(255, 255, 255, 0.08),
+      transparent 50%
+    );
+  pointer-events: none;
+}
+
+/* The brand icon in the center */
+.news-card-media.is-placeholder::after,
+.news-detail-media.is-placeholder::after {
+  content: "\f19d"; /* fa-graduation-cap */
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.9);
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Sizing */
+.news-card-media.is-placeholder::after {
+  font-size: 48px;
+}
+.news-detail-media.is-placeholder::after {
+  font-size: 64px;
+}
+
+/* Match the layout of the real image media blocks */
+.news-detail-media {
+  width: 100%;
+  border-radius: var(--radius-lg);
+  margin-bottom: 24px;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: var(--bg-subtle);
+}
+.news-detail-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .news-card-media.is-placeholder::after {
+    font-size: 40px;
+  }
+  .news-detail-media.is-placeholder::after {
+    font-size: 48px;
+  }
+}
+
+/* ==========================================================================
+   ANNOUNCEMENTS — Student view
+   Filter tabs, search, count line, and mobile-friendly cards.
+   The base .announcement card already exists in the stylesheet;
+   these rules layer on the student-specific extras.
+   ========================================================================== */
+
+/* The count line + filter bar sit above the stack */
+#main > .toolbar + .filter-bar {
+  margin-top: 0;
+}
+
+#main > .filter-bar + .cluster-between {
+  margin-top: 16px;
+}
+
+/* Announcement cards get a bit more breathing room on the student page */
+#ann-list .announcement {
+  padding: 20px 24px;
+}
+
+#ann-list .announcement-head {
+  gap: 14px;
+}
+
+#ann-list .announcement h3 {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 12px 0 10px;
+}
+
+#ann-list .announcement p {
+  font-size: var(--fs-sm);
+  line-height: 1.65;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+#ann-list .announcement-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+
+#ann-list .announcement-foot i {
+  font-size: 11px;
+  opacity: 0.75;
+}
+
+/* Important announcement gets a stronger visual treatment */
+#ann-list .announcement.is-important {
+  border-left-width: 5px;
+}
+
+#ann-list .announcement.is-important h3::before {
+  content: "";
+  /* subtle left marker shown only for important announcements */
+}
+
+/* ---------- Mobile layout ---------- */
+@media (max-width: 640px) {
+  #ann-list .announcement {
+    padding: 16px;
+  }
+
+  #ann-list .announcement h3 {
+    font-size: var(--fs-md);
+  }
+
+  #ann-list .announcement-head {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  /* The "Important" badge on the header wraps to its own line if needed */
+  #ann-list .announcement-head .badge {
+    margin-left: 0 !important;
+    order: 99;
+    flex-basis: 100%;
+    align-self: flex-start;
+    margin-top: 4px;
+  }
+
+  #ann-list .announcement-foot {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  #ann-list .announcement-foot > span {
+    margin-left: 0 !important;
+  }
+
+  /* The filter tabs + search fit comfortably */
+  #main > .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 420px) {
+  #ann-list .announcement {
+    padding: 14px;
+  }
+
+  #ann-list .announcement h3 {
+    font-size: var(--fs-base);
+  }
+
+  #ann-list .announcement p {
+    font-size: 13.5px;
+  }
+}
+
+/* ==========================================================================
+   ANNOUNCEMENTS — Admin workspace mobile layout
+   Scoped to #admin-ann-list so these rules only affect the admin page.
+   Desktop: keeps the current card layout with icon-buttons in the header.
+   Mobile: stacked card with full-width action buttons.
+   ========================================================================== */
+
+/* ---------- Container spacing ---------- */
+#admin-ann-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ---------- Admin card base ---------- */
+#admin-ann-list .announcement {
+  padding: 20px 24px;
+}
+
+#admin-ann-list .announcement h3 {
+  font-size: var(--fs-md);
+  font-weight: 700;
+  line-height: 1.35;
+  margin: 12px 0 8px;
+}
+
+#admin-ann-list .announcement > p {
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+#admin-ann-list .announcement-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+
+#admin-ann-list .announcement-foot i {
+  font-size: 11px;
+  opacity: 0.75;
+}
+
+/* ---------- Card header — desktop layout ---------- */
+#admin-ann-list .announcement-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+#admin-ann-list .announcement-head > i.fa-bullhorn {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+#admin-ann-list .announcement-head > div:first-of-type {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+#admin-ann-list .announcement-head .cluster {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* ---------- Desktop: icon-only buttons stay compact ---------- */
+#admin-ann-list .announcement-head .btn-icon,
+#admin-ann-list .announcement-head .btn.btn-ghost {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+}
+
+/* ---------- Mobile: stacked card + full-width actions ---------- */
+@media (max-width: 640px) {
+  #admin-ann-list {
+    gap: 12px;
+  }
+
+  #admin-ann-list .announcement {
+    padding: 16px;
+  }
+
+  /* Header: icon + author info on top, badges + actions below */
+  #admin-ann-list .announcement-head {
+    display: grid;
+    grid-template-columns: 20px 1fr;
+    grid-template-areas:
+      "icon info"
+      "badges badges"
+      "actions actions";
+    gap: 12px 10px;
+    align-items: start;
+  }
+
+  /* Assign each child to its grid area */
+  #admin-ann-list .announcement-head > i.fa-bullhorn {
+    grid-area: icon;
+    margin-top: 4px;
+  }
+
+  #admin-ann-list .announcement-head > div:first-of-type {
+    grid-area: info;
+    flex: none;
+  }
+
+  /* The badges cluster becomes its own row */
+  #admin-ann-list .announcement-head .cluster {
+    grid-area: actions;
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 8px;
+    margin-left: 0;
+    width: 100%;
+  }
+
+  /* Badges — pull them out of the actions and let them sit above */
+  #admin-ann-list .announcement-head .cluster > .badge {
+    grid-column: 1 / -1;
+    justify-self: start;
+    margin-bottom: 4px;
+  }
+
+  /* The three action buttons: Preview + Edit side by side, Delete on its own row */
+  #admin-ann-list .announcement-head .cluster > button {
+    width: 100%;
+    height: 40px;
+    border-radius: var(--radius-md);
+    padding: 0 14px;
+    font-size: 13px;
+    font-weight: 600;
+    justify-content: center;
+    background: var(--bg-subtle);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+  }
+
+  /* Add text labels via ::after — Edit / Preview / Delete */
+  #admin-ann-list .announcement-head .cluster > button::after {
+    margin-left: 8px;
+    font-size: 13px;
+  }
+
+  #admin-ann-list .announcement-head .cluster > button[data-preview]::after {
+    content: "Preview";
+  }
+
+  #admin-ann-list .announcement-head .cluster > button[data-edit]::after {
+    content: "Edit";
+  }
+
+  /* Delete button spans both columns */
+  #admin-ann-list .announcement-head .cluster > button[data-del] {
+    grid-column: 1 / -1;
+    background: var(--danger-soft);
+    border-color: transparent;
+    color: var(--danger);
+  }
+
+  #admin-ann-list .announcement-head .cluster > button[data-del]::after {
+    content: "Delete";
+  }
+
+  /* Destroy the icon-only sizing on mobile */
+  #admin-ann-list .announcement-head .btn.btn-ghost {
+    width: auto;
+    height: 40px;
+  }
+
+  /* Card title + body */
+  #admin-ann-list .announcement h3 {
+    font-size: var(--fs-base);
+    margin: 14px 0 8px;
+  }
+
+  #admin-ann-list .announcement > p {
+    font-size: 13.5px;
+  }
+
+  /* Footer stacks vertically */
+  #admin-ann-list .announcement-foot {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin-top: 14px;
+    padding-top: 12px;
+  }
+
+  #admin-ann-list .announcement-foot > span {
+    margin-left: 0 !important;
+  }
+}
+
+/* ---------- Narrow mobile ---------- */
+@media (max-width: 420px) {
+  #admin-ann-list .announcement {
+    padding: 14px;
+  }
+
+  #admin-ann-list .announcement h3 {
+    font-size: var(--fs-sm);
+  }
+
+  #admin-ann-list .announcement-head {
+    grid-template-columns: 18px 1fr;
+    gap: 10px 8px;
+  }
+
+  #admin-ann-list .announcement-head .cluster > button {
+    height: 38px;
+    padding: 0 12px;
+    font-size: 12.5px;
+  }
+
+  #admin-ann-list .announcement-head .cluster > button::after {
+    font-size: 12.5px;
+    margin-left: 6px;
+  }
+}
+
+@media (max-width: 375px) {
+  #admin-ann-list .announcement-head .cluster {
+    grid-template-columns: 1fr;
+  }
+
+  #admin-ann-list .announcement-head .cluster > button {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ==========================================================================
+   EMERGENCY CONTACTS — Admin cards
+   ========================================================================== */
+
+.ec-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ec-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ec-card-head-info {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ec-card-name {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.3;
+  margin-bottom: 2px;
+}
+
+.ec-card-handle {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+
+/* Category badge — colored by category.color */
+.ec-cat-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: var(--radius-pill);
+  flex-shrink: 0;
+}
+.ec-cat-badge i {
+  font-size: 10px;
+}
+
+.ec-cat-security {
+  background: var(--brand-secondary-soft);
+  color: var(--brand-secondary);
+}
+.ec-cat-medical {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.ec-cat-fire {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.ec-cat-other {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.ec-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 0 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.ec-card-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: var(--fs-sm);
+}
+.ec-card-row > i {
+  width: 16px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 13px;
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.ec-card-value {
+  color: var(--text-primary);
+  font-weight: 600;
+  text-decoration: none;
+  word-break: break-all;
+}
+.ec-card-value:hover {
+  color: var(--brand-primary);
+}
+
+.ec-card-value-sm {
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.ec-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.ec-card-actions .btn {
+  flex: 1 1 auto;
+  justify-content: center;
+}
+
+/* ---------- Mobile: full-width buttons ---------- */
+@media (max-width: 640px) {
+  .ec-card-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .ec-card-actions .btn {
+    padding: 11px 14px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 420px) {
+  .ec-card-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================================================================
+   OPPORTUNITIES — Admin list rows
+   Desktop: horizontal row with status badge and three actions.
+   Mobile: stacked card with full-width action buttons.
+   ========================================================================== */
+
+.opp-admin-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto auto;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 120ms ease;
+}
+.opp-admin-row:last-child {
+  border-bottom: 0;
+}
+.opp-admin-row:hover {
+  background: var(--bg-subtle);
+}
+
+.opp-admin-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: var(--brand-secondary-soft);
+  color: var(--brand-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.opp-admin-body {
+  min-width: 0;
+}
+
+.opp-admin-name {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.35;
+  margin-bottom: 6px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.opp-admin-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px 14px;
+  flex-wrap: wrap;
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+.opp-admin-meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.opp-admin-meta i {
+  font-size: 10px;
+  opacity: 0.75;
+}
+
+.opp-admin-cat {
+  font-weight: 700;
+  color: var(--brand-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 10.5px;
+}
+
+.opp-admin-status {
+  flex-shrink: 0;
+}
+
+.opp-admin-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Hide text labels on desktop — icons only */
+.opp-admin-actions .btn span {
+  display: none;
+}
+
+/* ---------- Mobile: stacked card ---------- */
+@media (max-width: 860px) {
+  .opp-admin-row {
+    grid-template-columns: 44px 1fr;
+    grid-template-areas:
+      "icon body"
+      "status status"
+      "actions actions";
+    row-gap: 12px;
+    padding: 16px;
+  }
+  .opp-admin-icon {
+    grid-area: icon;
+  }
+  .opp-admin-body {
+    grid-area: body;
+  }
+  .opp-admin-status {
+    grid-area: status;
+    align-self: start;
+    margin-top: 2px;
+  }
+
+  .opp-admin-actions {
+    grid-area: actions;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .opp-admin-actions .btn[data-delete] {
+    grid-column: 1 / -1;
+  }
+
+  .opp-admin-actions .btn {
+    width: 100%;
+    justify-content: center;
+    padding: 11px 14px;
+    font-size: 13px;
+  }
+
+  .opp-admin-actions .btn span {
+    display: inline;
+    margin-left: 6px;
+  }
+}
+
+@media (max-width: 420px) {
+  .opp-admin-row {
+    padding: 14px;
+    grid-template-columns: 40px 1fr;
+  }
+  .opp-admin-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+  .opp-admin-actions {
+    gap: 6px;
+  }
+  .opp-admin-actions .btn {
+    padding: 10px 12px;
+    font-size: 12.5px;
+  }
+}
+
+/* ==========================================================================
+   COMPLAINTS — Admin workspace
+   ========================================================================== */
+
+/* Row: icon | info | status | actions */
+.cm-admin-row {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto auto;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 120ms ease;
+}
+.cm-admin-row:last-child {
+  border-bottom: 0;
+}
+.cm-admin-row:hover {
+  background: var(--bg-subtle);
+}
+
+.cm-admin-row .complaint-icon {
+  width: 42px;
+  height: 42px;
+  font-size: 17px;
+}
+
+.cm-admin-row .complaint-info h4 {
+  font-size: var(--fs-sm);
+  margin-bottom: 5px;
+}
+
+.cm-admin-row .meta {
+  gap: 10px 14px;
+  flex-wrap: wrap;
+}
+.cm-admin-row .meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-xs);
+}
+.cm-admin-row .meta i {
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.cm-id {
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+.cm-admin-status {
+  flex-shrink: 0;
+}
+.cm-admin-actions {
+  flex-shrink: 0;
+}
+
+/* ---------- Complaint modal ---------- */
+.cm-modal-status-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-subtle);
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+}
+
+.cm-modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.cm-response {
+  padding: 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  margin-bottom: 12px;
+}
+.cm-response:last-child {
+  margin-bottom: 0;
+}
+
+.cm-response-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+/* ---------- Mobile: stacked card ---------- */
+@media (max-width: 860px) {
+  .cm-admin-row {
+    grid-template-columns: 42px 1fr;
+    grid-template-areas:
+      "icon info"
+      "status status"
+      "actions actions";
+    row-gap: 12px;
+    padding: 16px;
+  }
+  .cm-admin-row .complaint-icon {
+    grid-area: icon;
+  }
+  .cm-admin-row .complaint-info {
+    grid-area: info;
+  }
+  .cm-admin-status {
+    grid-area: status;
+    align-self: start;
+  }
+  .cm-admin-actions {
+    grid-area: actions;
+    display: flex;
+    width: 100%;
+  }
+  .cm-admin-actions .btn {
+    width: 100%;
+    justify-content: center;
+    padding: 11px 14px;
+    font-size: 13px;
+  }
+
+  .cm-modal-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  .cm-admin-row {
+    padding: 14px;
+  }
+  .cm-modal-status-strip {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 420px) {
+  .cm-admin-row {
+    grid-template-columns: 38px 1fr;
+  }
+  .cm-admin-row .complaint-icon {
+    width: 38px;
+    height: 38px;
+    font-size: 15px;
+  }
+  .cm-admin-actions .btn {
+    padding: 10px 12px;
+    font-size: 12.5px;
+  }
+}
+
+/* ==========================================================================
+   ADMINS — Super Admin workspace
+   Admin rows with role badges, three actions, and mobile stacking.
+   Also covers the activity modal and invite-sent modal.
+   ========================================================================== */
+
+/* ---------- Admin row ---------- */
+.admin-row {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 120ms ease;
+}
+.admin-row:last-child {
+  border-bottom: 0;
+}
+.admin-row:hover {
+  background: var(--bg-subtle);
+}
+
+/* Slight dim for deactivated admins */
+.admin-row.is-inactive {
+  opacity: 0.72;
+}
+.admin-row.is-inactive .admin-row-avatar {
+  filter: grayscale(0.6);
+}
+
+.admin-row-avatar {
+  flex-shrink: 0;
+}
+.admin-row-avatar .avatar {
+  display: block;
+}
+
+.admin-row-body {
+  min-width: 0;
+}
+
+.admin-row-name {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+  line-height: 1.35;
+}
+
+.admin-row-handle {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  margin-bottom: 8px;
+  word-break: break-all;
+}
+
+.admin-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+  font-size: var(--fs-xs);
+}
+
+.admin-last-active {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-tertiary);
+  font-size: var(--fs-xs);
+}
+.admin-last-active i {
+  font-size: 10px;
+  opacity: 0.75;
+}
+
+.admin-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Hide action button text labels on desktop */
+.admin-row-actions .btn span {
+  display: none;
+}
+
+/* ---------- Role chip variants (some exist, some new) ---------- */
+.role-chip.role-academia {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.role-chip.role-supro {
+  background: var(--info-soft);
+  color: var(--info);
+}
+
+/* Ensure base role-chip styling covers all variants cleanly */
+.role-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 4px 9px;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+.role-chip i {
+  font-size: 10px;
+}
+
+/* ---------- Activity modal ---------- */
+.activity-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px 20px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.activity-meta-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 6px;
+}
+
+.activity-meta-value {
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.activity-log-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.activity-log-item:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.activity-log-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.activity-log-icon.activity-log-create {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.activity-log-icon.activity-log-deactivate {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.activity-log-icon.activity-log-reactivate {
+  background: var(--brand-primary-soft);
+  color: var(--brand-primary);
+}
+
+.activity-log-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.activity-log-action {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.4;
+  margin-bottom: 2px;
+  word-break: break-word;
+}
+
+.activity-log-time {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+
+/* ---------- Invite-sent modal ---------- */
+#invite-sent-modal pre {
+  scrollbar-width: thin;
+}
+
+/* ---------- Mobile: stack everything ---------- */
+@media (max-width: 860px) {
+  .admin-row {
+    grid-template-columns: 56px 1fr;
+    grid-template-areas:
+      "avatar body"
+      "actions actions";
+    row-gap: 14px;
+    padding: 16px;
+  }
+  .admin-row-avatar {
+    grid-area: avatar;
+  }
+  .admin-row-body {
+    grid-area: body;
+  }
+
+  .admin-row-actions {
+    grid-area: actions;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+
+  /* If only one action is present (e.g. self with locked button) it takes
+     the full width */
+  .admin-row-actions:has(> :only-child) {
+    grid-template-columns: 1fr;
+  }
+
+  /* Fallback for browsers without :has() */
+  .admin-row-actions.single {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-row-actions .btn {
+    width: 100%;
+    justify-content: center;
+    padding: 11px 14px;
+    font-size: 13px;
+  }
+
+  .admin-row-actions .btn span {
+    display: inline;
+    margin-left: 6px;
+  }
+
+  /* Meta wraps more nicely on mobile */
+  .admin-row-handle {
+    font-size: 11.5px;
+    margin-bottom: 10px;
+  }
+
+  .admin-row-meta {
+    gap: 6px 10px;
+  }
+
+  /* Activity modal grid → single column */
+  .activity-meta-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-row {
+    padding: 14px;
+    grid-template-columns: 48px 1fr;
+  }
+  .admin-row-avatar .avatar {
+    width: 48px;
+    height: 48px;
+  }
+  .admin-row-name {
+    font-size: 13.5px;
+  }
+
+  /* Activity modal grid → single column */
+  .activity-meta-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 420px) {
+  .admin-row {
+    padding: 12px;
+    grid-template-columns: 44px 1fr;
+  }
+  .admin-row-avatar .avatar {
+    width: 44px;
+    height: 44px;
+  }
+  .admin-row-actions {
+    gap: 6px;
+  }
+  .admin-row-actions .btn {
+    padding: 10px 12px;
+    font-size: 12.5px;
+  }
+}
+
+/* ==========================================================================
+   ADMIN PROFILE IMAGES — Super Admin workspace
+   ========================================================================== */
+
+/* Space Admin hero block */
+.aip-hero {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 24px;
+  align-items: center;
+}
+
+.aip-avatar-preview {
+  flex-shrink: 0;
+}
+.aip-avatar-preview .avatar {
+  display: block;
+  border: 3px solid var(--bg-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.aip-hero-body h4 {
+  font-size: var(--fs-md);
+  font-weight: 700;
+  margin: 0 0 6px;
+  color: var(--text-primary);
+}
+
+.aip-hero-body p {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0 0 14px;
+  max-width: 480px;
+}
+
+.aip-hero-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ---------- Per-admin row ---------- */
+.aip-row {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 120ms ease;
+}
+.aip-row:last-child {
+  border-bottom: 0;
+}
+.aip-row:hover {
+  background: var(--bg-subtle);
+}
+
+.aip-row-avatar {
+  flex-shrink: 0;
+}
+.aip-row-avatar .avatar {
+  display: block;
+  border: 2px solid var(--bg-surface);
+  box-shadow: var(--shadow-xs);
+}
+
+.aip-row-body {
+  min-width: 0;
+}
+
+.aip-row-name {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+  line-height: 1.35;
+}
+
+.aip-row-handle {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  margin-bottom: 8px;
+}
+
+.aip-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+  font-size: var(--fs-xs);
+}
+
+.aip-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Hide button text labels on desktop */
+.aip-row-actions .btn span {
+  display: none;
+}
+
+/* ---------- Mobile ---------- */
+@media (max-width: 640px) {
+  .aip-hero {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    text-align: center;
+  }
+  .aip-avatar-preview {
+    display: flex;
+    justify-content: center;
+  }
+  .aip-hero-body h4 {
+    text-align: center;
+  }
+  .aip-hero-body p {
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .aip-hero-actions {
+    justify-content: center;
+  }
+
+  .aip-row {
+    grid-template-columns: 56px 1fr;
+    grid-template-areas:
+      "avatar body"
+      "actions actions";
+    row-gap: 14px;
+    padding: 16px;
+  }
+  .aip-row-avatar {
+    grid-area: avatar;
+  }
+  .aip-row-body {
+    grid-area: body;
+  }
+
+  .aip-row-actions {
+    grid-area: actions;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+
+  /* If only Upload is present (no custom image yet), full width */
+  .aip-row-actions:has(> :only-child) {
+    grid-template-columns: 1fr;
+  }
+  .aip-row-actions.single {
+    grid-template-columns: 1fr;
+  }
+
+  .aip-row-actions .btn {
+    width: 100%;
+    justify-content: center;
+    padding: 11px 14px;
+    font-size: 13px;
+  }
+
+  .aip-row-actions .btn span {
+    display: inline;
+    margin-left: 6px;
+  }
+
+  .aip-row-name {
+    font-size: 13.5px;
+  }
+}
+
+@media (max-width: 420px) {
+  .aip-row {
+    padding: 14px;
+    grid-template-columns: 48px 1fr;
+  }
+  .aip-row-avatar .avatar {
+    width: 48px;
+    height: 48px;
+  }
+  .aip-row-actions {
+    gap: 6px;
+  }
+  .aip-row-actions .btn {
+    padding: 10px 12px;
+    font-size: 12.5px;
+  }
+}
+
+/* ==========================================================================
+   SUPER ADMIN — Mobile UI for Student Verification, Admin Controls,
+   Admin Profile Images
+   ========================================================================== */
+
+/* ============================================================
+   1. STUDENT VERIFICATION — mobile layout
+   ============================================================ */
+
+/* Stat cards grid → 2 columns on tablet, 1 on mobile */
+@media (max-width: 860px) {
+  #main > .grid.grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  #main > .grid.grid-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Verification record rows — stack on mobile */
+@media (max-width: 768px) {
+  .vr-row {
+    display: grid;
+    grid-template-columns: 42px 1fr;
+    grid-template-areas:
+      "icon info"
+      "actions actions";
+    row-gap: 14px;
+    padding: 16px;
+  }
+  .vr-row .resource-icon {
+    grid-area: icon;
+  }
+  .vr-row .resource-info {
+    grid-area: info;
+  }
+
+  .vr-row-actions {
+    grid-area: actions;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+  .vr-row-actions .btn {
+    width: 100%;
+    justify-content: center;
+    padding: 11px 14px;
+    font-size: 13px;
+  }
+}
+
+/* Details modal — matched student rows */
+.vr-student-row {
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  transition: background 120ms ease;
+}
+.vr-student-row:hover {
+  background: var(--bg-subtle);
+}
+
+@media (max-width: 480px) {
+  .vr-student-row {
+    grid-template-columns: 32px 1fr;
+    grid-template-areas:
+      "avatar info"
+      "badge badge";
+    row-gap: 6px;
+  }
+  .vr-student-row .avatar {
+    grid-area: avatar;
+  }
+  .vr-student-row > div {
+    grid-area: info;
+  }
+  .vr-student-row .badge {
+    grid-area: badge;
+    justify-self: start;
+  }
+}
+
+/* Upload form — full-width button on mobile */
+@media (max-width: 640px) {
+  #upload-verification-form .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ============================================================
+   2. ADMIN CONTROLS — mobile layout
+   ============================================================ */
+
+@media (max-width: 640px) {
+  /* Setting rows: label above, toggle right-aligned */
+  .setting-row {
+    flex-direction: row;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 0;
+  }
+
+  .setting-row-info {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .setting-row-info h4 {
+    font-size: var(--fs-sm);
+    margin-bottom: 4px;
+    line-height: 1.35;
+  }
+
+  .setting-row-info p {
+    font-size: var(--fs-xs);
+    line-height: 1.5;
+  }
+
+  /* Keep toggle comfortably tappable */
+  .setting-row .toggle {
+    flex-shrink: 0;
+  }
+
+  /* Danger-zone button: full-width */
+  .setting-row .btn-danger {
+    width: 100%;
+    justify-content: center;
+    margin-top: 4px;
+  }
+
+  /* Stack the danger row for its button */
+  .setting-row:has(.btn-danger) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 420px) {
+  .setting-row {
+    padding: 14px 0;
+  }
+}
+
+/* ============================================================
+   3. ADMIN PROFILE IMAGES — mobile layout
+   ============================================================ */
+
+@media (max-width: 640px) {
+  /* The hero block for the Space Admin avatar */
+  .aip-hero {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    text-align: center;
+  }
+
+  .aip-avatar-preview {
+    display: flex;
+    justify-content: center;
+  }
+
+  .aip-hero-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .aip-hero-body h4,
+  .aip-hero-body p {
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .aip-hero-actions {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .aip-hero-actions .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  /* Per-admin rows: stack into cards */
+  .aip-row {
+    grid-template-columns: 56px 1fr;
+    grid-template-areas:
+      "avatar body"
+      "actions actions";
+    row-gap: 14px;
+    padding: 16px;
+  }
+  .aip-row-avatar {
+    grid-area: avatar;
+  }
+  .aip-row-body {
+    grid-area: body;
+  }
+
+  .aip-row-actions {
+    grid-area: actions;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .aip-row-actions .btn {
+    width: 100%;
+    justify-content: center;
+    padding: 11px 14px;
+    font-size: 13px;
+  }
+
+  .aip-row-actions .btn span {
+    display: inline;
+    margin-left: 6px;
+  }
+
+  /* If there's only one action button (Upload when no custom image) */
+  .aip-row-actions:has(> :only-child) {
+    grid-template-columns: 1fr;
+  }
+  .aip-row-actions.single {
+    grid-template-columns: 1fr;
+  }
+
+  .aip-row-name {
+    font-size: 13.5px;
+  }
+}
+
+@media (max-width: 420px) {
+  .aip-row {
+    padding: 14px;
+    grid-template-columns: 48px 1fr;
+  }
+  .aip-row-avatar .avatar {
+    width: 48px;
+    height: 48px;
+  }
+  .aip-row-actions {
+    gap: 6px;
+  }
+  .aip-row-actions .btn {
+    padding: 10px 12px;
+    font-size: 12.5px;
+  }
+
+  .aip-hero-actions {
+    flex-direction: column;
+  }
+  .aip-hero-actions .btn {
+    width: 100%;
+  }
+}
+
+/* ==========================================================================
+   STUDENT VERIFICATION — matching fields chips
+   Responsive from the start: 3 cols → 2 cols → 1 col.
+   Chips use flex layout so text can't clip or overlap.
+   ========================================================================== */
+
+.vr-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.vr-field-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--bg-surface);
+  border: 1px solid rgba(0, 59, 92, 0.12);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.3;
+  min-width: 0;
+}
+
+.vr-field-chip i {
+  color: var(--brand-secondary);
+  font-size: 13px;
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+}
+
+/* The label itself wraps cleanly; no clipping */
+.vr-field-chip span,
+.vr-field-chip:not(:has(span)) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* 3 → 2 columns on tablet */
+@media (max-width: 960px) {
+  .vr-fields-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* 2 → 1 column on phone */
+@media (max-width: 480px) {
+  .vr-fields-grid {
+    grid-template-columns: 1fr;
+  }
+  .vr-field-chip {
+    padding: 10px 12px;
+    font-size: 12.5px;
+  }
+}

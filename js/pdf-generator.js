@@ -8,7 +8,7 @@
      PdfGenerator.open({
        type: 'calendar' | 'exams' | 'lectures' | 'files',
        title: 'Academic Calendar',
-       subtitle: 'First Semester - 2026/2027 Academic Session',
+       subtitle: '2026/2027 Academic Session',
        data: [...]   // document-specific
      });
    ========================================================================== */
@@ -125,6 +125,29 @@ var PdfGenerator = (function () {
       "padding-bottom: 6px;" +
       "border-bottom: 1px solid var(--border);" +
       "}" +
+      /* Semester heading — bolder + larger than section-title */
+      ".semester-title {" +
+      'font-family: "Manrope", sans-serif;' +
+      "font-size: 19px;" +
+      "font-weight: 800;" +
+      "text-transform: uppercase;" +
+      "letter-spacing: 0.05em;" +
+      "color: var(--text-primary);" +
+      "margin-bottom: 14px;" +
+      "padding-bottom: 8px;" +
+      "border-bottom: 2px solid var(--brand-primary);" +
+      "}" +
+      ".semester-title .dot {" +
+      "display: inline-block;" +
+      "width: 10px;" +
+      "height: 10px;" +
+      "border-radius: 50%;" +
+      "background: var(--brand-primary);" +
+      "margin-right: 8px;" +
+      "vertical-align: middle;" +
+      "}" +
+      ".semester-block { margin-bottom: 30px; }" +
+      ".semester-block:last-child { margin-bottom: 0; }" +
       /* Footer */
       ".footer {" +
       "position: absolute;" +
@@ -199,31 +222,44 @@ var PdfGenerator = (function () {
   }
 
   /* ------------------------------------------------------------------
-     Layout: CALENDAR (timeline rows)
+     Layout: CALENDAR (two sections — First & Second semester)
      ------------------------------------------------------------------ */
   function layoutCalendar(data) {
-    var rows = data
-      .map(function (e) {
-        return (
-          '<div class="cal-row">' +
-          '<div class="cal-date">' +
-          e.date +
-          "</div>" +
-          '<div class="cal-body">' +
-          '<div class="cal-title">' +
-          e.title +
-          "</div>" +
-          '<div class="cal-desc">' +
-          e.desc +
-          "</div>" +
-          "</div>" +
-          "</div>"
-        );
-      })
-      .join("");
+    /* data: [{ date, title, desc, semester }] */
+    var first = [];
+    var second = [];
+    var other = [];
 
-    return (
-      '<div class="section-title">Key Dates</div>' +
+    data.forEach(function (e) {
+      var sem = (e.semester || "").toLowerCase();
+      if (sem === "first") first.push(e);
+      else if (sem === "second") second.push(e);
+      else other.push(e);
+    });
+
+    function renderRows(list) {
+      return list
+        .map(function (e) {
+          return (
+            '<div class="cal-row">' +
+            '<div class="cal-date">' +
+            escHtml(e.date) +
+            "</div>" +
+            '<div class="cal-body">' +
+            '<div class="cal-title">' +
+            escHtml(e.title) +
+            "</div>" +
+            (e.desc
+              ? '<div class="cal-desc">' + escHtml(e.desc) + "</div>"
+              : "") +
+            "</div>" +
+            "</div>"
+          );
+        })
+        .join("");
+    }
+
+    var styleBlock =
       "<style>" +
       ".cal-row {" +
       "display: grid;" +
@@ -251,9 +287,35 @@ var PdfGenerator = (function () {
       "color: var(--text-secondary);" +
       "line-height: 1.5;" +
       "}" +
-      "</style>" +
-      rows
-    );
+      "</style>";
+
+    var html = "";
+
+    if (first.length) {
+      html +=
+        '<div class="semester-block">' +
+        '<div class="semester-title"><span class="dot"></span>First Semester</div>' +
+        renderRows(first) +
+        "</div>";
+    }
+
+    if (second.length) {
+      html +=
+        '<div class="semester-block">' +
+        '<div class="semester-title"><span class="dot"></span>Second Semester</div>' +
+        renderRows(second) +
+        "</div>";
+    }
+
+    if (other.length) {
+      html +=
+        '<div class="semester-block">' +
+        '<div class="semester-title"><span class="dot"></span>Other Dates</div>' +
+        renderRows(other) +
+        "</div>";
+    }
+
+    return styleBlock + html;
   }
 
   /* ------------------------------------------------------------------
@@ -266,24 +328,24 @@ var PdfGenerator = (function () {
           '<div class="exam-row">' +
           '<div class="exam-date-block">' +
           '<div class="exam-day">' +
-          e.day +
+          escHtml(e.day) +
           "</div>" +
           '<div class="exam-month">' +
-          e.month +
+          escHtml(e.month) +
           "</div>" +
           "</div>" +
           '<div class="exam-body">' +
           '<div class="exam-course">' +
-          e.course +
+          escHtml(e.course) +
           " - " +
-          e.title +
+          escHtml(e.title) +
           "</div>" +
           '<div class="exam-meta">' +
           "<span><strong>Time:</strong> " +
-          e.time +
+          escHtml(e.time) +
           "</span>" +
           "<span><strong>Venue:</strong> " +
-          e.venue +
+          escHtml(e.venue) +
           "</span>" +
           "</div>" +
           "</div>" +
@@ -358,7 +420,8 @@ var PdfGenerator = (function () {
 
     var bodyRows = slots
       .map(function (slot) {
-        var row = '<div class="tt-cell tt-time">' + slot.time + "</div>";
+        var row =
+          '<div class="tt-cell tt-time">' + escHtml(slot.time) + "</div>";
         days.forEach(function (d) {
           var p = slot.periods[d];
           if (p) {
@@ -366,13 +429,13 @@ var PdfGenerator = (function () {
               '<div class="tt-cell">' +
               '<div class="tt-class">' +
               "<strong>" +
-              p.code +
+              escHtml(p.code) +
               "</strong>" +
               "<span>" +
-              p.venue +
+              escHtml(p.venue) +
               "</span>" +
               "<span>" +
-              p.lecturer +
+              escHtml(p.lecturer) +
               "</span>" +
               "</div>" +
               "</div>";
@@ -477,12 +540,12 @@ var PdfGenerator = (function () {
           "</div>" +
           '<div class="file-body">' +
           '<div class="file-name">' +
-          f.name +
+          escHtml(f.name) +
           "</div>" +
           '<div class="file-meta">' +
-          (f.course ? "<span>" + f.course + "</span>" : "") +
-          (f.category ? "<span>" + f.category + "</span>" : "") +
-          (f.size ? "<span>" + f.size + "</span>" : "") +
+          (f.course ? "<span>" + escHtml(f.course) + "</span>" : "") +
+          (f.category ? "<span>" + escHtml(f.category) + "</span>" : "") +
+          (f.size ? "<span>" + escHtml(f.size) + "</span>" : "") +
           "</div>" +
           "</div>" +
           "</div>"
@@ -556,6 +619,18 @@ var PdfGenerator = (function () {
   }
 
   /* ------------------------------------------------------------------
+     HTML escape helper — used inside document templates
+     ------------------------------------------------------------------ */
+  function escHtml(str) {
+    return String(str == null ? "" : str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  /* ------------------------------------------------------------------
      Public: open the print preview
      ------------------------------------------------------------------ */
   function open(opts) {
@@ -615,14 +690,16 @@ var PdfGenerator = (function () {
       '<div class="header-brand">Campus Space<div class="sub">OAUSTECH Student Digital Ecosystem</div></div>' +
       "</div>" +
       '<div class="doc-title">' +
-      (opts.title || "Document") +
+      escHtml(opts.title || "Document") +
       "</div>" +
       '<div class="doc-subtitle">' +
-      (opts.subtitle || "") +
+      escHtml(opts.subtitle || "") +
       "</div>" +
       '<div class="meta-strip">' +
       '<div><span class="label">Issued to</span><span class="value">' +
-      (student ? student.firstName + " " + student.lastName : "Student") +
+      escHtml(
+        student ? student.firstName + " " + student.lastName : "Student",
+      ) +
       "</span></div>" +
       '<div><span class="label">Generated</span><span class="value">' +
       generatedOn +

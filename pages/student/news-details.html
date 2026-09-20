@@ -45,6 +45,7 @@
   </head>
   <body class="has-session">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
       <aside
         class="sidebar"
@@ -68,6 +69,7 @@
         </main>
       </div>
     </div>
+
     <div id="mobile-nav-mount"></div>
     <div class="mobile-menu-backdrop"></div>
     <aside
@@ -85,33 +87,160 @@
     <script src="../../js/notifications.js"></script>
     <script src="../../js/leaders.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
+      /* ==========================================================================
+         News detail page.
+         Three states:
+           1. Valid article       → render it
+           2. Expired article     → show "no longer available" state
+           3. Not found / deleted → show "article not found" state
+         Reads merged data from DEMO_NEWS + cs_news_overrides (added/edits/deleted).
+         ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
         if (!session) {
           window.location.href = "../auth/login.html";
           return;
         }
         initAppShell("student");
 
-        const id = new URLSearchParams(location.search).get("id");
-        const n = DEMO_NEWS.find((x) => x.id === id) || DEMO_NEWS[0];
-        const el = document.getElementById("news-article");
+        var el = document.getElementById("news-article");
+        var id = new URLSearchParams(location.search).get("id");
 
-        el.innerHTML = `
-    <span class="badge badge-brand" style="margin-bottom:16px;">${Util.escape(n.category)}</span>
-    <h1 class="page-title" style="font-size:var(--fs-3xl); line-height:1.15; margin-bottom:16px;">${Util.escape(n.title)}</h1>
-    <div class="cluster" style="font-size:var(--fs-sm); color:var(--text-tertiary); margin-bottom:24px; gap:16px;">
-      <span><i class="fa-solid fa-user"></i> ${Util.escape(n.author)}</span>
-      <span><i class="fa-regular fa-calendar"></i> ${Util.formatDate(n.date, { day: "numeric", month: "long", year: "numeric" })}</span>
-    </div>
-    <img src="${n.image}" alt="" style="width:100%; border-radius:var(--radius-lg); margin-bottom:24px; aspect-ratio:16/9; object-fit:cover; background:var(--bg-subtle);" onerror="this.style.display='none'">
-    <div style="font-size:var(--fs-md); line-height:1.75; color:var(--text-primary);">
-      ${n.body
-        .split("\n\n")
-        .map((p) => `<p style="margin-bottom:16px;">${Util.escape(p)}</p>`)
-        .join("")}
-    </div>
-  `;
+        /* ------------------------------------------------------------------
+           LOAD — merge demo seed with admin overrides
+           ------------------------------------------------------------------ */
+        function loadNews() {
+          var base = (typeof DEMO_NEWS !== "undefined" ? DEMO_NEWS : []).map(
+            function (n) {
+              return Object.assign({}, n);
+            },
+          );
+
+          var saved = Store.get("news_overrides", null);
+          if (saved && Array.isArray(saved.added)) {
+            saved.added.forEach(function (n) {
+              if (
+                !base.some(function (x) {
+                  return x.id === n.id;
+                })
+              ) {
+                base.unshift(n);
+              }
+            });
+          }
+          if (saved && Array.isArray(saved.deleted)) {
+            base = base.filter(function (n) {
+              return saved.deleted.indexOf(n.id) === -1;
+            });
+          }
+          if (saved && saved.edits) {
+            base.forEach(function (n) {
+              var edit = saved.edits[n.id];
+              if (edit) Object.assign(n, edit);
+            });
+          }
+          return base;
+        }
+
+        function isExpired(article) {
+          if (!article || !article.expiresAt) return false;
+          var expiry = new Date(article.expiresAt);
+          if (isNaN(expiry.getTime())) return false;
+          var now = new Date();
+          now.setHours(0, 0, 0, 0);
+          return expiry < now;
+        }
+
+        var allNews = loadNews();
+        var article = id
+          ? allNews.find(function (n) {
+              return n.id === id;
+            })
+          : null;
+
+        /* ---------- State 3 — Not found ---------- */
+        if (!article) {
+          el.innerHTML =
+            '<div class="empty-state" style="padding: 64px 24px; max-width: 480px; margin: 0 auto;">' +
+            '<div class="empty-icon"><i class="fa-regular fa-newspaper"></i></div>' +
+            "<h3>Article not found</h3>" +
+            "<p>This article may have been removed or the link is incorrect.</p>" +
+            '<a class="btn btn-secondary" href="campus-news.html">' +
+            '<i class="fa-solid fa-arrow-left"></i> Back to Campus News' +
+            "</a>" +
+            "</div>";
+          return;
+        }
+
+        /* ---------- State 2 — Expired ---------- */
+        if (isExpired(article)) {
+          el.innerHTML =
+            '<div class="empty-state" style="padding: 64px 24px; max-width: 520px; margin: 0 auto;">' +
+            '<div class="empty-icon" style="background: var(--warning-soft); color: var(--warning);">' +
+            '<i class="fa-solid fa-clock"></i>' +
+            "</div>" +
+            "<h3>This article is no longer available</h3>" +
+            "<p>" +
+            "It expired on " +
+            Util.formatDate(article.expiresAt, {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            }) +
+            ". You may be able to find related coverage in Campus News." +
+            "</p>" +
+            '<a class="btn btn-secondary" href="campus-news.html">' +
+            '<i class="fa-solid fa-arrow-left"></i> Back to Campus News' +
+            "</a>" +
+            "</div>";
+          return;
+        }
+
+        /* ---------- State 1 — Render the article ---------- */
+        var fullDate = Util.formatDate(article.date, {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        });
+
+        /* Media block: image when available, branded placeholder otherwise.
+           On image load error, swap to placeholder. */
+        var mediaHtml = article.image
+          ? '<div class="news-detail-media">' +
+            '<img src="' +
+            Util.escape(article.image) +
+            '" alt="" ' +
+            "onerror=\"this.parentElement.classList.add('is-placeholder'); this.remove();\">" +
+            "</div>"
+          : '<div class="news-detail-media is-placeholder"></div>';
+
+        /* Body paragraphs — split on blank lines */
+        var bodyHtml = (article.body || "")
+          .split(/\n\s*\n/)
+          .map(function (p) {
+            return '<p style="margin-bottom:16px;">' + Util.escape(p) + "</p>";
+          })
+          .join("");
+
+        el.innerHTML =
+          '<span class="badge badge-brand" style="margin-bottom:16px;">' +
+          Util.escape(article.category) +
+          "</span>" +
+          '<h1 class="page-title" style="font-size:var(--fs-3xl); line-height:1.15; margin-bottom:16px;">' +
+          Util.escape(article.title) +
+          "</h1>" +
+          '<div class="cluster" style="font-size:var(--fs-sm); color:var(--text-tertiary); margin-bottom:24px; gap:16px;">' +
+          '<span><i class="fa-solid fa-user"></i> ' +
+          Util.escape(article.author || "Admin") +
+          "</span>" +
+          '<span><i class="fa-regular fa-calendar"></i> ' +
+          fullDate +
+          "</span>" +
+          "</div>" +
+          mediaHtml +
+          '<div style="font-size:var(--fs-md); line-height:1.75; color:var(--text-primary);">' +
+          bodyHtml +
+          "</div>";
       });
     </script>
   </body>

@@ -106,9 +106,10 @@
     <script src="../../js/notifications.js"></script>
     <script>
       /* ==========================================================================
-   Campus News — editorial listing with category filter and search.
-   Missing images are handled gracefully (media block is removed).
-   ========================================================================== */
+         Campus News — editorial listing with category filter and search.
+         Reads from DEMO_NEWS merged with admin overrides (cs_news_overrides).
+         Expired articles are hidden from students automatically.
+         ========================================================================== */
       document.addEventListener("DOMContentLoaded", function () {
         var session = Auth.current();
         if (!session) {
@@ -124,9 +125,71 @@
         var filterCategory = "all";
         var searchQuery = "";
 
-        /* ---- Build the category list from the actual data ---- */
+        /* ------------------------------------------------------------------
+           LOAD — merge demo seed with admin overrides
+           ------------------------------------------------------------------ */
+        function loadNews() {
+          var base = (typeof DEMO_NEWS !== "undefined" ? DEMO_NEWS : []).map(
+            function (n) {
+              return Object.assign({}, n);
+            },
+          );
+
+          var saved = Store.get("news_overrides", null);
+          if (saved && Array.isArray(saved.added)) {
+            saved.added.forEach(function (n) {
+              if (
+                !base.some(function (x) {
+                  return x.id === n.id;
+                })
+              ) {
+                base.unshift(n);
+              }
+            });
+          }
+          if (saved && Array.isArray(saved.deleted)) {
+            base = base.filter(function (n) {
+              return saved.deleted.indexOf(n.id) === -1;
+            });
+          }
+          if (saved && saved.edits) {
+            base.forEach(function (n) {
+              var edit = saved.edits[n.id];
+              if (edit) Object.assign(n, edit);
+            });
+          }
+          return base;
+        }
+
+        function isExpired(article) {
+          if (!article || !article.expiresAt) return false;
+          var expiry = new Date(article.expiresAt);
+          if (isNaN(expiry.getTime())) return false;
+          var now = new Date();
+          now.setHours(0, 0, 0, 0);
+          return expiry < now;
+        }
+
+        /* ------------------------------------------------------------------
+           STATE — visible articles only
+           ------------------------------------------------------------------ */
+        var allArticles = loadNews();
+
+        /* Students only see articles that are not expired */
+        var visibleArticles = allArticles.filter(function (n) {
+          return !isExpired(n);
+        });
+
+        /* Sort: newest publish date first */
+        visibleArticles.sort(function (a, b) {
+          return new Date(b.date) - new Date(a.date);
+        });
+
+        /* ------------------------------------------------------------------
+           CATEGORY CHIPS
+           ------------------------------------------------------------------ */
         var categories = ["all"];
-        DEMO_NEWS.forEach(function (n) {
+        visibleArticles.forEach(function (n) {
           if (n.category && categories.indexOf(n.category) === -1) {
             categories.push(n.category);
           }
@@ -150,11 +213,13 @@
           });
         }
 
-        /* ---- Render the news grid ---- */
+        /* ------------------------------------------------------------------
+           RENDER
+           ------------------------------------------------------------------ */
         function render() {
           grid.innerHTML = "";
 
-          var list = DEMO_NEWS.slice();
+          var list = visibleArticles.slice();
 
           if (filterCategory !== "all") {
             list = list.filter(function (n) {
@@ -166,8 +231,8 @@
             var q = searchQuery.toLowerCase();
             list = list.filter(function (n) {
               return (
-                n.title.toLowerCase().indexOf(q) !== -1 ||
-                n.excerpt.toLowerCase().indexOf(q) !== -1 ||
+                (n.title || "").toLowerCase().indexOf(q) !== -1 ||
+                (n.excerpt || "").toLowerCase().indexOf(q) !== -1 ||
                 (n.author || "").toLowerCase().indexOf(q) !== -1
               );
             });
@@ -210,14 +275,18 @@
             card.href = "news-details.html?id=" + n.id;
             card.className = "news-card";
 
-            /* Build the media block. If the image fails to load, the whole
-         block is hidden so the card doesn't show a big empty space. */
-            var mediaHtml =
-              '<div class="news-card-media">' +
-              '<img src="' +
-              Util.escape(n.image) +
-              '" alt="" onerror="this.parentElement.style.display=\'none\'">' +
-              "</div>";
+            /* Media block:
+               - If the article has an image, render it. On load error,
+                 fall back to the branded placeholder.
+               - If the article has no image, render the placeholder directly. */
+            var mediaHtml = n.image
+              ? '<div class="news-card-media">' +
+                '<img src="' +
+                Util.escape(n.image) +
+                '" alt="" ' +
+                "onerror=\"this.parentElement.classList.add('is-placeholder'); this.remove();\">" +
+                "</div>"
+              : '<div class="news-card-media is-placeholder"></div>';
 
             card.innerHTML =
               mediaHtml +

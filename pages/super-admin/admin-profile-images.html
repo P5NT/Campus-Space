@@ -45,8 +45,13 @@
   </head>
   <body class="has-session admin-body">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
-      <aside class="sidebar admin-sidebar" id="app-sidebar"></aside>
+      <aside
+        class="sidebar admin-sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
       <div class="app-main">
         <header class="app-header" id="app-header"></header>
         <main class="app-content" id="main">
@@ -60,40 +65,79 @@
             </div>
           </div>
 
-          <div class="card">
-            <div class="card-head"><h3>Admin profile images</h3></div>
-            <div class="card-body" style="padding-top: 0">
-              <div class="setting-row">
-                <div class="setting-row-info">
-                  <h4>Space Admin avatar</h4>
-                  <p>
-                    This image appears publicly on all Admin posts across the
-                    platform.
-                  </p>
-                </div>
-                <div class="cluster">
+          <!-- Space Admin avatar -->
+          <div class="card" style="margin-bottom: 24px">
+            <div class="card-head">
+              <div>
+                <h3>Space Admin avatar</h3>
+                <p class="section-desc" style="margin: 2px 0 0">
+                  This image appears publicly on all Admin posts across the
+                  platform.
+                </p>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="aip-hero">
+                <div class="aip-avatar-preview" id="space-avatar-preview">
                   <span
-                    class="avatar avatar-48 avatar-fallback"
+                    class="avatar avatar-96 avatar-fallback"
                     style="background: var(--brand-secondary)"
                     >SA</span
                   >
-                  <button class="btn btn-secondary btn-sm">
-                    <i class="fa-solid fa-upload"></i> Change image
-                  </button>
+                </div>
+                <div class="aip-hero-body">
+                  <h4>Space Admin</h4>
+                  <p>
+                    The shared identity shown on every Admin-authored post,
+                    announcement, and news article. Uploaded images are stored
+                    as base64 in the browser (demo-only).
+                  </p>
+                  <div class="aip-hero-actions">
+                    <button
+                      class="btn btn-primary btn-sm"
+                      id="space-upload-btn"
+                      type="button"
+                    >
+                      <i class="fa-solid fa-upload"></i> Upload image
+                    </button>
+                    <button
+                      class="btn btn-ghost btn-sm"
+                      id="space-remove-btn"
+                      type="button"
+                      style="color: var(--danger); display: none"
+                    >
+                      <i class="fa-solid fa-trash"></i> Remove
+                    </button>
+                  </div>
+                  <input
+                    type="file"
+                    id="space-avatar-input"
+                    accept="image/*"
+                    hidden
+                  />
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="card" style="margin-top: 20px">
-            <div class="card-head"><h3>Individual Admin images</h3></div>
-            <div class="card-body" style="padding-top: 0">
-              <div id="admin-images"></div>
+          <!-- Individual admin images -->
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h3>Individual Admin images</h3>
+                <p class="section-desc" style="margin: 2px 0 0">
+                  Each admin can have their own profile image that overrides the
+                  Space Admin default.
+                </p>
+              </div>
+              <span class="badge badge-neutral" id="aip-count">0</span>
             </div>
+            <div id="admin-images"></div>
           </div>
         </main>
       </div>
     </div>
+
     <div class="mobile-menu-backdrop"></div>
     <aside
       class="mobile-menu"
@@ -105,35 +149,342 @@
     <script src="../../js/main.js"></script>
     <script src="../../js/validation.js"></script>
     <script src="../../js/auth.js"></script>
+    <script src="../../js/permissions.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
     <script src="../../js/admin.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
+      /* ==========================================================================
+         Admin Profile Images — Super Admin workspace.
+         Upload/replace/remove profile images per admin.
+         The Space Admin avatar is stored globally.
+         All images are stored as base64 data URLs in localStorage.
+         Persistence:
+           cs_space_admin_avatar    → the shared Space Admin image
+           cs_admin_avatars_overrides → { adminId: base64 }
+         ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
         if (!session || session.role !== "super_admin") {
           window.location.href = "../auth/login.html";
           return;
         }
         initAppShell("admin");
 
-        const wrap = document.getElementById("admin-images");
-        DEMO_ADMINS.forEach((a) => {
-          const el = document.createElement("div");
-          el.className = "setting-row";
-          el.innerHTML = `
-      <div class="setting-row-info">
-        <h4>${Util.escape(a.firstName + " " + a.lastName)} <span class="role-chip ${a.role === "super_admin" ? "role-super" : "role-admin"}">${a.role === "super_admin" ? "Super Admin" : "Admin"}</span></h4>
-        <p>@${Util.escape(a.username)}</p>
-      </div>
-      <div class="cluster">
-        <span class="avatar avatar-48 avatar-fallback">${Util.initials(a.firstName + " " + a.lastName)}</span>
-        <button class="btn btn-secondary btn-sm">
-          <i class="fa-solid fa-upload"></i> Change
-        </button>
-      </div>`;
-          wrap.appendChild(el);
+        var SPACE_KEY = "space_admin_avatar";
+        var PER_ADMIN_KEY = "admin_avatars_overrides";
+        var MAX_SIZE = 2 * 1024 * 1024; /* 2 MB — base64 storage limit */
+
+        /* ------------------------------------------------------------------
+           HELPERS
+           ------------------------------------------------------------------ */
+        function readFile(file) {
+          return new Promise(function (resolve, reject) {
+            if (!file) return reject(new Error("No file"));
+            if (!file.type.startsWith("image/")) {
+              return reject(new Error("Not an image"));
+            }
+            if (file.size > MAX_SIZE) {
+              return reject(new Error("Too large"));
+            }
+            var reader = new FileReader();
+            reader.onload = function (e) {
+              resolve(e.target.result);
+            };
+            reader.onerror = function () {
+              reject(new Error("Read error"));
+            };
+            reader.readAsDataURL(file);
+          });
+        }
+
+        function formatSize(bytes) {
+          if (bytes < 1024) return bytes + " B";
+          if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+          return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+        }
+
+        function getPerAdminAvatars() {
+          return Store.get(PER_ADMIN_KEY, {}) || {};
+        }
+
+        function setPerAdminAvatar(id, dataUrl) {
+          var all = getPerAdminAvatars();
+          if (dataUrl) all[id] = dataUrl;
+          else delete all[id];
+          Store.set(PER_ADMIN_KEY, all);
+        }
+
+        function recordAudit(action, detail) {
+          var log = Store.get("admin_audit", []) || [];
+          log.unshift({
+            id: "aud-" + Date.now(),
+            at: Date.now(),
+            actorId: session.id,
+            actorName: session.name || session.username,
+            actorUsername: session.username,
+            action: action,
+            targetId: null,
+            targetName: "",
+            detail: detail,
+          });
+          Store.set("admin_audit", log);
+        }
+
+        /* ------------------------------------------------------------------
+           SPACE ADMIN AVATAR
+           ------------------------------------------------------------------ */
+        var spacePreview = document.getElementById("space-avatar-preview");
+        var spaceInput = document.getElementById("space-avatar-input");
+        var spaceUploadBtn = document.getElementById("space-upload-btn");
+        var spaceRemoveBtn = document.getElementById("space-remove-btn");
+
+        function renderSpaceAvatar() {
+          var dataUrl = Store.get(SPACE_KEY, "");
+          if (dataUrl) {
+            spacePreview.innerHTML =
+              '<img src="' + dataUrl + '" alt="" class="avatar avatar-96">';
+            spaceRemoveBtn.style.display = "";
+            spaceUploadBtn.innerHTML =
+              '<i class="fa-solid fa-arrows-rotate"></i> Change image';
+          } else {
+            spacePreview.innerHTML =
+              '<span class="avatar avatar-96 avatar-fallback" style="background: var(--brand-secondary);">SA</span>';
+            spaceRemoveBtn.style.display = "none";
+            spaceUploadBtn.innerHTML =
+              '<i class="fa-solid fa-upload"></i> Upload image';
+          }
+        }
+
+        spaceUploadBtn.addEventListener("click", function () {
+          spaceInput.click();
         });
+
+        spaceInput.addEventListener("change", async function () {
+          try {
+            var dataUrl = await readFile(spaceInput.files[0]);
+            Store.set(SPACE_KEY, dataUrl);
+            renderSpaceAvatar();
+            recordAudit("setting_change", "Updated Space Admin avatar");
+            Toast.success("Space Admin avatar updated.", "Saved");
+          } catch (err) {
+            var msg =
+              err.message === "Too large"
+                ? "That image is over 2 MB. Please choose a smaller one."
+                : err.message === "Not an image"
+                  ? "Please choose an image file."
+                  : "Could not read that image.";
+            Toast.error(msg, "Upload failed");
+          }
+          spaceInput.value = "";
+        });
+
+        spaceRemoveBtn.addEventListener("click", async function () {
+          var ok = await Confirmation.confirm({
+            title: "Remove the Space Admin avatar?",
+            message: "Posts will fall back to the default initials.",
+            confirmLabel: "Remove",
+            variant: "danger",
+          });
+          if (!ok) return;
+          Store.remove(SPACE_KEY);
+          renderSpaceAvatar();
+          recordAudit("setting_change", "Removed Space Admin avatar");
+          Toast.success("Space Admin avatar removed.", "Removed");
+        });
+
+        renderSpaceAvatar();
+
+        /* ------------------------------------------------------------------
+           INDIVIDUAL ADMIN IMAGES
+           ------------------------------------------------------------------ */
+        var listEl = document.getElementById("admin-images");
+        var countEl = document.getElementById("aip-count");
+
+        function renderAdminList() {
+          var admins = (
+            typeof DEMO_ADMINS !== "undefined" ? DEMO_ADMINS : []
+          ).map(function (a) {
+            return Object.assign({}, a);
+          });
+
+          /* Merge dynamically created admins */
+          var saved = Store.get("admins_overrides", null);
+          if (saved && Array.isArray(saved.created)) {
+            saved.created.forEach(function (a) {
+              if (
+                !admins.some(function (x) {
+                  return x.id === a.id;
+                })
+              ) {
+                admins.push(a);
+              }
+            });
+          }
+
+          /* Apply deactivations so we can show status */
+          if (saved && Array.isArray(saved.deactivated)) {
+            admins.forEach(function (a) {
+              if (saved.deactivated.indexOf(a.id) !== -1)
+                a.status = "deactivated";
+            });
+          }
+
+          var perAdmin = getPerAdminAvatars();
+          countEl.textContent = admins.length;
+
+          listEl.innerHTML = "";
+
+          if (!admins.length) {
+            listEl.innerHTML =
+              '<div class="empty-state" style="padding:48px 24px;">' +
+              '<div class="empty-icon"><i class="fa-solid fa-user-shield"></i></div>' +
+              "<h3>No admins</h3>" +
+              "</div>";
+            return;
+          }
+
+          admins.forEach(function (a) {
+            var role =
+              a.adminRole ||
+              (a.role === "super_admin" ? "super_admin" : "senior_admin");
+            var custom = perAdmin[a.id];
+            var initials = Util.initials(a.firstName + " " + a.lastName);
+
+            var avatarHtml = custom
+              ? '<img src="' + custom + '" alt="" class="avatar avatar-56">'
+              : '<span class="avatar avatar-56 avatar-fallback" style="' +
+                (role === "super_admin"
+                  ? "background: var(--brand-primary);"
+                  : "background: var(--brand-secondary);") +
+                '">' +
+                initials +
+                "</span>";
+
+            var roleLabel =
+              {
+                super_admin: "Super Admin",
+                senior_admin: "Senior Admin",
+                academia: "Academia",
+                su_pro: "SU PRO",
+              }[role] || "Admin";
+
+            var roleClass =
+              {
+                super_admin: "role-super",
+                senior_admin: "role-admin",
+                academia: "role-academia",
+                su_pro: "role-supro",
+              }[role] || "role-admin";
+
+            var isSelf = a.id === session.id || a.username === session.username;
+
+            var el = document.createElement("div");
+            el.className = "aip-row";
+
+            el.innerHTML =
+              '<div class="aip-row-avatar">' +
+              avatarHtml +
+              "</div>" +
+              '<div class="aip-row-body">' +
+              '<div class="aip-row-name">' +
+              Util.escape(a.firstName + " " + a.lastName) +
+              (isSelf
+                ? ' <span class="badge badge-brand" style="margin-left:6px;"><i class="fa-solid fa-user"></i> You</span>'
+                : "") +
+              "</div>" +
+              '<div class="aip-row-handle">@' +
+              Util.escape(a.username) +
+              "</div>" +
+              '<div class="aip-row-meta">' +
+              '<span class="role-chip ' +
+              roleClass +
+              '">' +
+              roleLabel +
+              "</span>" +
+              (custom
+                ? '<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Custom image</span>'
+                : '<span class="badge badge-neutral"><i class="fa-solid fa-circle-info"></i> Default initials</span>') +
+              "</div>" +
+              "</div>" +
+              '<div class="aip-row-actions">' +
+              '<button class="btn btn-secondary btn-sm" data-upload type="button">' +
+              '<i class="fa-solid fa-upload"></i> <span>' +
+              (custom ? "Change" : "Upload") +
+              "</span>" +
+              "</button>" +
+              (custom
+                ? '<button class="btn btn-ghost btn-sm" data-remove type="button" style="color: var(--danger);">' +
+                  '<i class="fa-solid fa-trash"></i> <span>Remove</span>' +
+                  "</button>"
+                : "") +
+              "</div>";
+
+            /* Hidden file input */
+            var input = document.createElement("input");
+            input.type = "file";
+            input.accept = "image/*";
+            input.hidden = true;
+            el.appendChild(input);
+
+            el.querySelector("[data-upload]").addEventListener(
+              "click",
+              function () {
+                input.click();
+              },
+            );
+
+            input.addEventListener("change", async function () {
+              try {
+                var dataUrl = await readFile(input.files[0]);
+                setPerAdminAvatar(a.id, dataUrl);
+                renderAdminList();
+                recordAudit(
+                  "setting_change",
+                  "Updated profile image for " + a.username,
+                );
+                Toast.success(
+                  a.firstName + "'s profile image updated.",
+                  "Saved",
+                );
+              } catch (err) {
+                var msg =
+                  err.message === "Too large"
+                    ? "That image is over 2 MB. Please choose a smaller one."
+                    : err.message === "Not an image"
+                      ? "Please choose an image file."
+                      : "Could not read that image.";
+                Toast.error(msg, "Upload failed");
+              }
+              input.value = "";
+            });
+
+            var removeBtn = el.querySelector("[data-remove]");
+            if (removeBtn) {
+              removeBtn.addEventListener("click", async function () {
+                var ok = await Confirmation.confirm({
+                  title: "Remove this admin's profile image?",
+                  message:
+                    a.firstName + " will fall back to the default initials.",
+                  confirmLabel: "Remove",
+                  variant: "danger",
+                });
+                if (!ok) return;
+                setPerAdminAvatar(a.id, null);
+                renderAdminList();
+                recordAudit(
+                  "setting_change",
+                  "Removed profile image for " + a.username,
+                );
+                Toast.success("Profile image removed.", "Removed");
+              });
+            }
+
+            listEl.appendChild(el);
+          });
+        }
+
+        renderAdminList();
       });
     </script>
   </body>

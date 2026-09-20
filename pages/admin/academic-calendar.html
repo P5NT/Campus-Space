@@ -45,65 +45,96 @@
   </head>
   <body class="has-session admin-body">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
-      <aside class="sidebar admin-sidebar" id="app-sidebar"></aside>
+      <aside
+        class="sidebar admin-sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
       <div class="app-main">
         <header class="app-header" id="app-header"></header>
         <main class="app-content" id="main">
           <div class="page-head">
             <div class="page-head-text">
               <h1 class="page-title">Academic Calendar</h1>
-              <p class="page-subtitle">Manage key session dates.</p>
+              <p class="page-subtitle">
+                Manage key session dates for the whole university.
+              </p>
             </div>
-            <button class="btn btn-primary" data-modal-open="add-event-modal">
-              <i class="fa-solid fa-plus"></i> Add date
-            </button>
+            <div class="cluster">
+              <button
+                class="btn btn-secondary"
+                id="preview-calendar-btn"
+                type="button"
+              >
+                <i class="fa-solid fa-file-pdf"></i> Preview PDF
+              </button>
+              <button
+                class="btn btn-primary"
+                id="edit-calendar-btn"
+                type="button"
+              >
+                <i class="fa-solid fa-pen"></i> Edit calendar
+              </button>
+            </div>
           </div>
-          <div class="card card-pad-lg">
-            <div class="timeline" id="calendar-timeline"></div>
-          </div>
-        </main>
-      </div>
-    </div>
 
-    <div class="modal-backdrop" id="add-event-modal">
-      <div class="modal">
-        <div class="modal-head">
-          <h3>Add calendar event</h3>
-          <button class="btn-icon" data-modal-close aria-label="Close">
-            <i class="fa-solid fa-xmark"></i>
-          </button>
-        </div>
-        <form id="add-event-form" novalidate>
-          <div class="modal-body">
-            <div class="field">
-              <label class="label">Date <span class="req">*</span></label>
-              <input class="input" type="date" name="date" />
-              <div class="field-error">
-                <i class="fa-solid fa-circle-exclamation"></i
-                ><span>Please choose a date.</span>
-              </div>
-            </div>
-            <div class="field">
-              <label class="label">Title <span class="req">*</span></label>
-              <input class="input" name="title" />
-              <div class="field-error">
-                <i class="fa-solid fa-circle-exclamation"></i
-                ><span>Please enter a title.</span>
-              </div>
-            </div>
-            <div class="field">
-              <label class="label">Description</label>
-              <textarea class="textarea" name="description"></textarea>
+          <!-- Session badge + count -->
+          <div class="cluster-between" style="margin-bottom: 16px">
+            <div class="cluster">
+              <span class="badge badge-brand">2026/2027 Session</span>
+              <span class="badge badge-neutral" id="cal-count">—</span>
             </div>
           </div>
-          <div class="modal-foot">
-            <button type="button" class="btn btn-secondary" data-modal-close>
-              Cancel
+
+          <!-- Semester tabs -->
+          <div class="filter-bar" id="cal-tabs" role="tablist">
+            <button class="chip is-active" data-semester="all" role="tab">
+              All events
             </button>
-            <button type="submit" class="btn btn-primary">Add event</button>
+            <button class="chip" data-semester="First" role="tab">
+              First Semester
+            </button>
+            <button class="chip" data-semester="Second" role="tab">
+              Second Semester
+            </button>
           </div>
-        </form>
+
+          <!-- First Semester section -->
+          <section class="cal-admin-section" id="cal-section-first">
+            <div class="cal-admin-section-head">
+              <span
+                class="cal-admin-section-dot"
+                style="background: var(--brand-primary)"
+              ></span>
+              <h2 class="cal-admin-section-title">First Semester</h2>
+              <span class="cal-admin-section-count" id="cal-count-first"
+                >0 events</span
+              >
+            </div>
+            <div class="card">
+              <div id="cal-first-list"></div>
+            </div>
+          </section>
+
+          <!-- Second Semester section -->
+          <section class="cal-admin-section" id="cal-section-second">
+            <div class="cal-admin-section-head">
+              <span
+                class="cal-admin-section-dot"
+                style="background: var(--brand-secondary)"
+              ></span>
+              <h2 class="cal-admin-section-title">Second Semester</h2>
+              <span class="cal-admin-section-count" id="cal-count-second"
+                >0 events</span
+              >
+            </div>
+            <div class="card">
+              <div id="cal-second-list"></div>
+            </div>
+          </section>
+        </main>
       </div>
     </div>
 
@@ -115,108 +146,229 @@
     ></aside>
 
     <script src="../../data/students.js"></script>
+    <script src="../../data/calendar-events.js"></script>
     <script src="../../js/main.js"></script>
     <script src="../../js/validation.js"></script>
     <script src="../../js/auth.js"></script>
+    <script src="../../js/permissions.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
     <script src="../../js/admin.js"></script>
+    <script src="../../js/calendar-admin.js"></script>
+    <script src="../../js/pdf-generator.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
-        if (
-          !session ||
-          (session.role !== "admin" && session.role !== "super_admin")
-        ) {
+      /* ==========================================================================
+         Academic Calendar — Admin page.
+         Reads merged data (demo + overrides) via CalendarAdmin.
+         CRUD lives in calendar-admin.js.
+         ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
+        if (!session || !Permissions.isAdminRole(session)) {
           window.location.href = "../auth/login.html";
           return;
         }
+        if (!Permissions.can(session, "academics.view")) {
+          window.location.href = "dashboard.html";
+          return;
+        }
+
         initAppShell("admin");
 
-        let events = [
-          {
-            date: "2026-01-02",
-            title: "Resumption & Registration Begins",
-            description: "Returning students report to campus.",
-          },
-          {
-            date: "2026-01-20",
-            title: "Lectures Commence",
-            description: "First semester lectures begin.",
-          },
-          {
-            date: "2026-01-26",
-            title: "Course Registration Deadline",
-            description: "No registration accepted beyond this date.",
-          },
-          {
-            date: "2026-04-20",
-            title: "First Semester Examinations Begin",
-            description: "Exam timetable published in advance.",
-          },
-          {
-            date: "2026-05-08",
-            title: "First Semester Ends",
-            description: "End of first semester.",
-          },
-        ];
+        var SESSION = "2026/2027";
+        var activeSemester = "all";
 
-        const tl = document.getElementById("calendar-timeline");
+        var firstList = document.getElementById("cal-first-list");
+        var secondList = document.getElementById("cal-second-list");
+        var sectionFirst = document.getElementById("cal-section-first");
+        var sectionSecond = document.getElementById("cal-section-second");
+        var countEl = document.getElementById("cal-count");
+        var countFirstEl = document.getElementById("cal-count-first");
+        var countSecondEl = document.getElementById("cal-count-second");
+        var tabs = document.getElementById("cal-tabs");
+
+        /* ------------------------------------------------------------------
+           RENDER
+           ------------------------------------------------------------------ */
         function render() {
-          tl.innerHTML = "";
-          events.forEach((e) => {
-            const el = document.createElement("div");
-            el.className = "timeline-item";
-            el.innerHTML = `
-        <div class="timeline-date">${Util.formatDate(e.date, { day: "numeric", month: "long", year: "numeric" })}</div>
-        <div class="cluster-between">
-          <div>
-            <div class="timeline-title">${Util.escape(e.title)}</div>
-            <div class="timeline-desc">${Util.escape(e.description || "")}</div>
-          </div>
-          <button class="btn btn-ghost btn-sm" data-del style="color:var(--danger);" aria-label="Delete event"><i class="fa-solid fa-trash"></i></button>
-        </div>`;
-            el.querySelector("[data-del]").addEventListener(
-              "click",
-              async () => {
-                if (
-                  await Confirmation.confirm({
-                    title: "Delete this calendar event?",
-                    message: '"' + e.title + '" will be removed.',
-                    confirmLabel: "Delete",
-                    variant: "danger",
-                  })
-                ) {
-                  events = events.filter((x) => x !== e);
+          var split = CalendarAdmin.getSplitEvents(SESSION);
+          var first = split.first;
+          var second = split.second;
+
+          countEl.textContent =
+            first.length +
+            second.length +
+            " event" +
+            (first.length + second.length === 1 ? "" : "s");
+
+          countFirstEl.textContent =
+            first.length + " event" + (first.length === 1 ? "" : "s");
+          countSecondEl.textContent =
+            second.length + " event" + (second.length === 1 ? "" : "s");
+
+          /* Apply tab filter — show/hide whole sections */
+          if (activeSemester === "all" || activeSemester === "First") {
+            sectionFirst.style.display = "";
+          } else {
+            sectionFirst.style.display = "none";
+          }
+          if (activeSemester === "all" || activeSemester === "Second") {
+            sectionSecond.style.display = "";
+          } else {
+            sectionSecond.style.display = "none";
+          }
+
+          renderList(firstList, first, "First");
+          renderList(secondList, second, "Second");
+        }
+
+        function renderList(wrap, list, semester) {
+          wrap.innerHTML = "";
+
+          if (!list.length) {
+            wrap.innerHTML =
+              '<div class="empty-state" style="padding:32px 20px;">' +
+              '<div class="empty-icon"><i class="fa-regular fa-calendar"></i></div>' +
+              "<h3>No events yet</h3>" +
+              "<p>Click <strong>Edit calendar</strong> to add events for this semester.</p>" +
+              "</div>";
+            return;
+          }
+
+          list.forEach(function (e) {
+            var row = document.createElement("div");
+            row.className = "cal-admin-row";
+            row.innerHTML =
+              '<div class="cal-admin-date">' +
+              Util.escape(
+                e.displayDate ||
+                  Util.formatDate(e.isoDate, {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  }),
+              ) +
+              "</div>" +
+              '<div class="cal-admin-body">' +
+              '<div class="cal-admin-title">' +
+              Util.escape(e.title) +
+              "</div>" +
+              (e.desc
+                ? '<div class="cal-admin-desc">' +
+                  Util.escape(e.desc) +
+                  "</div>"
+                : "") +
+              "</div>" +
+              '<div class="cal-admin-actions">' +
+              '<button class="btn btn-ghost btn-sm" data-edit type="button" aria-label="Edit event">' +
+              '<i class="fa-solid fa-pen"></i>' +
+              "</button>" +
+              '<button class="btn btn-ghost btn-sm" data-del type="button" aria-label="Delete event" style="color:var(--danger);">' +
+              '<i class="fa-solid fa-trash"></i>' +
+              "</button>" +
+              "</div>";
+
+            row
+              .querySelector("[data-edit]")
+              .addEventListener("click", function () {
+                /* Open the full editor — admin can then adjust this event's
+                 row in the section it belongs to */
+                CalendarAdmin.openEditor(SESSION);
+              });
+
+            row
+              .querySelector("[data-del]")
+              .addEventListener("click", async function () {
+                var ok = await Confirmation.confirm({
+                  title: "Delete this event?",
+                  message:
+                    '"' +
+                    e.title +
+                    '" will be removed from the academic calendar.',
+                  confirmLabel: "Delete",
+                  variant: "danger",
+                });
+                if (!ok) return;
+
+                CalendarAdmin.deleteEvent(SESSION, e.id, function () {
                   render();
                   Toast.success("Event deleted.", "Removed");
-                }
-              },
-            );
-            tl.appendChild(el);
+                });
+              });
+
+            wrap.appendChild(row);
           });
         }
-        render();
 
-        bindForm(
-          document.getElementById("add-event-form"),
-          {
-            date: [Rules.required],
-            title: [Rules.required],
-          },
-          (data) => {
-            events.push({
-              date: data.get("date"),
-              title: data.get("title"),
-              description: data.get("description"),
+        /* ------------------------------------------------------------------
+           TABS
+           ------------------------------------------------------------------ */
+        tabs.addEventListener("click", function (e) {
+          var btn = e.target.closest("[data-semester]");
+          if (!btn) return;
+          tabs.querySelectorAll(".chip").forEach(function (c) {
+            c.classList.remove("is-active");
+          });
+          btn.classList.add("is-active");
+          activeSemester = btn.getAttribute("data-semester");
+          render();
+        });
+
+        /* ------------------------------------------------------------------
+           EDIT BUTTON — opens the full editor
+           ------------------------------------------------------------------ */
+        document
+          .getElementById("edit-calendar-btn")
+          .addEventListener("click", function () {
+            CalendarAdmin.openEditor(SESSION);
+          });
+
+        /* Called by calendar-admin.js after a save */
+        window.onCalendarSaved = function () {
+          render();
+        };
+
+        /* ------------------------------------------------------------------
+           PREVIEW PDF — generates the branded document
+           ------------------------------------------------------------------ */
+        document
+          .getElementById("preview-calendar-btn")
+          .addEventListener("click", function () {
+            if (typeof PdfGenerator === "undefined") {
+              Toast.error("Document generator not loaded.", "Error");
+              return;
+            }
+
+            var split = CalendarAdmin.getSplitEvents(SESSION);
+            var all = split.first.concat(split.second);
+
+            /* PdfGenerator's calendar layout expects:
+                 { date, title, desc, semester } */
+            var data = all.map(function (e) {
+              return {
+                date:
+                  e.displayDate ||
+                  Util.formatDate(e.isoDate, {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  }),
+                title: e.title,
+                desc: e.desc || "",
+                semester: e.semester,
+              };
             });
-            events.sort((a, b) => new Date(a.date) - new Date(b.date));
-            render();
-            Modal.close("add-event-modal");
-            document.getElementById("add-event-form").reset();
-            Toast.success("Calendar event added.", "Saved");
-          },
-        );
+
+            PdfGenerator.open({
+              type: "calendar",
+              title: "Academic Calendar",
+              subtitle: "2026/2027 Academic Session",
+              data: data,
+            });
+          });
+
+        /* Initial render */
+        render();
       });
     </script>
   </body>

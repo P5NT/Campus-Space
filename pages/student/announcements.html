@@ -45,6 +45,7 @@
   </head>
   <body class="has-session">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
       <aside
         class="sidebar"
@@ -60,10 +61,40 @@
               <p class="page-subtitle">Important messages from Space Admin.</p>
             </div>
           </div>
-          <div id="ann-list"></div>
+
+          <div class="toolbar">
+            <div class="input-wrap">
+              <i class="fa-solid fa-magnifying-glass input-icon"></i>
+              <input
+                class="input"
+                type="search"
+                id="ann-search"
+                placeholder="Search announcements…"
+                aria-label="Search announcements"
+              />
+            </div>
+          </div>
+
+          <div class="filter-bar" id="ann-filter" role="tablist">
+            <button class="chip is-active" data-status="all" role="tab">
+              All
+            </button>
+            <button class="chip" data-status="important" role="tab">
+              Important
+            </button>
+          </div>
+
+          <div class="cluster-between" style="margin-bottom: 12px">
+            <p class="section-desc" style="margin: 0" id="ann-count">
+              Loading…
+            </p>
+          </div>
+
+          <div id="ann-list" class="stack"></div>
         </main>
       </div>
     </div>
+
     <div id="mobile-nav-mount"></div>
     <div class="mobile-menu-backdrop"></div>
     <aside
@@ -81,45 +112,115 @@
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
+      /* ==========================================================================
+         Official Announcements — student view.
+         Reads from DEMO_ANNOUNCEMENTS merged with admin overrides
+         (cs_announcements_overrides). Expired announcements are hidden.
+         Announcements targeted at audiences the student doesn't belong to
+         are also hidden.
+         Sorting: important first, then newest.
+         ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
         if (!session) {
           window.location.href = "../auth/login.html";
           return;
         }
         initAppShell("student");
 
-        const wrap = document.getElementById("ann-list");
-        const student = DEMO_STUDENTS.find(
-          (s) => s.username === session.username,
-        );
+        var wrap = document.getElementById("ann-list");
+        var countEl = document.getElementById("ann-count");
+        var searchEl = document.getElementById("ann-search");
+        var filterBar = document.getElementById("ann-filter");
+
+        var student = (
+          typeof DEMO_STUDENTS !== "undefined" ? DEMO_STUDENTS : []
+        ).find(function (s) {
+          return s.username === session.username;
+        });
+
+        var activeFilter = "all";
 
         /* ------------------------------------------------------------------
-     Visibility rule — does this announcement target this student?
-     ------------------------------------------------------------------ */
+           LOAD — merge demo seed with admin overrides
+           ------------------------------------------------------------------ */
+        function loadAnnouncements() {
+          var base = (
+            typeof DEMO_ANNOUNCEMENTS !== "undefined" ? DEMO_ANNOUNCEMENTS : []
+          ).map(function (a) {
+            var copy = Object.assign({}, a);
+            /* Normalize affected: always an array */
+            if (typeof copy.affected === "string")
+              copy.affected = [copy.affected];
+            if (!Array.isArray(copy.affected)) copy.affected = ["All students"];
+            return copy;
+          });
+
+          var saved = Store.get("announcements_overrides", null);
+          if (saved && Array.isArray(saved.added)) {
+            saved.added.forEach(function (a) {
+              if (
+                !base.some(function (x) {
+                  return x.id === a.id;
+                })
+              ) {
+                base.unshift(a);
+              }
+            });
+          }
+          if (saved && Array.isArray(saved.deleted)) {
+            base = base.filter(function (a) {
+              return saved.deleted.indexOf(a.id) === -1;
+            });
+          }
+          if (saved && saved.edits) {
+            base.forEach(function (a) {
+              var edit = saved.edits[a.id];
+              if (edit) Object.assign(a, edit);
+            });
+          }
+          return base;
+        }
+
+        function isExpired(a) {
+          if (!a || !a.expiresAt) return false;
+          var expiry = new Date(a.expiresAt);
+          if (isNaN(expiry.getTime())) return false;
+          var now = new Date();
+          now.setHours(0, 0, 0, 0);
+          return expiry < now;
+        }
+
+        /* ------------------------------------------------------------------
+           AUDIENCE MATCHING — does this announcement target this student?
+           ------------------------------------------------------------------ */
         function announcementVisibleTo(a, student) {
           if (!student) return true;
           if (!a.affected) return true;
+          var audiences = Array.isArray(a.affected) ? a.affected : [a.affected];
 
-          const audiences = Array.isArray(a.affected)
-            ? a.affected
-            : [a.affected];
-
+          /* "All students" is a universal pass */
           if (audiences.indexOf("All students") !== -1) return true;
 
+          /* Level (either "400" or "400 Level") */
           if (audiences.indexOf(student.level) !== -1) return true;
           if (audiences.indexOf(student.level + " Level") !== -1) return true;
 
+          /* Faculty (full name) */
           if (audiences.indexOf(student.faculty) !== -1) return true;
 
-          const fac =
-            typeof DEMO_FACULTIES !== "undefined"
-              ? DEMO_FACULTIES.find((f) => f.name === student.faculty)
-              : null;
+          /* Faculty (short name) */
+          var fac = (
+            typeof DEMO_FACULTIES !== "undefined" ? DEMO_FACULTIES : []
+          ).find(function (f) {
+            return f.name === student.faculty;
+          });
           if (fac && audiences.indexOf(fac.shortName) !== -1) return true;
 
+          /* Department (full name) */
           if (audiences.indexOf(student.department) !== -1) return true;
 
+          /* Special groups */
           if (
             audiences.indexOf("New students") !== -1 &&
             student.level === "100"
@@ -127,76 +228,161 @@
             return true;
           if (
             audiences.indexOf("Final year students") !== -1 &&
-            student.level === "500"
-          )
-            return true;
-          if (
-            audiences.indexOf("Final year students") !== -1 &&
-            student.level === "400"
+            (student.level === "400" || student.level === "500")
           )
             return true;
 
           return false;
         }
 
-        const visibleAnnouncements = DEMO_ANNOUNCEMENTS.filter((a) =>
-          announcementVisibleTo(a, student),
-        );
-
-        /* ------------------------------------------------------------------
-     Empty state
-     ------------------------------------------------------------------ */
-        if (!visibleAnnouncements.length) {
-          wrap.innerHTML =
-            '<div class="card"><div class="empty-state">' +
-            '<div class="empty-icon"><i class="fa-solid fa-bullhorn"></i></div>' +
-            "<h3>No announcements for you yet</h3>" +
-            "<p>You'll see announcements here once Admin publishes messages aimed at your faculty, department, level or the entire student body.</p>" +
-            "</div></div>";
-          return;
+        function audienceLabel(a) {
+          var arr = Array.isArray(a.affected)
+            ? a.affected
+            : [a.affected || "All students"];
+          if (arr.indexOf("All students") !== -1) return "All students";
+          return arr.join(", ");
         }
 
         /* ------------------------------------------------------------------
-     Render each visible announcement
-     ------------------------------------------------------------------ */
-        visibleAnnouncements.forEach((a) => {
-          const el = document.createElement("div");
-          el.className = "announcement" + (a.important ? " is-important" : "");
-
-          const audienceText = Array.isArray(a.affected)
-            ? a.affected.join(", ")
-            : a.affected || "All students";
-
-          el.innerHTML = `
-      <div class="announcement-head">
-        <span class="avatar avatar-32 avatar-fallback" style="background:var(--brand-secondary); flex-shrink:0;">SA</span>
-        <div class="announcement-head-info">
-          <div class="font-semibold" style="font-size:var(--fs-sm);">${Util.escape(a.author)}</div>
-          <div class="text-xs text-muted">${Util.formatDate(a.date, { day: "numeric", month: "long", year: "numeric" })}</div>
-        </div>
-        ${a.important ? '<span class="badge badge-brand" style="margin-left:auto; flex-shrink:0;">Important</span>' : ""}
-      </div>
-
-      <h3>${Util.escape(a.title)}</h3>
-      ${a.body
-        .split("\\n\\n")
-        .map((p) => `<p style="margin-bottom:8px;">${Util.escape(p)}</p>`)
-        .join("")}
-
-      <div class="announcement-foot">
-        <span><i class="fa-solid fa-users"></i> ${Util.escape(audienceText)}</span>
-        ${
-          a.source
-            ? '<span style="margin-left:auto; display:inline-flex; align-items:center; gap:6px; font-weight:600; color:var(--brand-primary);"><i class="fa-solid fa-quote-left"></i> Source: ' +
-              Util.escape(a.source) +
-              "</span>"
-            : ""
-        }
-      </div>
-    `;
-
-          wrap.appendChild(el);
+           STATE — only the announcements the student should see
+           ------------------------------------------------------------------ */
+        var allAnnouncements = loadAnnouncements().filter(function (a) {
+          if (isExpired(a)) return false;
+          return announcementVisibleTo(a, student);
         });
+
+        /* ------------------------------------------------------------------
+           RENDER
+           ------------------------------------------------------------------ */
+        function render() {
+          var q = searchEl.value.trim().toLowerCase();
+
+          var visible = allAnnouncements.filter(function (a) {
+            if (activeFilter === "important" && !a.important) return false;
+            if (!q) return true;
+            return (
+              (a.title || "").toLowerCase().indexOf(q) !== -1 ||
+              (a.body || "").toLowerCase().indexOf(q) !== -1 ||
+              audienceLabel(a).toLowerCase().indexOf(q) !== -1
+            );
+          });
+
+          /* Sort: important first, then newest */
+          visible.sort(function (a, b) {
+            if (!!a.important !== !!b.important) return a.important ? -1 : 1;
+            return new Date(b.date) - new Date(a.date);
+          });
+
+          countEl.textContent =
+            visible.length +
+            " announcement" +
+            (visible.length === 1 ? "" : "s") +
+            (q || activeFilter !== "all" ? " matching" : "");
+
+          wrap.innerHTML = "";
+
+          if (!visible.length) {
+            var emptyMsg = q
+              ? "No announcements match your search."
+              : activeFilter === "important"
+                ? "No important announcements right now."
+                : "No announcements for you yet";
+            var emptyDesc = q
+              ? "Try a different search term."
+              : activeFilter === "important"
+                ? "Check back later — important messages will appear here."
+                : "You'll see announcements here once Admin publishes messages aimed at your faculty, department, level or the entire student body.";
+            wrap.innerHTML =
+              '<div class="card"><div class="empty-state" style="padding: 48px 24px;">' +
+              '<div class="empty-icon"><i class="fa-solid fa-bullhorn"></i></div>' +
+              "<h3>" +
+              emptyMsg +
+              "</h3>" +
+              "<p>" +
+              emptyDesc +
+              "</p>" +
+              "</div></div>";
+            return;
+          }
+
+          visible.forEach(function (a) {
+            var el = document.createElement("div");
+            el.className =
+              "announcement" + (a.important ? " is-important" : "");
+
+            var audienceText = audienceLabel(a);
+
+            /* Body — split on blank lines for paragraphs */
+            var bodyHtml = (a.body || "")
+              .split(/\n\s*\n/)
+              .map(function (p) {
+                return (
+                  '<p style="margin-bottom:8px;">' + Util.escape(p) + "</p>"
+                );
+              })
+              .join("");
+
+            el.innerHTML =
+              '<div class="announcement-head">' +
+              '<span class="avatar avatar-32 avatar-fallback" style="background:var(--brand-secondary); flex-shrink:0;">SA</span>' +
+              '<div class="announcement-head-info">' +
+              '<div class="font-semibold" style="font-size:var(--fs-sm);">' +
+              Util.escape(a.author || "Space Admin") +
+              "</div>" +
+              '<div class="text-xs text-muted">' +
+              Util.formatDate(a.date, {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              }) +
+              "</div>" +
+              "</div>" +
+              (a.important
+                ? '<span class="badge badge-brand" style="margin-left:auto; flex-shrink:0;"><i class="fa-solid fa-star"></i> Important</span>'
+                : "") +
+              "</div>" +
+              "<h3>" +
+              Util.escape(a.title) +
+              "</h3>" +
+              bodyHtml +
+              '<div class="announcement-foot">' +
+              '<span><i class="fa-solid fa-users"></i> ' +
+              Util.escape(audienceText) +
+              "</span>" +
+              (a.source
+                ? '<span style="margin-left:auto; display:inline-flex; align-items:center; gap:6px; font-weight:600; color:var(--brand-primary);">' +
+                  '<i class="fa-solid fa-quote-left"></i> Source: ' +
+                  Util.escape(a.source) +
+                  "</span>"
+                : "") +
+              "</div>";
+
+            wrap.appendChild(el);
+          });
+        }
+
+        /* ------------------------------------------------------------------
+           EVENTS
+           ------------------------------------------------------------------ */
+        filterBar.addEventListener("click", function (e) {
+          var btn = e.target.closest("[data-status]");
+          if (!btn) return;
+          filterBar.querySelectorAll(".chip").forEach(function (c) {
+            c.classList.remove("is-active");
+          });
+          btn.classList.add("is-active");
+          activeFilter = btn.getAttribute("data-status");
+          render();
+        });
+
+        var debounce;
+        searchEl.addEventListener("input", function () {
+          clearTimeout(debounce);
+          debounce = setTimeout(render, 120);
+        });
+
+        /* Initial render */
+        render();
       });
     </script>
   </body>

@@ -45,8 +45,13 @@
   </head>
   <body class="has-session admin-body">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
-      <aside class="sidebar admin-sidebar" id="app-sidebar"></aside>
+      <aside
+        class="sidebar admin-sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
       <div class="app-main">
         <header class="app-header" id="app-header"></header>
         <main class="app-content" id="main">
@@ -57,10 +62,30 @@
                 Positions available for assignment to students.
               </p>
             </div>
-            <button class="btn btn-primary" data-modal-open="add-pos-modal">
+            <button class="btn btn-primary" id="add-pos-btn" type="button">
               <i class="fa-solid fa-plus"></i> Add position
             </button>
           </div>
+
+          <div class="toolbar">
+            <div class="input-wrap">
+              <i class="fa-solid fa-magnifying-glass input-icon"></i>
+              <input
+                class="input"
+                type="search"
+                id="pos-search"
+                placeholder="Search positions…"
+                aria-label="Search positions"
+              />
+            </div>
+          </div>
+
+          <div class="cluster-between" style="margin-bottom: 12px">
+            <p class="section-desc" style="margin: 0" id="pos-count">
+              Loading…
+            </p>
+          </div>
+
           <div class="card">
             <div id="pos-list"></div>
           </div>
@@ -68,22 +93,30 @@
       </div>
     </div>
 
-    <div class="modal-backdrop" id="add-pos-modal">
+    <!-- ============ Add / Edit position modal ============ -->
+    <div
+      class="modal-backdrop"
+      id="pos-editor-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="pos-modal-title"
+    >
       <div class="modal">
         <div class="modal-head">
-          <h3>Add position</h3>
+          <h3 id="pos-modal-title">Add position</h3>
           <button class="btn-icon" data-modal-close aria-label="Close">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
-        <form id="add-pos-form" novalidate>
+        <form id="pos-form" novalidate>
           <div class="modal-body">
             <div class="field">
-              <label class="label"
+              <label class="label" for="pos-name"
                 >Position name <span class="req">*</span></label
               >
               <input
                 class="input"
+                id="pos-name"
                 name="name"
                 placeholder="e.g. Academic Director"
               />
@@ -97,7 +130,9 @@
             <button type="button" class="btn btn-secondary" data-modal-close>
               Cancel
             </button>
-            <button type="submit" class="btn btn-primary">Add position</button>
+            <button type="submit" class="btn btn-primary" id="pos-submit">
+              <i class="fa-solid fa-check"></i> <span>Add position</span>
+            </button>
           </div>
         </form>
       </div>
@@ -119,8 +154,13 @@
     <script src="../../js/notifications.js"></script>
     <script src="../../js/admin.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
+      /* ==========================================================================
+         Leadership Positions — Admin workspace.
+         Full CRUD with localStorage persistence.
+         Mirrors the Student Associations page structure.
+         ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
         if (
           !session ||
           (session.role !== "admin" && session.role !== "super_admin")
@@ -130,71 +170,304 @@
         }
         initAppShell("admin");
 
-        let positions = DEMO_POSITIONS.slice();
-        const listEl = document.getElementById("pos-list");
+        var STORAGE_KEY = "positions_overrides";
 
-        function render() {
-          listEl.innerHTML = "";
-          positions.forEach((p) => {
-            const el = document.createElement("div");
-            el.className = "resource-row";
-            el.innerHTML = `
-        <span class="resource-icon"><i class="fa-solid fa-ranking-star"></i></span>
-        <div class="resource-info">
-          <div class="resource-name">${Util.escape(p.name)}</div>
-          <div class="resource-meta"><span class="badge ${p.active ? "badge-success" : "badge-neutral"}">${p.active ? "Active" : "Inactive"}</span></div>
-        </div>
-        <button class="btn btn-ghost btn-sm" data-edit><i class="fa-solid fa-pen"></i></button>
-        <button class="btn btn-ghost btn-sm" data-toggle style="color:${p.active ? "var(--danger)" : "var(--success)"};">
-          ${p.active ? '<i class="fa-solid fa-ban"></i>' : '<i class="fa-solid fa-circle-check"></i>'}
-        </button>`;
-            el.querySelector("[data-edit]").addEventListener("click", () => {
-              Toast.info(
-                'Editing "' + p.name + '" (simulated).',
-                "Edit position",
-              );
+        /* ------------------------------------------------------------------
+           LOAD — merge demo with saved overrides
+           ------------------------------------------------------------------ */
+        function loadPositions() {
+          var base = (
+            typeof DEMO_POSITIONS !== "undefined" ? DEMO_POSITIONS : []
+          ).map(function (p) {
+            return Object.assign({}, p);
+          });
+
+          var saved = Store.get(STORAGE_KEY, null);
+          if (saved && Array.isArray(saved.added)) {
+            saved.added.forEach(function (p) {
+              if (
+                !base.some(function (x) {
+                  return x.id === p.id;
+                })
+              ) {
+                base.push(p);
+              }
             });
-            el.querySelector("[data-toggle]").addEventListener(
+          }
+          if (saved && Array.isArray(saved.deleted)) {
+            base = base.filter(function (p) {
+              return saved.deleted.indexOf(p.id) === -1;
+            });
+          }
+          if (saved && saved.edits) {
+            base.forEach(function (p) {
+              var edit = saved.edits[p.id];
+              if (edit) Object.assign(p, edit);
+            });
+          }
+          return base;
+        }
+
+        /* ------------------------------------------------------------------
+           PERSIST — write added/deleted/edits to localStorage
+           ------------------------------------------------------------------ */
+        function persistEdit(record) {
+          var existing = Store.get(STORAGE_KEY, {}) || {};
+          existing.edits = existing.edits || {};
+          existing.edits[record.id] = {
+            name: record.name,
+            active: record.active,
+          };
+          Store.set(STORAGE_KEY, existing);
+        }
+
+        function persistAdded(record) {
+          var existing = Store.get(STORAGE_KEY, {}) || {};
+          existing.added = existing.added || [];
+          if (
+            !existing.added.some(function (x) {
+              return x.id === record.id;
+            })
+          ) {
+            existing.added.push(record);
+          }
+          Store.set(STORAGE_KEY, existing);
+        }
+
+        /* ------------------------------------------------------------------
+           STATE
+           ------------------------------------------------------------------ */
+        var positions = loadPositions();
+        var editingId = null;
+
+        var listEl = document.getElementById("pos-list");
+        var countEl = document.getElementById("pos-count");
+        var searchEl = document.getElementById("pos-search");
+        var modalTitle = document.getElementById("pos-modal-title");
+        var submitBtn = document.getElementById("pos-submit");
+        var form = document.getElementById("pos-form");
+
+        /* ------------------------------------------------------------------
+           RENDER
+           ------------------------------------------------------------------ */
+        function render() {
+          var q = searchEl.value.trim().toLowerCase();
+          var visible = positions.filter(function (p) {
+            if (!q) return true;
+            return p.name.toLowerCase().indexOf(q) !== -1;
+          });
+
+          countEl.textContent =
+            visible.length +
+            " position" +
+            (visible.length === 1 ? "" : "s") +
+            (q && visible.length !== positions.length ? " matching" : "");
+
+          listEl.innerHTML = "";
+
+          if (!visible.length) {
+            listEl.innerHTML =
+              '<div class="empty-state" style="padding:48px 24px;">' +
+              '<div class="empty-icon"><i class="fa-solid fa-ranking-star"></i></div>' +
+              "<h3>" +
+              (q ? "No positions match" : "No positions yet") +
+              "</h3>" +
+              "<p>" +
+              (q
+                ? "Try a different search term."
+                : "Click <strong>Add position</strong> to get started.") +
+              "</p>" +
+              "</div>";
+            return;
+          }
+
+          visible.forEach(function (p) {
+            var el = document.createElement("div");
+            el.className = "assoc-row"; /* reuse the associations row style */
+
+            el.innerHTML =
+              '<div class="assoc-row-icon pos-icon">' +
+              '<i class="fa-solid fa-ranking-star"></i>' +
+              "</div>" +
+              '<div class="assoc-row-body">' +
+              '<div class="assoc-row-name">' +
+              Util.escape(p.name) +
+              "</div>" +
+              '<div class="assoc-row-meta">' +
+              '<span class="badge ' +
+              (p.active ? "badge-success" : "badge-neutral") +
+              '">' +
+              '<i class="fa-solid ' +
+              (p.active ? "fa-circle-check" : "fa-circle-pause") +
+              '"></i> ' +
+              (p.active ? "Active" : "Inactive") +
+              "</span>" +
+              "</div>" +
+              "</div>" +
+              '<div class="assoc-row-actions">' +
+              '<button class="btn btn-secondary btn-sm" data-edit type="button" aria-label="Edit position">' +
+              '<i class="fa-solid fa-pen"></i> <span>Edit</span>' +
+              "</button>" +
+              '<button class="btn btn-sm ' +
+              (p.active ? "btn-ghost" : "btn-secondary") +
+              '" data-toggle type="button" aria-label="' +
+              (p.active ? "Deactivate position" : "Reactivate position") +
+              '"' +
+              (p.active ? ' style="color:var(--danger);"' : "") +
+              ">" +
+              '<i class="fa-solid ' +
+              (p.active ? "fa-ban" : "fa-circle-check") +
+              '"></i> ' +
+              "<span>" +
+              (p.active ? "Deactivate" : "Activate") +
+              "</span>" +
+              "</button>" +
+              "</div>";
+
+            /* ---- Edit handler ---- */
+            el.querySelector("[data-edit]").addEventListener(
               "click",
-              async () => {
-                if (
-                  await Confirmation.confirm({
-                    title: p.active
-                      ? "Deactivate this position?"
-                      : "Reactivate this position?",
-                    message: p.active
-                      ? "This position will not be assignable until reactivated."
-                      : "This position will be assignable again.",
-                    confirmLabel: p.active ? "Deactivate" : "Reactivate",
-                    variant: p.active ? "danger" : "primary",
-                  })
-                ) {
-                  p.active = !p.active;
-                  render();
-                  Toast.success("Position updated.", "Saved");
-                }
+              function () {
+                openEditor(p);
               },
             );
+
+            /* ---- Toggle handler ---- */
+            el.querySelector("[data-toggle]").addEventListener(
+              "click",
+              async function () {
+                var ok = await Confirmation.confirm({
+                  title: p.active
+                    ? "Deactivate this position?"
+                    : "Reactivate this position?",
+                  message: p.active
+                    ? '"' +
+                      p.name +
+                      '" will no longer be assignable to students.'
+                    : '"' +
+                      p.name +
+                      '" will be available for assignment again.',
+                  confirmLabel: p.active ? "Deactivate" : "Reactivate",
+                  variant: p.active ? "danger" : "primary",
+                });
+                if (!ok) return;
+
+                p.active = !p.active;
+                persistEdit(p);
+                render();
+                Toast.success(
+                  p.active ? "Position reactivated." : "Position deactivated.",
+                  "Saved",
+                );
+              },
+            );
+
             listEl.appendChild(el);
           });
         }
-        render();
 
+        /* ------------------------------------------------------------------
+           OPEN EDITOR — Add or Edit
+           ------------------------------------------------------------------ */
+        function openEditor(existing) {
+          form.reset();
+          form.querySelectorAll(".field").forEach(function (f) {
+            f.classList.remove("is-invalid", "is-valid");
+          });
+
+          if (existing) {
+            editingId = existing.id;
+            modalTitle.textContent = "Edit position";
+            form.querySelector('[name="name"]').value = existing.name;
+            submitBtn.querySelector("span").textContent = "Save changes";
+          } else {
+            editingId = null;
+            modalTitle.textContent = "Add position";
+            submitBtn.querySelector("span").textContent = "Add position";
+          }
+
+          Modal.open("pos-editor-modal");
+        }
+
+        /* ------------------------------------------------------------------
+           SUBMIT
+           ------------------------------------------------------------------ */
         bindForm(
-          document.getElementById("add-pos-form"),
-          { name: [Rules.required] },
-          (data) => {
-            positions.push({
-              id: "pos-" + Date.now(),
-              name: data.get("name"),
-              active: true,
+          form,
+          {
+            name: [Rules.required, Rules.minLen(3)],
+          },
+          function (data) {
+            var name = data.get("name").trim();
+
+            /* Duplicate name check (excluding the record being edited) */
+            var clash = positions.find(function (p) {
+              return (
+                p.name.toLowerCase() === name.toLowerCase() &&
+                p.id !== editingId
+              );
             });
+            if (clash) {
+              Toast.error(
+                'A position named "' + name + '" already exists.',
+                "Duplicate position",
+              );
+              return;
+            }
+
+            if (editingId) {
+              /* Edit in place */
+              var target = positions.find(function (p) {
+                return p.id === editingId;
+              });
+              if (target) {
+                target.name = name;
+                persistEdit(target);
+              }
+              Toast.success("Position updated.", "Saved");
+            } else {
+              /* Add new */
+              var newRec = {
+                id: "pos-" + Date.now(),
+                name: name,
+                active: true,
+              };
+              positions.push(newRec);
+              persistAdded(newRec);
+              Toast.success("Position added.", "Saved");
+            }
+
             render();
-            Modal.close("add-pos-modal");
-            document.getElementById("add-pos-form").reset();
-            Toast.success("Position added.", "Saved");
+            Modal.close("pos-editor-modal");
+            form.reset();
+            editingId = null;
           },
         );
+
+        /* ------------------------------------------------------------------
+           TRIGGERS
+           ------------------------------------------------------------------ */
+        document
+          .getElementById("add-pos-btn")
+          .addEventListener("click", function () {
+            openEditor(null);
+          });
+
+        var debounce;
+        searchEl.addEventListener("input", function () {
+          clearTimeout(debounce);
+          debounce = setTimeout(render, 120);
+        });
+
+        /* Reset edit state on modal close */
+        document.addEventListener("click", function (e) {
+          if (e.target.closest("[data-modal-close]")) {
+            editingId = null;
+          }
+        });
+
+        /* Initial render */
+        render();
       });
     </script>
   </body>

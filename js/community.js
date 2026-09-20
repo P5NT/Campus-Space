@@ -163,6 +163,47 @@ const Community = (() => {
         },
       ],
     },
+
+    /* ---- DEMO REPORTS — posts with a reported flag and reason ----
+       These give the admin moderation page real content to work with. */
+    {
+      id: "p6",
+      author: "Grace Oladipo",
+      handle: "grace",
+      tag: "",
+      initials: "GO",
+      time: Date.now() - 4 * 3600000,
+      text: "🔥 MASSIVE DISCOUNT! Buy original FUTA past questions and handouts at half price! DM me on WhatsApp 080-X-XXX-XXXX to order NOW. Limited time offer!",
+      likes: 0,
+      liked: false,
+      image: "",
+      reported: true,
+      reportReason: "Spam",
+      reportedAt: Date.now() - 3 * 3600000,
+      reportedBy: "Ibrahim Suleiman",
+      reportedById: "STU003",
+      hidden: false,
+      comments: [],
+    },
+    {
+      id: "p7",
+      author: "Oluwaseun Ogundipe",
+      handle: "seun",
+      tag: "NACOS",
+      initials: "OO",
+      time: Date.now() - 8 * 3600000,
+      text: "Anybody who fails CSC 401 this semester is just lazy. If you can't handle the workload you shouldn't be in this department. Simple.",
+      likes: 3,
+      liked: false,
+      image: "",
+      reported: true,
+      reportReason: "Harassment / bullying",
+      reportedAt: Date.now() - 6 * 3600000,
+      reportedBy: "Zainab Abdulrahman",
+      reportedById: "STU006",
+      hidden: false,
+      comments: [],
+    },
   ];
 
   function all() {
@@ -215,6 +256,7 @@ const Community = (() => {
     if (!p) return;
     p.reported = true;
     p.reportReason = reason;
+    p.reportedAt = Date.now();
     save(posts);
   }
 
@@ -242,7 +284,52 @@ const Community = (() => {
     return true;
   }
 
-  return { all, add, edit, remove, toggleLike, report, save, countComments };
+  /* Returns all reported posts, sorted by report date (newest first). */
+  function reported() {
+    return all()
+      .filter(function (p) {
+        return p.reported === true;
+      })
+      .sort(function (a, b) {
+        return (b.reportedAt || b.time || 0) - (a.reportedAt || a.time || 0);
+      });
+  }
+
+  /* Mark a report as resolved or dismissed. The post stays in the feed
+     unless hide/delete is called separately. */
+  function resolveReport(id, resolution) {
+    const posts = all();
+    const p = posts.find((x) => x.id === id);
+    if (!p) return false;
+    p.reportStatus = resolution; // "resolved" | "dismissed"
+    p.reportResolvedAt = Date.now();
+    save(posts);
+    return true;
+  }
+
+  /* Hide a post from student feeds. It remains visible to Admin. */
+  function hide(id) {
+    const posts = all();
+    const p = posts.find((x) => x.id === id);
+    if (!p) return false;
+    p.hidden = true;
+    save(posts);
+    return true;
+  }
+
+  return {
+    all,
+    add,
+    edit,
+    remove,
+    toggleLike,
+    report,
+    reported,
+    resolveReport,
+    hide,
+    save,
+    countComments,
+  };
 })();
 
 /* -------------------------------------------------------------------------
@@ -345,7 +432,6 @@ function renderPost(post, { linkToDetails = true } = {}) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(url).then(done).catch(failed);
     } else {
-      /* Fallback for older browsers */
       const ta = document.createElement("textarea");
       ta.value = url;
       ta.style.position = "fixed";
@@ -394,7 +480,6 @@ function renderPost(post, { linkToDetails = true } = {}) {
       Community.remove(post.id);
       el.remove();
       Toast.success("Post deleted.", "Deleted");
-      // If a filter is active on the current page, let the page re-render if it wants to
       document.dispatchEvent(
         new CustomEvent("community:post-deleted", {
           detail: { id: post.id },
@@ -509,7 +594,6 @@ function openEditModal(postId, currentText) {
         Community.edit(postId, data.get("text"));
         Modal.close("edit-post-modal");
 
-        /* Update the post body in place */
         const card = document.querySelector('[data-post-id="' + postId + '"]');
         if (card) {
           const body = card.querySelector(".post-body");
@@ -521,7 +605,6 @@ function openEditModal(postId, currentText) {
     );
   }
 
-  /* Populate the current text */
   const textarea = modal.querySelector("#edit-post-text");
   if (textarea) textarea.value = currentText || "";
 

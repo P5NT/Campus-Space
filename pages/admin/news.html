@@ -45,20 +45,59 @@
   </head>
   <body class="has-session admin-body">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
-      <aside class="sidebar admin-sidebar" id="app-sidebar"></aside>
+      <aside
+        class="sidebar admin-sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
       <div class="app-main">
         <header class="app-header" id="app-header"></header>
         <main class="app-content" id="main">
           <div class="page-head">
             <div class="page-head-text">
               <h1 class="page-title">News</h1>
-              <p class="page-subtitle">Manage editorial news content.</p>
+              <p class="page-subtitle">
+                Manage editorial news content for Campus Space.
+              </p>
             </div>
-            <button class="btn btn-primary" data-modal-open="add-news-modal">
+            <button class="btn btn-primary" id="news-publish-btn" type="button">
               <i class="fa-solid fa-plus"></i> Publish news
             </button>
           </div>
+
+          <div class="toolbar">
+            <div class="input-wrap">
+              <i class="fa-solid fa-magnifying-glass input-icon"></i>
+              <input
+                class="input"
+                type="search"
+                id="news-admin-search"
+                placeholder="Search by title, category or author…"
+                aria-label="Search news"
+              />
+            </div>
+          </div>
+
+          <div class="filter-bar" id="news-admin-filter" role="tablist">
+            <button class="chip is-active" data-status="all" role="tab">
+              All
+            </button>
+            <button class="chip" data-status="published" role="tab">
+              Published
+            </button>
+            <button class="chip" data-status="expired" role="tab">
+              Expired
+            </button>
+          </div>
+
+          <div class="cluster-between" style="margin-bottom: 12px">
+            <p class="section-desc" style="margin: 0" id="news-admin-count">
+              Loading…
+            </p>
+          </div>
+
           <div class="card">
             <div id="news-admin-list"></div>
           </div>
@@ -66,27 +105,44 @@
       </div>
     </div>
 
-    <div class="modal-backdrop" id="add-news-modal">
+    <!-- ============ Publish / Edit news modal ============ -->
+    <div
+      class="modal-backdrop"
+      id="news-editor-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="news-modal-title"
+    >
       <div class="modal modal-lg">
         <div class="modal-head">
-          <h3>Publish news article</h3>
+          <h3 id="news-modal-title">Publish news article</h3>
           <button class="btn-icon" data-modal-close aria-label="Close">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
-        <form id="add-news-form" novalidate>
+        <form id="news-form" novalidate>
           <div class="modal-body">
             <div class="field">
-              <label class="label">Title <span class="req">*</span></label>
-              <input class="input" name="title" />
+              <label class="label" for="news-title"
+                >Title <span class="req">*</span></label
+              >
+              <input
+                class="input"
+                id="news-title"
+                name="title"
+                placeholder="e.g. OAUSTECH Emerges Top 5 in National Engineering Competition"
+              />
               <div class="field-error">
                 <i class="fa-solid fa-circle-exclamation"></i
                 ><span>Please enter a title.</span>
               </div>
             </div>
+
             <div class="field">
-              <label class="label">Category <span class="req">*</span></label>
-              <select class="select" name="category">
+              <label class="label" for="news-category"
+                >Category <span class="req">*</span></label
+              >
+              <select class="select" id="news-category" name="category">
                 <option value="">Select category</option>
                 <option>Campus</option>
                 <option>Academics</option>
@@ -98,28 +154,137 @@
                 ><span>Please select a category.</span>
               </div>
             </div>
+
+            <!-- Cover image — real file upload -->
             <div class="field">
-              <label class="label">Excerpt <span class="req">*</span></label>
+              <label class="label"
+                >Cover image <span class="label-hint">Optional</span></label
+              >
+              <div class="cover-picker" id="cover-picker">
+                <input
+                  type="file"
+                  id="news-image-file"
+                  accept="image/*"
+                  hidden
+                />
+                <input
+                  type="hidden"
+                  id="news-image-data"
+                  name="image"
+                  value=""
+                />
+                <div class="cover-picker-preview" id="cover-preview-wrap">
+                  <div class="cover-picker-placeholder" id="cover-placeholder">
+                    <i class="fa-regular fa-image"></i>
+                  </div>
+                  <img id="cover-preview-img" alt="" style="display: none" />
+                </div>
+                <div class="cover-picker-body">
+                  <div class="cover-picker-title" id="cover-title">
+                    Choose a cover image…
+                  </div>
+                  <div class="cover-picker-hint" id="cover-hint">
+                    PNG, JPG, WEBP · up to 4 MB
+                  </div>
+                </div>
+                <div class="cover-picker-actions">
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-sm"
+                    id="cover-browse"
+                  >
+                    <i class="fa-solid fa-folder-open"></i> Browse
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-ghost btn-sm cover-picker-remove"
+                    id="cover-remove"
+                    aria-label="Remove image"
+                    style="display: none; color: var(--danger)"
+                  >
+                    <i class="fa-solid fa-xmark"></i> Remove
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="label" for="news-excerpt"
+                >Excerpt <span class="req">*</span></label
+              >
               <input
                 class="input"
+                id="news-excerpt"
                 name="excerpt"
                 placeholder="Short summary shown in listings"
               />
+              <div class="field-help">
+                One or two sentences that give a sense of the article.
+              </div>
               <div class="field-error">
                 <i class="fa-solid fa-circle-exclamation"></i
                 ><span>Please add an excerpt.</span>
               </div>
             </div>
+
             <div class="field">
-              <label class="label">Body <span class="req">*</span></label>
+              <label class="label" for="news-body"
+                >Body <span class="req">*</span></label
+              >
               <textarea
                 class="textarea"
+                id="news-body"
                 name="body"
-                style="min-height: 180px"
+                style="min-height: 200px"
+                placeholder="Write the article. Separate paragraphs with a blank line."
               ></textarea>
               <div class="field-error">
                 <i class="fa-solid fa-circle-exclamation"></i
                 ><span>Please write the article.</span>
+              </div>
+            </div>
+
+            <div class="grid grid-2" style="gap: 16px">
+              <div class="field">
+                <label class="label" for="news-publish-date"
+                  >Publish date</label
+                >
+                <input
+                  class="input"
+                  type="date"
+                  id="news-publish-date"
+                  name="publishDate"
+                />
+                <div class="field-help">Defaults to today if left empty.</div>
+              </div>
+
+              <div class="field">
+                <label class="label" for="news-expiry-date"
+                  >Expiry date <span class="label-hint">Optional</span></label
+                >
+                <input
+                  class="input"
+                  type="date"
+                  id="news-expiry-date"
+                  name="expiresAt"
+                />
+                <div class="field-help">
+                  After this date the article hides from students but stays
+                  visible here.
+                </div>
+              </div>
+            </div>
+
+            <div class="field" style="margin-top: 8px">
+              <label class="label">Notify students</label>
+              <div class="cluster" style="gap: 16px; align-items: center">
+                <label class="checkbox">
+                  <input type="checkbox" name="notify" checked />
+                  <span
+                    >Send an in-app notification when this article is
+                    published</span
+                  >
+                </label>
               </div>
             </div>
           </div>
@@ -127,9 +292,45 @@
             <button type="button" class="btn btn-secondary" data-modal-close>
               Cancel
             </button>
-            <button type="submit" class="btn btn-primary">Publish</button>
+            <button type="submit" class="btn btn-primary" id="news-submit">
+              <i class="fa-solid fa-check"></i> <span>Publish</span>
+            </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- ============ Preview modal ============ -->
+    <div
+      class="modal-backdrop"
+      id="news-preview-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="news-preview-title"
+    >
+      <div class="modal modal-lg">
+        <div class="modal-head">
+          <div style="min-width: 0">
+            <h3 id="news-preview-title">Preview</h3>
+            <p
+              id="news-preview-sub"
+              style="
+                font-size: var(--fs-xs);
+                color: var(--text-tertiary);
+                margin-top: 2px;
+              "
+            ></p>
+          </div>
+          <button class="btn-icon" data-modal-close aria-label="Close">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="modal-body" id="news-preview-body" style="padding: 0"></div>
+        <div class="modal-foot">
+          <button type="button" class="btn btn-secondary" data-modal-close>
+            Close
+          </button>
+        </div>
       </div>
     </div>
 
@@ -145,90 +346,640 @@
     <script src="../../js/main.js"></script>
     <script src="../../js/validation.js"></script>
     <script src="../../js/auth.js"></script>
+    <script src="../../js/permissions.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
     <script src="../../js/admin.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
-        if (
-          !session ||
-          (session.role !== "admin" && session.role !== "super_admin")
-        ) {
+      /* ==========================================================================
+         News — Admin workspace.
+         Full CRUD with localStorage persistence (cs_news_overrides).
+         Cover image is uploaded as a file and stored as a base64 data URL,
+         so it persists across reloads without needing a backend.
+         Optional expiry date: expired articles hide from students but
+         remain visible to admins.
+         ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
+        if (!session || !Permissions.isAdminRole(session)) {
           window.location.href = "../auth/login.html";
           return;
         }
+        if (!Permissions.can(session, "news.publish")) {
+          window.location.href = "dashboard.html";
+          return;
+        }
+
         initAppShell("admin");
 
-        const listEl = document.getElementById("news-admin-list");
+        var STORAGE_KEY = "news_overrides";
+
+        /* ------------------------------------------------------------------
+           LOAD — merge demo seed with saved overrides
+           ------------------------------------------------------------------ */
+        function loadNews() {
+          var base = (typeof DEMO_NEWS !== "undefined" ? DEMO_NEWS : []).map(
+            function (n) {
+              return Object.assign({}, n);
+            },
+          );
+
+          var saved = Store.get(STORAGE_KEY, null);
+          if (saved && Array.isArray(saved.added)) {
+            saved.added.forEach(function (n) {
+              if (
+                !base.some(function (x) {
+                  return x.id === n.id;
+                })
+              ) {
+                base.unshift(n);
+              }
+            });
+          }
+          if (saved && Array.isArray(saved.deleted)) {
+            base = base.filter(function (n) {
+              return saved.deleted.indexOf(n.id) === -1;
+            });
+          }
+          if (saved && saved.edits) {
+            base.forEach(function (n) {
+              var edit = saved.edits[n.id];
+              if (edit) Object.assign(n, edit);
+            });
+          }
+          return base;
+        }
+
+        /* ------------------------------------------------------------------
+           PERSIST
+           ------------------------------------------------------------------ */
+        function persistAdded(record) {
+          var existing = Store.get(STORAGE_KEY, {}) || {};
+          existing.added = existing.added || [];
+          if (
+            !existing.added.some(function (x) {
+              return x.id === record.id;
+            })
+          ) {
+            existing.added.unshift(record);
+          }
+          Store.set(STORAGE_KEY, existing);
+        }
+
+        function persistEdit(record) {
+          var existing = Store.get(STORAGE_KEY, {}) || {};
+          existing.edits = existing.edits || {};
+          existing.edits[record.id] = {
+            title: record.title,
+            category: record.category,
+            excerpt: record.excerpt,
+            body: record.body,
+            image: record.image,
+            date: record.date,
+            expiresAt: record.expiresAt || "",
+            lastEditedAt: Date.now(),
+          };
+          Store.set(STORAGE_KEY, existing);
+        }
+
+        function persistDeleted(id) {
+          var existing = Store.get(STORAGE_KEY, {}) || {};
+          existing.deleted = existing.deleted || [];
+          if (existing.deleted.indexOf(id) === -1) existing.deleted.push(id);
+          if (Array.isArray(existing.added)) {
+            existing.added = existing.added.filter(function (x) {
+              return x.id !== id;
+            });
+          }
+          if (existing.edits && existing.edits[id]) delete existing.edits[id];
+          Store.set(STORAGE_KEY, existing);
+        }
+
+        /* ------------------------------------------------------------------
+           STATE
+           ------------------------------------------------------------------ */
+        var news = loadNews();
+        var activeFilter = "all";
+        var editingId = null;
+
+        var listEl = document.getElementById("news-admin-list");
+        var countEl = document.getElementById("news-admin-count");
+        var searchEl = document.getElementById("news-admin-search");
+        var filterBar = document.getElementById("news-admin-filter");
+        var modalTitle = document.getElementById("news-modal-title");
+        var submitBtn = document.getElementById("news-submit");
+        var form = document.getElementById("news-form");
+
+        /* ------------------------------------------------------------------
+           HELPERS
+           ------------------------------------------------------------------ */
+        function todayISO() {
+          return new Date().toISOString().slice(0, 10);
+        }
+
+        function isExpired(article) {
+          if (!article || !article.expiresAt) return false;
+          var expiry = new Date(article.expiresAt);
+          if (isNaN(expiry.getTime())) return false;
+          var now = new Date();
+          now.setHours(0, 0, 0, 0);
+          return expiry < now;
+        }
+
+        function getStatus(article) {
+          return isExpired(article) ? "expired" : "published";
+        }
+
+        /* ------------------------------------------------------------------
+           COVER PICKER — file upload + base64 preview
+           ------------------------------------------------------------------ */
+        var coverInput = document.getElementById("news-image-file");
+        var coverHiddenInput = document.getElementById("news-image-data");
+        var coverPicker = document.getElementById("cover-picker");
+        var coverPreviewImg = document.getElementById("cover-preview-img");
+        var coverPlaceholder = document.getElementById("cover-placeholder");
+        var coverTitle = document.getElementById("cover-title");
+        var coverHint = document.getElementById("cover-hint");
+        var coverBrowse = document.getElementById("cover-browse");
+        var coverRemove = document.getElementById("cover-remove");
+
+        var MAX_SIZE = 4 * 1024 * 1024; // 4 MB
+
+        function formatSize(bytes) {
+          if (bytes < 1024) return bytes + " B";
+          if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+          return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+        }
+
+        function showCover(dataUrl, filename, size) {
+          coverHiddenInput.value = dataUrl;
+          coverPreviewImg.src = dataUrl;
+          coverPreviewImg.style.display = "block";
+          coverPlaceholder.style.display = "none";
+          coverTitle.textContent = filename || "Cover image";
+          coverHint.textContent = size ? formatSize(size) : "";
+          coverBrowse.innerHTML =
+            '<i class="fa-solid fa-arrows-rotate"></i> Change';
+          coverRemove.style.display = "";
+          coverPicker.classList.add("has-file");
+        }
+
+        function resetCover() {
+          coverHiddenInput.value = "";
+          coverInput.value = "";
+          coverPreviewImg.src = "";
+          coverPreviewImg.style.display = "none";
+          coverPlaceholder.style.display = "";
+          coverTitle.textContent = "Choose a cover image…";
+          coverHint.textContent = "PNG, JPG, WEBP · up to 4 MB";
+          coverBrowse.innerHTML =
+            '<i class="fa-solid fa-folder-open"></i> Browse';
+          coverRemove.style.display = "none";
+          coverPicker.classList.remove("has-file");
+        }
+
+        function readFile(file) {
+          if (!file) return;
+          if (!file.type.startsWith("image/")) {
+            Toast.error("Please choose an image file.", "Invalid file");
+            return;
+          }
+          if (file.size > MAX_SIZE) {
+            Toast.error(
+              "That image is over 4 MB. Please choose a smaller one.",
+              "File too large",
+            );
+            return;
+          }
+          var reader = new FileReader();
+          reader.onload = function (e) {
+            showCover(e.target.result, file.name, file.size);
+          };
+          reader.onerror = function () {
+            Toast.error("Could not read that image.", "Upload failed");
+          };
+          reader.readAsDataURL(file);
+        }
+
+        /* Open the file dialog */
+        coverBrowse.addEventListener("click", function (e) {
+          e.stopPropagation();
+          coverInput.click();
+        });
+
+        /* Whole picker click opens dialog (except the remove button) */
+        coverPicker.addEventListener("click", function (e) {
+          if (e.target.closest("#cover-remove")) return;
+          coverInput.click();
+        });
+
+        /* File selected */
+        coverInput.addEventListener("change", function () {
+          readFile(coverInput.files[0]);
+        });
+
+        /* Remove */
+        coverRemove.addEventListener("click", function (e) {
+          e.stopPropagation();
+          resetCover();
+        });
+
+        /* Drag & drop */
+        coverPicker.addEventListener("dragover", function (e) {
+          e.preventDefault();
+          coverPicker.classList.add("is-dragover");
+        });
+        coverPicker.addEventListener("dragleave", function () {
+          coverPicker.classList.remove("is-dragover");
+        });
+        coverPicker.addEventListener("drop", function (e) {
+          e.preventDefault();
+          coverPicker.classList.remove("is-dragover");
+          var file = e.dataTransfer.files[0];
+          if (file) readFile(file);
+        });
+
+        /* ------------------------------------------------------------------
+           RENDER
+           ------------------------------------------------------------------ */
         function render() {
+          var q = searchEl.value.trim().toLowerCase();
+
+          var visible = news.filter(function (n) {
+            if (activeFilter !== "all" && getStatus(n) !== activeFilter)
+              return false;
+            if (!q) return true;
+            return (
+              (n.title || "").toLowerCase().indexOf(q) !== -1 ||
+              (n.excerpt || "").toLowerCase().indexOf(q) !== -1 ||
+              (n.category || "").toLowerCase().indexOf(q) !== -1 ||
+              (n.author || "").toLowerCase().indexOf(q) !== -1
+            );
+          });
+
+          visible.sort(function (a, b) {
+            return new Date(b.date) - new Date(a.date);
+          });
+
+          countEl.textContent =
+            visible.length +
+            " article" +
+            (visible.length === 1 ? "" : "s") +
+            (q || activeFilter !== "all" ? " matching" : "");
+
           listEl.innerHTML = "";
-          DEMO_NEWS.forEach((n) => {
-            const el = document.createElement("div");
-            el.className = "resource-row";
-            el.innerHTML = `
-        <span class="resource-icon"><i class="fa-solid fa-newspaper"></i></span>
-        <div class="resource-info">
-          <div class="resource-name">${Util.escape(n.title)}</div>
-          <div class="resource-meta">
-            <span>${Util.escape(n.category)}</span>
-            <span>${Util.formatDate(n.date)}</span>
-            <span>${Util.escape(n.author)}</span>
-          </div>
-        </div>
-        <button class="btn btn-ghost btn-sm" data-edit><i class="fa-solid fa-pen"></i></button>
-        <button class="btn btn-ghost btn-sm" data-del style="color:var(--danger);"><i class="fa-solid fa-trash"></i></button>`;
-            el.querySelector("[data-edit]").addEventListener("click", () =>
-              Toast.info('Edit "' + n.title + '" (simulated).', "Edit news"),
-            );
-            el.querySelector("[data-del]").addEventListener(
-              "click",
-              async () => {
-                if (
-                  await Confirmation.confirm({
-                    title: "Delete this article?",
-                    message: '"' + n.title + '" will be removed.',
-                    confirmLabel: "Delete",
-                    variant: "danger",
-                  })
-                ) {
-                  const idx = DEMO_NEWS.findIndex((x) => x.id === n.id);
-                  DEMO_NEWS.splice(idx, 1);
-                  render();
-                  Toast.success("News article deleted.", "Removed");
-                }
-              },
-            );
-            listEl.appendChild(el);
+
+          if (!visible.length) {
+            var emptyMsg = q
+              ? "No articles match your search."
+              : activeFilter === "expired"
+                ? "No expired articles."
+                : activeFilter === "published"
+                  ? "No published articles."
+                  : "No news articles yet.";
+            listEl.innerHTML =
+              '<div class="empty-state" style="padding: 48px 24px;">' +
+              '<div class="empty-icon"><i class="fa-regular fa-newspaper"></i></div>' +
+              "<h3>" +
+              emptyMsg +
+              "</h3>" +
+              (!q && activeFilter === "all"
+                ? "<p>Click <strong>Publish news</strong> to get started.</p>"
+                : "") +
+              "</div>";
+            return;
+          }
+
+          visible.forEach(function (n) {
+            var status = getStatus(n);
+            var row = document.createElement("div");
+            row.className = "news-admin-row";
+
+            var badge =
+              status === "expired"
+                ? '<span class="badge badge-neutral"><i class="fa-solid fa-clock"></i> Expired</span>'
+                : '<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Published</span>';
+
+            var expiryNote =
+              status === "expired"
+                ? "Expired on " + Util.formatDate(n.expiresAt)
+                : n.expiresAt
+                  ? "Expires " + Util.formatDate(n.expiresAt)
+                  : "No expiry";
+
+            /* Row icon: thumbnail if the article has a cover image */
+            var thumbHtml = n.image
+              ? '<div class="news-admin-icon news-admin-thumb"><img src="' +
+                Util.escape(n.image) +
+                '" alt="" onerror="this.parentElement.classList.remove(\'news-admin-thumb\'); this.parentElement.innerHTML=\'<i class=&quot;fa-solid fa-newspaper&quot;></i>\'"></div>'
+              : '<div class="news-admin-icon"><i class="fa-solid fa-newspaper"></i></div>';
+
+            row.innerHTML =
+              thumbHtml +
+              '<div class="news-admin-body">' +
+              '<div class="news-admin-name">' +
+              Util.escape(n.title) +
+              "</div>" +
+              '<div class="news-admin-meta">' +
+              '<span class="news-admin-cat">' +
+              Util.escape(n.category) +
+              "</span>" +
+              '<span><i class="fa-regular fa-calendar"></i> ' +
+              Util.formatDate(n.date) +
+              "</span>" +
+              '<span><i class="fa-solid fa-user"></i> ' +
+              Util.escape(n.author || "Admin") +
+              "</span>" +
+              '<span><i class="fa-regular fa-clock"></i> ' +
+              expiryNote +
+              "</span>" +
+              "</div>" +
+              "</div>" +
+              '<div class="news-admin-status">' +
+              badge +
+              "</div>" +
+              '<div class="news-admin-actions">' +
+              '<button class="btn btn-secondary btn-sm" data-preview type="button" aria-label="Preview article">' +
+              '<i class="fa-solid fa-eye"></i> <span>Preview</span>' +
+              "</button>" +
+              '<button class="btn btn-secondary btn-sm" data-edit type="button" aria-label="Edit article">' +
+              '<i class="fa-solid fa-pen"></i> <span>Edit</span>' +
+              "</button>" +
+              '<button class="btn btn-ghost btn-sm" data-delete type="button" aria-label="Delete article" style="color:var(--danger);">' +
+              '<i class="fa-solid fa-trash"></i> <span>Delete</span>' +
+              "</button>" +
+              "</div>";
+
+            row
+              .querySelector("[data-preview]")
+              .addEventListener("click", function () {
+                openPreviewModal(n);
+              });
+            row
+              .querySelector("[data-edit]")
+              .addEventListener("click", function () {
+                openEditor(n);
+              });
+            row
+              .querySelector("[data-delete]")
+              .addEventListener("click", async function () {
+                var ok = await Confirmation.confirm({
+                  title: "Delete this article?",
+                  message:
+                    '"' +
+                    n.title +
+                    '" will be removed from Campus Space. This cannot be undone.',
+                  confirmLabel: "Delete",
+                  variant: "danger",
+                });
+                if (!ok) return;
+                news = news.filter(function (x) {
+                  return x.id !== n.id;
+                });
+                persistDeleted(n.id);
+                render();
+                Toast.success("Article deleted.", "Removed");
+              });
+
+            listEl.appendChild(row);
           });
         }
-        render();
 
+        /* ------------------------------------------------------------------
+           OPEN EDITOR — Add or Edit
+           ------------------------------------------------------------------ */
+        function openEditor(existing) {
+          form.reset();
+          form.querySelectorAll(".field").forEach(function (f) {
+            f.classList.remove("is-invalid", "is-valid");
+          });
+          resetCover();
+
+          if (existing) {
+            editingId = existing.id;
+            modalTitle.textContent = "Edit news article";
+            submitBtn.querySelector("span").textContent = "Save changes";
+            form.querySelector('[name="title"]').value = existing.title || "";
+            form.querySelector('[name="category"]').value =
+              existing.category || "";
+            form.querySelector('[name="excerpt"]').value =
+              existing.excerpt || "";
+            form.querySelector('[name="body"]').value = existing.body || "";
+            form.querySelector('[name="publishDate"]').value =
+              existing.date || todayISO();
+            form.querySelector('[name="expiresAt"]').value =
+              existing.expiresAt || "";
+            form.querySelector('[name="notify"]').checked = false;
+
+            /* Prefill the cover picker with the existing image */
+            if (existing.image) {
+              showCover(existing.image, "Current cover image");
+            }
+          } else {
+            editingId = null;
+            modalTitle.textContent = "Publish news article";
+            submitBtn.querySelector("span").textContent = "Publish";
+            form.querySelector('[name="publishDate"]').value = todayISO();
+            form.querySelector('[name="notify"]').checked = true;
+          }
+
+          Modal.open("news-editor-modal");
+        }
+
+        /* ------------------------------------------------------------------
+           PREVIEW MODAL
+           ------------------------------------------------------------------ */
+        function openPreviewModal(n) {
+          document.getElementById("news-preview-title").textContent = n.title;
+          document.getElementById("news-preview-sub").textContent =
+            n.category +
+            " · " +
+            Util.formatDate(n.date) +
+            (isExpired(n)
+              ? " · Expired on " + Util.formatDate(n.expiresAt)
+              : "");
+
+          var bodyHtml = (n.body || "")
+            .split(/\n\s*\n/)
+            .map(function (p) {
+              return '<p style="margin:0 0 16px;">' + Util.escape(p) + "</p>";
+            })
+            .join("");
+
+          var imageHtml = n.image
+            ? '<div class="news-detail-media">' +
+              '<img src="' +
+              Util.escape(n.image) +
+              '" alt="" ' +
+              "onerror=\"this.parentElement.classList.add('is-placeholder'); this.remove();\">" +
+              "</div>"
+            : '<div class="news-detail-media is-placeholder"></div>';
+
+          var expiredNote = isExpired(n)
+            ? '<div class="report-review-notice" style="background:var(--warning-soft); border-left-color:var(--warning); margin-bottom:20px;">' +
+              '<i class="fa-solid fa-clock"></i> This article is expired and hidden from students.' +
+              "</div>"
+            : "";
+
+          document.getElementById("news-preview-body").innerHTML =
+            '<div style="padding:24px;">' +
+            expiredNote +
+            '<span class="badge badge-brand" style="margin-bottom:12px;">' +
+            Util.escape(n.category) +
+            "</span>" +
+            '<h2 style="font-family:var(--font-heading); font-size:var(--fs-2xl); font-weight:800; letter-spacing:-0.02em; line-height:1.2; margin:12px 0 12px;">' +
+            Util.escape(n.title) +
+            "</h2>" +
+            '<div class="cluster" style="font-size:var(--fs-sm); color:var(--text-tertiary); gap:16px; margin-bottom:20px;">' +
+            '<span><i class="fa-solid fa-user"></i> ' +
+            Util.escape(n.author || "Admin") +
+            "</span>" +
+            '<span><i class="fa-regular fa-calendar"></i> ' +
+            Util.formatDate(n.date) +
+            "</span>" +
+            "</div>" +
+            imageHtml +
+            '<div style="font-size:var(--fs-md); line-height:1.75; color:var(--text-primary);">' +
+            bodyHtml +
+            "</div>" +
+            "</div>";
+
+          Modal.open("news-preview-modal");
+        }
+
+        /* ------------------------------------------------------------------
+           SUBMIT
+           ------------------------------------------------------------------ */
         bindForm(
-          document.getElementById("add-news-form"),
+          form,
           {
-            title: [Rules.required],
+            title: [Rules.required, Rules.minLen(5)],
             category: [Rules.required],
-            excerpt: [Rules.required],
+            excerpt: [Rules.required, Rules.minLen(10)],
             body: [Rules.required, Rules.minLen(20)],
           },
-          (data) => {
-            DEMO_NEWS.unshift({
-              id: "news-" + Date.now(),
-              title: data.get("title"),
-              category: data.get("category"),
-              author: session.name || session.username,
-              date: new Date().toISOString().slice(0, 10),
-              image: "../../assets/images/news/campus-event-01.jpg",
-              excerpt: data.get("excerpt"),
-              body: data.get("body"),
-            });
+          function (data) {
+            var title = data.get("title").trim();
+            var category = data.get("category");
+            var excerpt = data.get("excerpt").trim();
+            var body = data.get("body").trim();
+            var image = (coverHiddenInput.value || "").trim();
+            var publishDate = data.get("publishDate") || todayISO();
+            var expiresAt = (data.get("expiresAt") || "").trim();
+            var notify = data.get("notify") === "on";
+
+            if (
+              expiresAt &&
+              publishDate &&
+              new Date(expiresAt) < new Date(publishDate)
+            ) {
+              Toast.error(
+                "Expiry date can't be before the publish date.",
+                "Invalid dates",
+              );
+              return;
+            }
+
+            if (editingId) {
+              /* Edit */
+              var target = news.find(function (n) {
+                return n.id === editingId;
+              });
+              if (target) {
+                target.title = title;
+                target.category = category;
+                target.excerpt = excerpt;
+                target.body = body;
+                target.image = image;
+                target.date = publishDate;
+                target.expiresAt = expiresAt;
+                persistEdit(target);
+              }
+              Toast.success("Article updated.", "Saved");
+            } else {
+              /* Add */
+              var newRec = {
+                id: "news-" + Date.now(),
+                title: title,
+                category: category,
+                excerpt: excerpt,
+                body: body,
+                image:
+                  image /* may be "" if no image — handled by placeholder */,
+                author: session.name || session.username,
+                date: publishDate,
+                expiresAt: expiresAt,
+                createdAt: Date.now(),
+              };
+              news.unshift(newRec);
+              persistAdded(newRec);
+
+              /* Notify students */
+              if (notify) {
+                var notifs = Store.get("notifications", []) || [];
+                notifs.unshift({
+                  id: "n-" + Date.now(),
+                  type: "campus_news",
+                  icon: "fa-newspaper",
+                  tone: "brand",
+                  title: "New Campus News",
+                  body: title,
+                  link: "news-details.html?id=" + newRec.id,
+                  time: Date.now(),
+                  read: false,
+                });
+                Store.set("notifications", notifs);
+              }
+
+              Toast.success(
+                notify
+                  ? "Article published. Students notified."
+                  : "Article published.",
+                "Published",
+              );
+            }
+
             render();
-            Modal.close("add-news-modal");
-            document.getElementById("add-news-form").reset();
-            Toast.success("News published.", "Published");
+            Modal.close("news-editor-modal");
+            form.reset();
+            resetCover();
+            editingId = null;
           },
         );
+
+        /* ------------------------------------------------------------------
+           TRIGGERS
+           ------------------------------------------------------------------ */
+        document
+          .getElementById("news-publish-btn")
+          .addEventListener("click", function () {
+            openEditor(null);
+          });
+
+        filterBar.addEventListener("click", function (e) {
+          var btn = e.target.closest("[data-status]");
+          if (!btn) return;
+          filterBar.querySelectorAll(".chip").forEach(function (c) {
+            c.classList.remove("is-active");
+          });
+          btn.classList.add("is-active");
+          activeFilter = btn.getAttribute("data-status");
+          render();
+        });
+
+        var debounce;
+        searchEl.addEventListener("input", function () {
+          clearTimeout(debounce);
+          debounce = setTimeout(render, 120);
+        });
+
+        document.addEventListener("click", function (e) {
+          if (e.target.closest("[data-modal-close]")) {
+            editingId = null;
+          }
+        });
+
+        render();
       });
     </script>
   </body>

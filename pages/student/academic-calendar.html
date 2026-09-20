@@ -71,73 +71,56 @@
             </button>
           </div>
 
-          <div class="card card-pad-lg">
-            <div class="cluster" style="margin-bottom: 24px">
-              <span class="badge badge-brand">2026/2027 Session</span>
-              <span class="badge badge-neutral">First Semester</span>
-            </div>
-            <div class="timeline">
-              <div class="timeline-item">
-                <div class="timeline-date">2 January 2026</div>
-                <div class="timeline-title">
-                  Resumption &amp; Registration Begins
-                </div>
-                <div class="timeline-desc">
-                  Returning students report to campus. Course registration
-                  opens.
-                </div>
-              </div>
-              <div class="timeline-item">
-                <div class="timeline-date">13 January 2026</div>
-                <div class="timeline-title">Late Registration Begins</div>
-                <div class="timeline-desc">
-                  A late registration fee applies from this date.
-                </div>
-              </div>
-              <div class="timeline-item">
-                <div class="timeline-date">20 January 2026</div>
-                <div class="timeline-title">Lectures Commence</div>
-                <div class="timeline-desc">
-                  First semester lectures begin across all faculties.
-                </div>
-              </div>
-              <div class="timeline-item">
-                <div class="timeline-date">26 January 2026</div>
-                <div class="timeline-title">Course Registration Deadline</div>
-                <div class="timeline-desc">
-                  No registration accepted beyond this date.
-                </div>
-              </div>
-              <div class="timeline-item">
-                <div class="timeline-date">14–18 April 2026</div>
-                <div class="timeline-title">Revision Week</div>
-                <div class="timeline-desc">
-                  Lectures end. Students prepare for examinations.
-                </div>
-              </div>
-              <div class="timeline-item">
-                <div class="timeline-date">20 April 2026</div>
-                <div class="timeline-title">
-                  First Semester Examinations Begin
-                </div>
-                <div class="timeline-desc">
-                  Examination timetable published in advance.
-                </div>
-              </div>
-              <div class="timeline-item">
-                <div class="timeline-date">8 May 2026</div>
-                <div class="timeline-title">First Semester Ends</div>
-                <div class="timeline-desc">End of first semester.</div>
-              </div>
-              <div class="timeline-item">
-                <div class="timeline-date">18 May 2026</div>
-                <div class="timeline-title">Second Semester Begins</div>
-                <div class="timeline-desc">
-                  Second semester lectures commence.
-                </div>
-              </div>
-            </div>
+          <div class="cluster" style="margin-bottom: 16px">
+            <span class="badge badge-brand">2026/2027 Session</span>
+            <span class="badge badge-neutral" id="cal-count">—</span>
           </div>
+
+          <div class="filter-bar" id="cal-tabs" role="tablist">
+            <button class="chip is-active" data-semester="all" role="tab">
+              All events
+            </button>
+            <button class="chip" data-semester="First" role="tab">
+              First Semester
+            </button>
+            <button class="chip" data-semester="Second" role="tab">
+              Second Semester
+            </button>
+          </div>
+
+          <!-- First Semester section -->
+          <section class="cal-student-section" id="cal-section-first">
+            <div class="cal-student-section-head">
+              <span
+                class="cal-student-section-dot"
+                style="background: var(--brand-primary)"
+              ></span>
+              <h2 class="cal-student-section-title">First Semester</h2>
+              <span class="cal-student-section-count" id="cal-count-first"
+                >0 events</span
+              >
+            </div>
+            <div class="card card-pad-lg">
+              <div class="timeline" id="cal-first-list"></div>
+            </div>
+          </section>
+
+          <!-- Second Semester section -->
+          <section class="cal-student-section" id="cal-section-second">
+            <div class="cal-student-section-head">
+              <span
+                class="cal-student-section-dot"
+                style="background: var(--brand-secondary)"
+              ></span>
+              <h2 class="cal-student-section-title">Second Semester</h2>
+              <span class="cal-student-section-count" id="cal-count-second"
+                >0 events</span
+              >
+            </div>
+            <div class="card card-pad-lg">
+              <div class="timeline" id="cal-second-list"></div>
+            </div>
+          </section>
         </main>
       </div>
     </div>
@@ -151,13 +134,21 @@
     ></aside>
 
     <script src="../../data/students.js"></script>
+    <script src="../../data/calendar-events.js"></script>
     <script src="../../js/main.js"></script>
     <script src="../../js/validation.js"></script>
     <script src="../../js/auth.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
+    <script src="../../js/calendar-admin.js"></script>
     <script src="../../js/pdf-generator.js"></script>
     <script>
+      /* ==========================================================================
+         Academic Calendar — Student view.
+         Reads merged events (demo + admin overrides) via CalendarAdmin.
+         Groups events by semester (First / Second) with bold section headings.
+         Download produces the branded PDF, split by semester.
+         ========================================================================== */
       document.addEventListener("DOMContentLoaded", function () {
         var session = Auth.current();
         if (!session) {
@@ -166,57 +157,177 @@
         }
         initAppShell("student");
 
-        var btn = document
+        var SESSION = "2026/2027";
+        var activeSemester = "all";
+
+        var firstList = document.getElementById("cal-first-list");
+        var secondList = document.getElementById("cal-second-list");
+        var sectionFirst = document.getElementById("cal-section-first");
+        var sectionSecond = document.getElementById("cal-section-second");
+        var countEl = document.getElementById("cal-count");
+        var countFirstEl = document.getElementById("cal-count-first");
+        var countSecondEl = document.getElementById("cal-count-second");
+        var tabs = document.getElementById("cal-tabs");
+
+        /* ------------------------------------------------------------------
+           RENDER
+           ------------------------------------------------------------------ */
+        function render() {
+          /* Merge demo + overrides via CalendarAdmin */
+          var split =
+            typeof CalendarAdmin !== "undefined"
+              ? CalendarAdmin.getSplitEvents(SESSION)
+              : {
+                  first: (typeof DEMO_CALENDAR_EVENTS !== "undefined"
+                    ? DEMO_CALENDAR_EVENTS
+                    : []
+                  ).filter(function (e) {
+                    return e.semester === "First";
+                  }),
+                  second: (typeof DEMO_CALENDAR_EVENTS !== "undefined"
+                    ? DEMO_CALENDAR_EVENTS
+                    : []
+                  ).filter(function (e) {
+                    return e.semester === "Second";
+                  }),
+                };
+
+          var first = split.first;
+          var second = split.second;
+
+          countEl.textContent =
+            first.length +
+            second.length +
+            " event" +
+            (first.length + second.length === 1 ? "" : "s");
+
+          countFirstEl.textContent =
+            first.length + " event" + (first.length === 1 ? "" : "s");
+          countSecondEl.textContent =
+            second.length + " event" + (second.length === 1 ? "" : "s");
+
+          /* Tab filter — show/hide whole sections */
+          if (activeSemester === "all" || activeSemester === "First") {
+            sectionFirst.style.display = "";
+          } else {
+            sectionFirst.style.display = "none";
+          }
+          if (activeSemester === "all" || activeSemester === "Second") {
+            sectionSecond.style.display = "";
+          } else {
+            sectionSecond.style.display = "none";
+          }
+
+          renderTimeline(firstList, first);
+          renderTimeline(secondList, second);
+        }
+
+        function renderTimeline(wrap, list) {
+          wrap.innerHTML = "";
+
+          if (!list.length) {
+            wrap.innerHTML =
+              '<div style="padding:24px 0;text-align:center;color:var(--text-tertiary);font-size:var(--fs-sm);">' +
+              "No dates in this semester yet." +
+              "</div>";
+            return;
+          }
+
+          list.forEach(function (e) {
+            var item = document.createElement("div");
+            item.className = "timeline-item";
+            item.innerHTML =
+              '<div class="timeline-date">' +
+              Util.escape(
+                e.displayDate ||
+                  Util.formatDate(e.isoDate, {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  }),
+              ) +
+              "</div>" +
+              '<div class="timeline-title">' +
+              Util.escape(e.title) +
+              "</div>" +
+              (e.desc
+                ? '<div class="timeline-desc">' + Util.escape(e.desc) + "</div>"
+                : "");
+            wrap.appendChild(item);
+          });
+        }
+
+        /* ------------------------------------------------------------------
+           TABS
+           ------------------------------------------------------------------ */
+        tabs.addEventListener("click", function (e) {
+          var btn = e.target.closest("[data-semester]");
+          if (!btn) return;
+          tabs.querySelectorAll(".chip").forEach(function (c) {
+            c.classList.remove("is-active");
+          });
+          btn.classList.add("is-active");
+          activeSemester = btn.getAttribute("data-semester");
+          render();
+        });
+
+        /* ------------------------------------------------------------------
+           DOWNLOAD — branded PDF via PdfGenerator
+           ------------------------------------------------------------------ */
+        document
           .getElementById("download-calendar")
           .addEventListener("click", function () {
+            if (typeof PdfGenerator === "undefined") {
+              Toast.error("Document generator not loaded.", "Error");
+              return;
+            }
+
+            var split =
+              typeof CalendarAdmin !== "undefined"
+                ? CalendarAdmin.getSplitEvents(SESSION)
+                : { first: [], second: [] };
+
+            var all = split.first.concat(split.second);
+
+            /* Filter to the active tab, if not "all" */
+            if (activeSemester !== "all") {
+              all = all.filter(function (e) {
+                return e.semester === activeSemester;
+              });
+            }
+
+            /* Map to PdfGenerator's expected shape */
+            var data = all.map(function (e) {
+              return {
+                date:
+                  e.displayDate ||
+                  Util.formatDate(e.isoDate, {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  }),
+                title: e.title,
+                desc: e.desc || "",
+                semester: e.semester,
+              };
+            });
+
+            var subtitle =
+              "2026/2027 Academic Session" +
+              (activeSemester !== "all"
+                ? " — " + activeSemester + " Semester"
+                : "");
+
             PdfGenerator.open({
               type: "calendar",
               title: "Academic Calendar",
-              subtitle: "First Semester - 2026/2027 Academic Session",
-              data: [
-                {
-                  date: "2 January 2026",
-                  title: "Resumption & Registration Begins",
-                  desc: "Returning students report to campus. Course registration opens.",
-                },
-                {
-                  date: "13 January 2026",
-                  title: "Late Registration Begins",
-                  desc: "A late registration fee applies from this date.",
-                },
-                {
-                  date: "20 January 2026",
-                  title: "Lectures Commence",
-                  desc: "First semester lectures begin across all faculties.",
-                },
-                {
-                  date: "26 January 2026",
-                  title: "Course Registration Deadline",
-                  desc: "No registration accepted beyond this date.",
-                },
-                {
-                  date: "14-18 April 2026",
-                  title: "Revision Week",
-                  desc: "Lectures end. Students prepare for examinations.",
-                },
-                {
-                  date: "20 April 2026",
-                  title: "First Semester Examinations Begin",
-                  desc: "Examination timetable published in advance.",
-                },
-                {
-                  date: "8 May 2026",
-                  title: "First Semester Ends",
-                  desc: "End of first semester.",
-                },
-                {
-                  date: "18 May 2026",
-                  title: "Second Semester Begins",
-                  desc: "Second semester lectures commence.",
-                },
-              ],
+              subtitle: subtitle,
+              data: data,
             });
           });
+
+        /* Initial render */
+        render();
       });
     </script>
   </body>

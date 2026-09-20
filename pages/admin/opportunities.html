@@ -45,8 +45,13 @@
   </head>
   <body class="has-session admin-body">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
-      <aside class="sidebar admin-sidebar" id="app-sidebar"></aside>
+      <aside
+        class="sidebar admin-sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
       <div class="app-main">
         <header class="app-header" id="app-header"></header>
         <main class="app-content" id="main">
@@ -54,13 +59,47 @@
             <div class="page-head-text">
               <h1 class="page-title">Opportunities</h1>
               <p class="page-subtitle">
-                Manage scholarships, internships and other listings.
+                Manage scholarships, internships, SIWES, jobs, competitions and
+                more.
               </p>
             </div>
-            <button class="btn btn-primary" data-modal-open="add-opp-modal">
+            <button class="btn btn-primary" id="opp-publish-btn" type="button">
               <i class="fa-solid fa-plus"></i> Add opportunity
             </button>
           </div>
+
+          <div class="toolbar">
+            <div class="input-wrap">
+              <i class="fa-solid fa-magnifying-glass input-icon"></i>
+              <input
+                class="input"
+                type="search"
+                id="opp-search"
+                placeholder="Search by title, organization or category…"
+                aria-label="Search opportunities"
+              />
+            </div>
+          </div>
+
+          <div class="filter-bar" id="opp-filter" role="tablist">
+            <button class="chip is-active" data-status="all" role="tab">
+              All
+            </button>
+            <button class="chip" data-status="active" role="tab">Active</button>
+            <button class="chip" data-status="closing-soon" role="tab">
+              Closing Soon
+            </button>
+            <button class="chip" data-status="expired" role="tab">
+              Expired
+            </button>
+          </div>
+
+          <div class="cluster-between" style="margin-bottom: 12px">
+            <p class="section-desc" style="margin: 0" id="opp-count">
+              Loading…
+            </p>
+          </div>
+
           <div class="card">
             <div id="opp-admin-list"></div>
           </div>
@@ -68,28 +107,45 @@
       </div>
     </div>
 
-    <div class="modal-backdrop" id="add-opp-modal">
+    <!-- ============ Add / Edit opportunity modal ============ -->
+    <div
+      class="modal-backdrop"
+      id="opp-editor-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="opp-modal-title"
+    >
       <div class="modal modal-lg">
         <div class="modal-head">
-          <h3>Add opportunity</h3>
+          <h3 id="opp-modal-title">Add opportunity</h3>
           <button class="btn-icon" data-modal-close aria-label="Close">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
-        <form id="add-opp-form" novalidate>
+        <form id="opp-form" novalidate>
           <div class="modal-body">
             <div class="field">
-              <label class="label">Title <span class="req">*</span></label>
-              <input class="input" name="title" />
+              <label class="label" for="opp-title"
+                >Title <span class="req">*</span></label
+              >
+              <input
+                class="input"
+                id="opp-title"
+                name="title"
+                placeholder="e.g. NNPC/SNEPCo National University Scholarship 2026"
+              />
               <div class="field-error">
                 <i class="fa-solid fa-circle-exclamation"></i
                 ><span>Please enter a title.</span>
               </div>
             </div>
+
             <div class="grid grid-2" style="gap: 16px">
               <div class="field">
-                <label class="label">Category <span class="req">*</span></label>
-                <select class="select" name="category">
+                <label class="label" for="opp-category"
+                  >Category <span class="req">*</span></label
+                >
+                <select class="select" id="opp-category" name="category">
                   <option value="">Select category</option>
                   <option>Scholarships</option>
                   <option>Internships</option>
@@ -109,64 +165,168 @@
                 </div>
               </div>
               <div class="field">
-                <label class="label"
+                <label class="label" for="opp-organization"
                   >Organization <span class="req">*</span></label
                 >
-                <input class="input" name="organization" />
+                <input
+                  class="input"
+                  id="opp-organization"
+                  name="organization"
+                  placeholder="e.g. Paystack"
+                />
                 <div class="field-error">
                   <i class="fa-solid fa-circle-exclamation"></i
                   ><span>Please enter the organization.</span>
                 </div>
               </div>
               <div class="field">
-                <label class="label">Location <span class="req">*</span></label>
-                <input class="input" name="location" />
+                <label class="label" for="opp-location"
+                  >Location <span class="req">*</span></label
+                >
+                <input
+                  class="input"
+                  id="opp-location"
+                  name="location"
+                  placeholder="e.g. Lagos, Nigeria (Hybrid)"
+                />
                 <div class="field-error">
                   <i class="fa-solid fa-circle-exclamation"></i
                   ><span>Please enter the location.</span>
                 </div>
               </div>
               <div class="field">
-                <label class="label">Deadline <span class="req">*</span></label>
-                <input class="input" type="date" name="deadline" />
+                <label class="label" for="opp-deadline"
+                  >Application deadline <span class="req">*</span></label
+                >
+                <input
+                  class="input"
+                  type="date"
+                  id="opp-deadline"
+                  name="deadline"
+                />
                 <div class="field-error">
                   <i class="fa-solid fa-circle-exclamation"></i
                   ><span>Please set a deadline.</span>
                 </div>
               </div>
             </div>
+
             <div class="field">
-              <label class="label">Summary <span class="req">*</span></label>
-              <input class="input" name="summary" />
+              <label class="label" for="opp-summary"
+                >Summary <span class="req">*</span></label
+              >
+              <input
+                class="input"
+                id="opp-summary"
+                name="summary"
+                placeholder="Short one-line description shown in listings"
+              />
               <div class="field-error">
                 <i class="fa-solid fa-circle-exclamation"></i
                 ><span>Please add a summary.</span>
               </div>
             </div>
+
             <div class="field">
-              <label class="label"
+              <label class="label" for="opp-description"
                 >Description <span class="req">*</span></label
               >
-              <textarea class="textarea" name="description"></textarea>
+              <textarea
+                class="textarea"
+                id="opp-description"
+                name="description"
+                style="min-height: 180px"
+                placeholder="Full details. Separate paragraphs with a blank line."
+              ></textarea>
               <div class="field-error">
                 <i class="fa-solid fa-circle-exclamation"></i
                 ><span>Please write a description.</span>
               </div>
             </div>
+
             <div class="field">
-              <label class="label">Application URL</label>
-              <input class="input" name="applyUrl" placeholder="https://…" />
+              <label class="label" for="opp-requirements"
+                >Requirements
+                <span class="label-hint">Optional · one per line</span></label
+              >
+              <textarea
+                class="textarea"
+                id="opp-requirements"
+                name="requirements"
+                style="min-height: 100px"
+                placeholder="Must be in 200L or 300L&#10;Minimum CGPA of 3.5&#10;Nigerian citizen"
+              ></textarea>
+              <div class="field-help">
+                Enter each requirement on its own line. Shown as a list on the
+                detail page.
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="label" for="opp-apply-url"
+                >Application URL <span class="label-hint">Optional</span></label
+              >
+              <input
+                class="input"
+                id="opp-apply-url"
+                name="applyUrl"
+                placeholder="https://…"
+              />
+              <div class="field-help">
+                The external link students click to apply.
+              </div>
+            </div>
+
+            <div class="field" style="margin-top: 12px">
+              <label class="checkbox">
+                <input type="checkbox" name="notify" id="opp-notify" checked />
+                <span>Send an in-app notification when published</span>
+              </label>
             </div>
           </div>
           <div class="modal-foot">
             <button type="button" class="btn btn-secondary" data-modal-close>
               Cancel
             </button>
-            <button type="submit" class="btn btn-primary">
-              Add opportunity
+            <button type="submit" class="btn btn-primary" id="opp-submit">
+              <i class="fa-solid fa-check"></i> <span>Add opportunity</span>
             </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- ============ Preview modal ============ -->
+    <div
+      class="modal-backdrop"
+      id="opp-preview-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="opp-preview-title"
+    >
+      <div class="modal modal-lg">
+        <div class="modal-head">
+          <div style="min-width: 0">
+            <h3 id="opp-preview-title">Preview</h3>
+            <p
+              id="opp-preview-sub"
+              style="
+                font-size: var(--fs-xs);
+                color: var(--text-tertiary);
+                margin-top: 2px;
+              "
+            ></p>
+          </div>
+          <button class="btn-icon" data-modal-close aria-label="Close">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="modal-body" id="opp-preview-body"></div>
+        <div class="modal-foot">
+          <button type="button" class="btn btn-secondary" data-modal-close>
+            Close
+          </button>
+        </div>
       </div>
     </div>
 
@@ -182,97 +342,623 @@
     <script src="../../js/main.js"></script>
     <script src="../../js/validation.js"></script>
     <script src="../../js/auth.js"></script>
+    <script src="../../js/permissions.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
     <script src="../../js/admin.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
-        if (
-          !session ||
-          (session.role !== "admin" && session.role !== "super_admin")
-        ) {
+      /* ==========================================================================
+         Opportunities — Admin workspace.
+         Full CRUD with localStorage persistence (cs_opportunities_overrides).
+         Deadline-aware: opportunities with past deadlines are marked "Expired"
+         and can be filtered. Closing Soon badge for those under 7 days.
+         ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
+        if (!session || !Permissions.isAdminRole(session)) {
           window.location.href = "../auth/login.html";
           return;
         }
+        if (!Permissions.can(session, "opportunities.publish")) {
+          window.location.href = "dashboard.html";
+          return;
+        }
+
         initAppShell("admin");
 
-        const listEl = document.getElementById("opp-admin-list");
+        var STORAGE_KEY = "opportunities_overrides";
+
+        /* ------------------------------------------------------------------
+           LOAD — merge demo seed with saved overrides
+           ------------------------------------------------------------------ */
+        function loadOpportunities() {
+          var base = (
+            typeof DEMO_OPPORTUNITIES !== "undefined" ? DEMO_OPPORTUNITIES : []
+          ).map(function (o) {
+            return Object.assign({}, o);
+          });
+
+          var saved = Store.get(STORAGE_KEY, null);
+          if (saved && Array.isArray(saved.added)) {
+            saved.added.forEach(function (o) {
+              if (
+                !base.some(function (x) {
+                  return x.id === o.id;
+                })
+              ) {
+                base.unshift(o);
+              }
+            });
+          }
+          if (saved && Array.isArray(saved.deleted)) {
+            base = base.filter(function (o) {
+              return saved.deleted.indexOf(o.id) === -1;
+            });
+          }
+          if (saved && saved.edits) {
+            base.forEach(function (o) {
+              var edit = saved.edits[o.id];
+              if (edit) Object.assign(o, edit);
+            });
+          }
+          return base;
+        }
+
+        /* ------------------------------------------------------------------
+           PERSIST
+           ------------------------------------------------------------------ */
+        function persistAdded(record) {
+          var existing = Store.get(STORAGE_KEY, {}) || {};
+          existing.added = existing.added || [];
+          if (
+            !existing.added.some(function (x) {
+              return x.id === record.id;
+            })
+          ) {
+            existing.added.unshift(record);
+          }
+          Store.set(STORAGE_KEY, existing);
+        }
+
+        function persistEdit(record) {
+          var existing = Store.get(STORAGE_KEY, {}) || {};
+          existing.edits = existing.edits || {};
+          existing.edits[record.id] = {
+            title: record.title,
+            category: record.category,
+            organization: record.organization,
+            location: record.location,
+            deadline: record.deadline,
+            summary: record.summary,
+            description: record.description,
+            requirements: record.requirements,
+            applyUrl: record.applyUrl,
+            lastEditedAt: Date.now(),
+          };
+          Store.set(STORAGE_KEY, existing);
+        }
+
+        function persistDeleted(id) {
+          var existing = Store.get(STORAGE_KEY, {}) || {};
+          existing.deleted = existing.deleted || [];
+          if (existing.deleted.indexOf(id) === -1) existing.deleted.push(id);
+          if (Array.isArray(existing.added)) {
+            existing.added = existing.added.filter(function (x) {
+              return x.id !== id;
+            });
+          }
+          if (existing.edits && existing.edits[id]) delete existing.edits[id];
+          Store.set(STORAGE_KEY, existing);
+        }
+
+        /* ------------------------------------------------------------------
+           STATE
+           ------------------------------------------------------------------ */
+        var opportunities = loadOpportunities();
+        var activeFilter = "all";
+        var editingId = null;
+
+        var listEl = document.getElementById("opp-admin-list");
+        var countEl = document.getElementById("opp-count");
+        var searchEl = document.getElementById("opp-search");
+        var filterBar = document.getElementById("opp-filter");
+        var modalTitle = document.getElementById("opp-modal-title");
+        var submitBtn = document.getElementById("opp-submit");
+        var form = document.getElementById("opp-form");
+
+        /* ------------------------------------------------------------------
+           HELPERS
+           ------------------------------------------------------------------ */
+        function daysUntil(deadline) {
+          if (!deadline) return null;
+          var d = new Date(deadline);
+          if (isNaN(d.getTime())) return null;
+          d.setHours(0, 0, 0, 0);
+          var now = new Date();
+          now.setHours(0, 0, 0, 0);
+          return Math.round((d - now) / (1000 * 60 * 60 * 24));
+        }
+
+        function getStatus(o) {
+          var days = daysUntil(o.deadline);
+          if (days === null) return "active";
+          if (days < 0) return "expired";
+          if (days <= 7) return "closing-soon";
+          return "active";
+        }
+
+        /* ------------------------------------------------------------------
+           RENDER
+           ------------------------------------------------------------------ */
         function render() {
+          var q = searchEl.value.trim().toLowerCase();
+
+          var visible = opportunities.filter(function (o) {
+            var status = getStatus(o);
+            if (activeFilter !== "all" && status !== activeFilter) return false;
+            if (!q) return true;
+            return (
+              (o.title || "").toLowerCase().indexOf(q) !== -1 ||
+              (o.organization || "").toLowerCase().indexOf(q) !== -1 ||
+              (o.category || "").toLowerCase().indexOf(q) !== -1 ||
+              (o.summary || "").toLowerCase().indexOf(q) !== -1
+            );
+          });
+
+          /* Sort: active/closing-soon first by soonest deadline, then expired */
+          visible.sort(function (a, b) {
+            var sa = getStatus(a);
+            var sb = getStatus(b);
+            var order = { "closing-soon": 0, active: 1, expired: 2 };
+            if (order[sa] !== order[sb]) return order[sa] - order[sb];
+            return new Date(a.deadline) - new Date(b.deadline);
+          });
+
+          countEl.textContent =
+            visible.length +
+            " opportunity" +
+            (visible.length === 1 ? "" : "ies").replace("ys", "y") +
+            (q || activeFilter !== "all" ? " matching" : "");
+
           listEl.innerHTML = "";
-          DEMO_OPPORTUNITIES.forEach((o) => {
-            const el = document.createElement("div");
-            el.className = "resource-row";
-            el.innerHTML = `
-        <span class="resource-icon"><i class="fa-solid fa-briefcase"></i></span>
-        <div class="resource-info">
-          <div class="resource-name">${Util.escape(o.title)}</div>
-          <div class="resource-meta">
-            <span>${Util.escape(o.category)}</span>
-            <span>${Util.escape(o.organization)}</span>
-            <span><i class="fa-regular fa-clock"></i> ${Util.formatDate(o.deadline)}</span>
-          </div>
-        </div>
-        <button class="btn btn-ghost btn-sm" data-edit><i class="fa-solid fa-pen"></i></button>
-        <button class="btn btn-ghost btn-sm" data-del style="color:var(--danger);"><i class="fa-solid fa-trash"></i></button>`;
-            el.querySelector("[data-edit]").addEventListener("click", () =>
-              Toast.info('Edit "' + o.title + '" (simulated).', "Edit"),
-            );
-            el.querySelector("[data-del]").addEventListener(
-              "click",
-              async () => {
-                if (
-                  await Confirmation.confirm({
-                    title: "Delete this opportunity?",
-                    message: '"' + o.title + '" will be removed.',
-                    confirmLabel: "Delete",
-                    variant: "danger",
-                  })
-                ) {
-                  const idx = DEMO_OPPORTUNITIES.findIndex(
-                    (x) => x.id === o.id,
-                  );
-                  DEMO_OPPORTUNITIES.splice(idx, 1);
-                  render();
-                  Toast.success("Opportunity deleted.", "Removed");
-                }
-              },
-            );
-            listEl.appendChild(el);
+
+          if (!visible.length) {
+            var emptyMsg = q
+              ? "No opportunities match your search."
+              : activeFilter === "expired"
+                ? "No expired opportunities."
+                : activeFilter === "closing-soon"
+                  ? "No opportunities closing soon."
+                  : "No opportunities yet.";
+            listEl.innerHTML =
+              '<div class="empty-state" style="padding: 48px 24px;">' +
+              '<div class="empty-icon"><i class="fa-solid fa-briefcase"></i></div>' +
+              "<h3>" +
+              emptyMsg +
+              "</h3>" +
+              (!q && activeFilter === "all"
+                ? "<p>Click <strong>Add opportunity</strong> to get started.</p>"
+                : "") +
+              "</div>";
+            return;
+          }
+
+          visible.forEach(function (o) {
+            var status = getStatus(o);
+            var days = daysUntil(o.deadline);
+
+            var row = document.createElement("div");
+            row.className = "opp-admin-row";
+
+            /* Status badge */
+            var statusBadge;
+            if (status === "expired") {
+              statusBadge =
+                '<span class="badge badge-neutral"><i class="fa-solid fa-clock"></i> Expired</span>';
+            } else if (status === "closing-soon") {
+              statusBadge =
+                '<span class="badge badge-warning"><i class="fa-solid fa-hourglass-half"></i> Closing in ' +
+                days +
+                "d</span>";
+            } else {
+              statusBadge =
+                '<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Active</span>';
+            }
+
+            var deadlineNote =
+              status === "expired"
+                ? "Expired " + Util.relativeTime(o.deadline)
+                : status === "closing-soon"
+                  ? "Closing in " + days + " day" + (days === 1 ? "" : "s")
+                  : "Closes " + Util.formatDate(o.deadline);
+
+            var reqCount = (o.requirements || []).length;
+
+            row.innerHTML =
+              '<div class="opp-admin-icon"><i class="fa-solid fa-briefcase"></i></div>' +
+              '<div class="opp-admin-body">' +
+              '<div class="opp-admin-name">' +
+              Util.escape(o.title) +
+              "</div>" +
+              '<div class="opp-admin-meta">' +
+              '<span class="opp-admin-cat">' +
+              Util.escape(o.category) +
+              "</span>" +
+              '<span><i class="fa-solid fa-building"></i> ' +
+              Util.escape(o.organization) +
+              "</span>" +
+              '<span><i class="fa-solid fa-location-dot"></i> ' +
+              Util.escape(o.location) +
+              "</span>" +
+              '<span><i class="fa-regular fa-clock"></i> ' +
+              deadlineNote +
+              "</span>" +
+              "</div>" +
+              "</div>" +
+              '<div class="opp-admin-status">' +
+              statusBadge +
+              "</div>" +
+              '<div class="opp-admin-actions">' +
+              '<button class="btn btn-secondary btn-sm" data-preview type="button" aria-label="Preview opportunity">' +
+              '<i class="fa-solid fa-eye"></i> <span>Preview</span>' +
+              "</button>" +
+              '<button class="btn btn-secondary btn-sm" data-edit type="button" aria-label="Edit opportunity">' +
+              '<i class="fa-solid fa-pen"></i> <span>Edit</span>' +
+              "</button>" +
+              '<button class="btn btn-ghost btn-sm" data-delete type="button" aria-label="Delete opportunity" style="color:var(--danger);">' +
+              '<i class="fa-solid fa-trash"></i> <span>Delete</span>' +
+              "</button>" +
+              "</div>";
+
+            /* ---- Preview ---- */
+            row
+              .querySelector("[data-preview]")
+              .addEventListener("click", function () {
+                openPreviewModal(o);
+              });
+
+            /* ---- Edit ---- */
+            row
+              .querySelector("[data-edit]")
+              .addEventListener("click", function () {
+                openEditor(o);
+              });
+
+            /* ---- Delete ---- */
+            row
+              .querySelector("[data-delete]")
+              .addEventListener("click", async function () {
+                var ok = await Confirmation.confirm({
+                  title: "Delete this opportunity?",
+                  message:
+                    '"' + o.title + '" will be removed from Campus Space.',
+                  confirmLabel: "Delete",
+                  variant: "danger",
+                });
+                if (!ok) return;
+
+                opportunities = opportunities.filter(function (x) {
+                  return x.id !== o.id;
+                });
+                persistDeleted(o.id);
+                render();
+                Toast.success("Opportunity deleted.", "Removed");
+              });
+
+            listEl.appendChild(row);
           });
         }
-        render();
 
+        /* ------------------------------------------------------------------
+           OPEN EDITOR — Add or Edit
+           ------------------------------------------------------------------ */
+        function openEditor(existing) {
+          form.reset();
+          form.querySelectorAll(".field").forEach(function (f) {
+            f.classList.remove("is-invalid", "is-valid");
+          });
+
+          if (existing) {
+            editingId = existing.id;
+            modalTitle.textContent = "Edit opportunity";
+            submitBtn.querySelector("span").textContent = "Save changes";
+
+            form.querySelector('[name="title"]').value = existing.title || "";
+            form.querySelector('[name="category"]').value =
+              existing.category || "";
+            form.querySelector('[name="organization"]').value =
+              existing.organization || "";
+            form.querySelector('[name="location"]').value =
+              existing.location || "";
+            form.querySelector('[name="deadline"]').value =
+              existing.deadline || "";
+            form.querySelector('[name="summary"]').value =
+              existing.summary || "";
+            form.querySelector('[name="description"]').value =
+              existing.description || "";
+            form.querySelector('[name="requirements"]').value = (
+              existing.requirements || []
+            ).join("\n");
+            form.querySelector('[name="applyUrl"]').value =
+              existing.applyUrl === "#" ? "" : existing.applyUrl || "";
+            form.querySelector('[name="notify"]').checked = false;
+          } else {
+            editingId = null;
+            modalTitle.textContent = "Add opportunity";
+            submitBtn.querySelector("span").textContent = "Add opportunity";
+            form.querySelector('[name="notify"]').checked = true;
+          }
+
+          Modal.open("opp-editor-modal");
+        }
+
+        /* ------------------------------------------------------------------
+           PREVIEW MODAL
+           ------------------------------------------------------------------ */
+        function openPreviewModal(o) {
+          document.getElementById("opp-preview-title").textContent = o.title;
+          document.getElementById("opp-preview-sub").textContent =
+            o.category + " · " + o.organization;
+
+          var days = daysUntil(o.deadline);
+          var status = getStatus(o);
+
+          var expiredNote =
+            status === "expired"
+              ? '<div class="report-review-notice" style="background:var(--warning-soft); border-left-color:var(--warning); margin-bottom:20px;">' +
+                '<i class="fa-solid fa-clock"></i> This opportunity closed on ' +
+                Util.formatDate(o.deadline) +
+                ". Students no longer see it." +
+                "</div>"
+              : "";
+
+          var closingNote =
+            status === "closing-soon"
+              ? '<div class="report-review-notice" style="background:var(--brand-primary-soft); border-left-color:var(--brand-primary); margin-bottom:20px;">' +
+                '<i class="fa-solid fa-hourglass-half"></i> Closing in ' +
+                days +
+                " day" +
+                (days === 1 ? "" : "s") +
+                ". Students see a warning badge." +
+                "</div>"
+              : "";
+
+          var descriptionHtml = (o.description || "")
+            .split(/\n\s*\n/)
+            .map(function (p) {
+              return (
+                '<p style="margin:0 0 14px; font-size:var(--fs-md); line-height:1.75; color:var(--text-primary);">' +
+                Util.escape(p) +
+                "</p>"
+              );
+            })
+            .join("");
+
+          var requirementsHtml =
+            o.requirements && o.requirements.length
+              ? '<div style="margin-top:24px;">' +
+                '<div style="font-size:var(--fs-xs); font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--text-tertiary); margin-bottom:12px;">Requirements</div>' +
+                '<ul style="display:grid; gap:10px; padding-left:0; list-style:none;">' +
+                o.requirements
+                  .map(function (r) {
+                    return (
+                      '<li style="display:flex; gap:10px; align-items:flex-start; font-size:var(--fs-sm); color:var(--text-secondary);">' +
+                      '<i class="fa-solid fa-circle-check" style="color:var(--success); margin-top:4px; flex-shrink:0;"></i> ' +
+                      Util.escape(r) +
+                      "</li>"
+                    );
+                  })
+                  .join("") +
+                "</ul>" +
+                "</div>"
+              : "";
+
+          var applyHtml =
+            o.applyUrl && o.applyUrl !== "#"
+              ? '<div style="margin-top:24px;">' +
+                '<div style="font-size:var(--fs-xs); font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--text-tertiary); margin-bottom:8px;">Apply</div>' +
+                '<a href="' +
+                Util.escape(o.applyUrl) +
+                '" target="_blank" rel="noopener" class="btn btn-primary">' +
+                'Apply on external site <i class="fa-solid fa-arrow-up-right-from-square"></i>' +
+                "</a>" +
+                '<div style="font-size:var(--fs-xs); color:var(--text-tertiary); margin-top:8px; word-break: break-all;">' +
+                Util.escape(o.applyUrl) +
+                "</div>" +
+                "</div>"
+              : "";
+
+          document.getElementById("opp-preview-body").innerHTML =
+            '<div style="padding:24px;">' +
+            expiredNote +
+            closingNote +
+            '<div class="cluster" style="margin-bottom:16px; gap:8px;">' +
+            '<span class="badge badge-marine">' +
+            Util.escape(o.category) +
+            "</span>" +
+            '<span class="badge badge-neutral"><i class="fa-solid fa-location-dot"></i> ' +
+            Util.escape(o.location) +
+            "</span>" +
+            "</div>" +
+            '<h2 style="font-family:var(--font-heading); font-size:var(--fs-2xl); font-weight:800; letter-spacing:-0.02em; line-height:1.2; margin:0 0 8px;">' +
+            Util.escape(o.title) +
+            "</h2>" +
+            '<div style="font-size:var(--fs-md); color:var(--brand-secondary); font-weight:600; margin-bottom:20px;">' +
+            Util.escape(o.organization) +
+            "</div>" +
+            '<div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; padding:16px 0; border-top:1px solid var(--border-subtle); border-bottom:1px solid var(--border-subtle); margin-bottom:20px;">' +
+            "<div>" +
+            '<div style="font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-tertiary); margin-bottom:4px;">Deadline</div>' +
+            '<div style="font-size:var(--fs-sm); font-weight:600;">' +
+            Util.formatDate(o.deadline, {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            }) +
+            "</div>" +
+            '<div style="font-size:var(--fs-xs); color:var(--text-tertiary); margin-top:2px;">' +
+            (status === "expired"
+              ? "Expired"
+              : days === 0
+                ? "Due today"
+                : days + " days remaining") +
+            "</div>" +
+            "</div>" +
+            "<div>" +
+            '<div style="font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-tertiary); margin-bottom:4px;">Category</div>' +
+            '<div style="font-size:var(--fs-sm); font-weight:600;">' +
+            Util.escape(o.category) +
+            "</div>" +
+            "</div>" +
+            "<div>" +
+            '<div style="font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-tertiary); margin-bottom:4px;">Location</div>' +
+            '<div style="font-size:var(--fs-sm); font-weight:600;">' +
+            Util.escape(o.location) +
+            "</div>" +
+            "</div>" +
+            "</div>" +
+            descriptionHtml +
+            requirementsHtml +
+            applyHtml +
+            "</div>";
+
+          Modal.open("opp-preview-modal");
+        }
+
+        /* ------------------------------------------------------------------
+           SUBMIT
+           ------------------------------------------------------------------ */
         bindForm(
-          document.getElementById("add-opp-form"),
+          form,
           {
-            title: [Rules.required],
+            title: [Rules.required, Rules.minLen(5)],
             category: [Rules.required],
             organization: [Rules.required],
             location: [Rules.required],
             deadline: [Rules.required],
-            summary: [Rules.required],
+            summary: [Rules.required, Rules.minLen(10)],
             description: [Rules.required, Rules.minLen(20)],
           },
-          (data) => {
-            DEMO_OPPORTUNITIES.unshift({
-              id: "opp-" + Date.now(),
-              title: data.get("title"),
-              category: data.get("category"),
-              organization: data.get("organization"),
-              location: data.get("location"),
-              deadline: data.get("deadline"),
-              summary: data.get("summary"),
-              description: data.get("description"),
-              requirements: ["See description for requirements"],
-              applyUrl: data.get("applyUrl") || "#",
-            });
+          function (data) {
+            var title = data.get("title").trim();
+            var category = data.get("category");
+            var organization = data.get("organization").trim();
+            var location = data.get("location").trim();
+            var deadline = data.get("deadline");
+            var summary = data.get("summary").trim();
+            var description = data.get("description").trim();
+            var requirementsRaw = (data.get("requirements") || "").trim();
+            var applyUrl = (data.get("applyUrl") || "").trim() || "#";
+            var notify = data.get("notify") === "on";
+
+            /* Parse requirements: one per line, drop empty lines */
+            var requirements = requirementsRaw
+              ? requirementsRaw
+                  .split("\n")
+                  .map(function (r) {
+                    return r.trim();
+                  })
+                  .filter(Boolean)
+              : ["See description for requirements"];
+
+            if (editingId) {
+              var target = opportunities.find(function (o) {
+                return o.id === editingId;
+              });
+              if (target) {
+                target.title = title;
+                target.category = category;
+                target.organization = organization;
+                target.location = location;
+                target.deadline = deadline;
+                target.summary = summary;
+                target.description = description;
+                target.requirements = requirements;
+                target.applyUrl = applyUrl;
+                persistEdit(target);
+              }
+              Toast.success("Opportunity updated.", "Saved");
+            } else {
+              var newRec = {
+                id: "opp-" + Date.now(),
+                title: title,
+                category: category,
+                organization: organization,
+                location: location,
+                deadline: deadline,
+                summary: summary,
+                description: description,
+                requirements: requirements,
+                applyUrl: applyUrl,
+                createdAt: Date.now(),
+              };
+              opportunities.unshift(newRec);
+              persistAdded(newRec);
+
+              if (notify) {
+                var notifs = Store.get("notifications", []) || [];
+                notifs.unshift({
+                  id: "n-" + Date.now(),
+                  type: "opportunity",
+                  icon: "fa-briefcase",
+                  tone: "marine",
+                  title: "New Opportunity",
+                  body: title,
+                  link: "opportunities.html",
+                  time: Date.now(),
+                  read: false,
+                });
+                Store.set("notifications", notifs);
+              }
+
+              Toast.success(
+                notify
+                  ? "Opportunity added. Students notified."
+                  : "Opportunity added.",
+                "Added",
+              );
+            }
+
             render();
-            Modal.close("add-opp-modal");
-            document.getElementById("add-opp-form").reset();
-            Toast.success("Opportunity added. Students notified.", "Added");
+            Modal.close("opp-editor-modal");
+            form.reset();
+            editingId = null;
           },
         );
+
+        /* ------------------------------------------------------------------
+           TRIGGERS
+           ------------------------------------------------------------------ */
+        document
+          .getElementById("opp-publish-btn")
+          .addEventListener("click", function () {
+            openEditor(null);
+          });
+
+        filterBar.addEventListener("click", function (e) {
+          var btn = e.target.closest("[data-status]");
+          if (!btn) return;
+          filterBar.querySelectorAll(".chip").forEach(function (c) {
+            c.classList.remove("is-active");
+          });
+          btn.classList.add("is-active");
+          activeFilter = btn.getAttribute("data-status");
+          render();
+        });
+
+        var debounce;
+        searchEl.addEventListener("input", function () {
+          clearTimeout(debounce);
+          debounce = setTimeout(render, 120);
+        });
+
+        document.addEventListener("click", function (e) {
+          if (e.target.closest("[data-modal-close]")) {
+            editingId = null;
+          }
+        });
+
+        render();
       });
     </script>
   </body>

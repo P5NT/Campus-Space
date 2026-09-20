@@ -45,8 +45,13 @@
   </head>
   <body class="has-session admin-body">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
-      <aside class="sidebar admin-sidebar" id="app-sidebar"></aside>
+      <aside
+        class="sidebar admin-sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
       <div class="app-main">
         <header class="app-header" id="app-header"></header>
         <main class="app-content" id="main">
@@ -59,11 +64,42 @@
             </div>
             <button
               class="btn btn-primary"
-              data-modal-open="assign-leader-modal"
+              id="assign-leader-btn"
+              type="button"
             >
               <i class="fa-solid fa-user-plus"></i> Assign leader
             </button>
           </div>
+
+          <div class="toolbar">
+            <div class="input-wrap">
+              <i class="fa-solid fa-magnifying-glass input-icon"></i>
+              <input
+                class="input"
+                type="search"
+                id="leaders-search"
+                placeholder="Search by name, username, position or association…"
+                aria-label="Search leaders"
+              />
+            </div>
+          </div>
+
+          <div class="filter-bar" id="leaders-filter" role="tablist">
+            <button class="chip is-active" data-filter="all" role="tab">
+              All
+            </button>
+            <button class="chip" data-filter="active" role="tab">Active</button>
+            <button class="chip" data-filter="inactive" role="tab">
+              Inactive
+            </button>
+          </div>
+
+          <div class="cluster-between" style="margin-bottom: 12px">
+            <p class="section-desc" style="margin: 0" id="leaders-count">
+              Loading…
+            </p>
+          </div>
+
           <div class="card">
             <div id="leaders-list"></div>
           </div>
@@ -71,18 +107,28 @@
       </div>
     </div>
 
-    <div class="modal-backdrop" id="assign-leader-modal">
+    <!-- ============ Assign / Edit leader modal ============ -->
+    <div
+      class="modal-backdrop"
+      id="assign-leader-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="assign-modal-title"
+    >
       <div class="modal">
         <div class="modal-head">
-          <h3>Assign leadership role</h3>
+          <h3 id="assign-modal-title">Assign leadership role</h3>
           <button class="btn-icon" data-modal-close aria-label="Close">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
         <form id="assign-leader-form" novalidate>
           <div class="modal-body">
-            <div class="field">
-              <label class="label">Student <span class="req">*</span></label>
+            <!-- Student field — dropdown on add, read-only display on edit -->
+            <div class="field" id="student-select-wrap">
+              <label class="label" for="l-student"
+                >Student <span class="req">*</span></label
+              >
               <select class="select" name="studentId" id="l-student">
                 <option value="">Select registered student</option>
               </select>
@@ -94,8 +140,33 @@
                 ><span>Please select a student.</span>
               </div>
             </div>
+
+            <div class="field" id="student-display-wrap" style="display: none">
+              <label class="label">Student</label>
+              <div class="leader-edit-student">
+                <span
+                  class="avatar avatar-40 avatar-fallback"
+                  id="l-edit-avatar"
+                  >--</span
+                >
+                <div class="leader-edit-student-info">
+                  <div class="leader-edit-student-name" id="l-edit-name">—</div>
+                  <div class="leader-edit-student-handle" id="l-edit-handle">
+                    —
+                  </div>
+                </div>
+                <span class="badge badge-neutral"
+                  ><i class="fa-solid fa-lock"></i> Fixed</span
+                >
+              </div>
+              <div class="field-help">
+                The student can't be changed here. Remove the leader and
+                reassign to change the student.
+              </div>
+            </div>
+
             <div class="field">
-              <label class="label"
+              <label class="label" for="l-assoc"
                 >Association <span class="req">*</span></label
               >
               <select class="select" name="associationId" id="l-assoc">
@@ -106,8 +177,11 @@
                 ><span>Please select an association.</span>
               </div>
             </div>
+
             <div class="field">
-              <label class="label">Position <span class="req">*</span></label>
+              <label class="label" for="l-pos"
+                >Position <span class="req">*</span></label
+              >
               <select class="select" name="positionId" id="l-pos">
                 <option value="">Select position</option>
               </select>
@@ -121,7 +195,9 @@
             <button type="button" class="btn btn-secondary" data-modal-close>
               Cancel
             </button>
-            <button type="submit" class="btn btn-primary">Assign leader</button>
+            <button type="submit" class="btn btn-primary" id="assign-submit">
+              <i class="fa-solid fa-check"></i> <span>Assign leader</span>
+            </button>
           </div>
         </form>
       </div>
@@ -144,8 +220,13 @@
     <script src="../../js/leaders.js"></script>
     <script src="../../js/admin.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
+      /* ==========================================================================
+         Student Leaders — Admin workspace.
+         Three actions per row: Edit, Deactivate/Activate, Remove.
+         Full CRUD with localStorage persistence (cs_leaders_overrides).
+         ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
         if (
           !session ||
           (session.role !== "admin" && session.role !== "super_admin")
@@ -155,104 +236,559 @@
         }
         initAppShell("admin");
 
-        // Populate selects
-        const studentSel = document.getElementById("l-student");
-        DEMO_STUDENTS.forEach((s) => {
-          studentSel.insertAdjacentHTML(
-            "beforeend",
-            `<option value="${s.id}">${Util.escape(s.firstName + " " + s.lastName)} — @${Util.escape(s.username)} (${Util.escape(s.matric)})</option>`,
-          );
-        });
-        const assocSel = document.getElementById("l-assoc");
-        DEMO_ASSOCIATIONS.filter((a) => a.active).forEach((a) => {
-          assocSel.insertAdjacentHTML(
-            "beforeend",
-            `<option value="${a.id}">${Util.escape(a.acronym)} — ${Util.escape(a.name)}</option>`,
-          );
-        });
-        const posSel = document.getElementById("l-pos");
-        DEMO_POSITIONS.filter((p) => p.active).forEach((p) => {
-          posSel.insertAdjacentHTML(
-            "beforeend",
-            `<option value="${p.id}">${Util.escape(p.name)}</option>`,
-          );
-        });
+        var STORAGE_KEY = "leaders_overrides";
 
+        /* ------------------------------------------------------------------
+           LOAD — merge demo leaders with saved overrides
+           Returns array of { studentId, associationId, positionId, active, assignedAt, assignedBy }
+           ------------------------------------------------------------------ */
+        function loadLeaders() {
+          var base = (
+            typeof DEMO_LEADERS !== "undefined" ? DEMO_LEADERS : []
+          ).map(function (l) {
+            return Object.assign({}, l, {
+              active: l.active !== false,
+              assignedAt: l.assignedAt || "2026-01-01",
+              assignedBy: l.assignedBy || "Admin",
+            });
+          });
+
+          var saved = Store.get(STORAGE_KEY, null);
+          if (saved && Array.isArray(saved.added)) {
+            saved.added.forEach(function (l) {
+              if (
+                !base.some(function (x) {
+                  return x.studentId === l.studentId;
+                })
+              ) {
+                base.push(l);
+              }
+            });
+          }
+          if (saved && Array.isArray(saved.deleted)) {
+            base = base.filter(function (l) {
+              return saved.deleted.indexOf(l.studentId) === -1;
+            });
+          }
+          if (saved && saved.edits) {
+            base.forEach(function (l) {
+              var edit = saved.edits[l.studentId];
+              if (edit) Object.assign(l, edit);
+            });
+          }
+          return base;
+        }
+
+        /* ------------------------------------------------------------------
+           PERSIST
+           ------------------------------------------------------------------ */
+        function persistEdit(record) {
+          var existing = Store.get(STORAGE_KEY, {}) || {};
+          existing.edits = existing.edits || {};
+          existing.edits[record.studentId] = {
+            associationId: record.associationId,
+            positionId: record.positionId,
+            active: record.active,
+          };
+          Store.set(STORAGE_KEY, existing);
+        }
+
+        function persistAdded(record) {
+          var existing = Store.get(STORAGE_KEY, {}) || {};
+          existing.added = existing.added || [];
+          existing.added = existing.added.filter(function (x) {
+            return x.studentId !== record.studentId;
+          });
+          existing.added.push(record);
+          Store.set(STORAGE_KEY, existing);
+        }
+
+        function persistDeleted(studentId) {
+          var existing = Store.get(STORAGE_KEY, {}) || {};
+          existing.deleted = existing.deleted || [];
+          if (existing.deleted.indexOf(studentId) === -1) {
+            existing.deleted.push(studentId);
+          }
+          /* Also drop any added override for that student */
+          if (Array.isArray(existing.added)) {
+            existing.added = existing.added.filter(function (x) {
+              return x.studentId !== studentId;
+            });
+          }
+          /* And any pending edit */
+          if (existing.edits && existing.edits[studentId]) {
+            delete existing.edits[studentId];
+          }
+          Store.set(STORAGE_KEY, existing);
+        }
+
+        /* ------------------------------------------------------------------
+           STATE
+           ------------------------------------------------------------------ */
+        var leaders = loadLeaders();
+        var activeFilter = "all";
+        var editingStudentId = null;
+
+        var listEl = document.getElementById("leaders-list");
+        var countEl = document.getElementById("leaders-count");
+        var searchEl = document.getElementById("leaders-search");
+        var filterBar = document.getElementById("leaders-filter");
+        var modalTitle = document.getElementById("assign-modal-title");
+        var submitBtn = document.getElementById("assign-submit");
+        var form = document.getElementById("assign-leader-form");
+        var studentSelectWrap = document.getElementById("student-select-wrap");
+        var studentDisplayWrap = document.getElementById(
+          "student-display-wrap",
+        );
+
+        /* ------------------------------------------------------------------
+           POPULATE SELECTS
+           ------------------------------------------------------------------ */
+        var studentSel = document.getElementById("l-student");
+        var assocSel = document.getElementById("l-assoc");
+        var posSel = document.getElementById("l-pos");
+
+        function populateStudentSelect() {
+          studentSel.innerHTML =
+            '<option value="">Select registered student</option>';
+          (typeof DEMO_STUDENTS !== "undefined" ? DEMO_STUDENTS : []).forEach(
+            function (s) {
+              /* Only show active students */
+              if (s.status && s.status !== "active") return;
+              var opt = document.createElement("option");
+              opt.value = s.id;
+              opt.textContent =
+                s.firstName +
+                " " +
+                s.lastName +
+                " — @" +
+                s.username +
+                " (" +
+                s.matric +
+                ")";
+              studentSel.appendChild(opt);
+            },
+          );
+        }
+
+        function populateAssocSelect() {
+          assocSel.innerHTML = '<option value="">Select association</option>';
+          (typeof DEMO_ASSOCIATIONS !== "undefined" ? DEMO_ASSOCIATIONS : [])
+            .filter(function (a) {
+              return a.active;
+            })
+            .forEach(function (a) {
+              var opt = document.createElement("option");
+              opt.value = a.id;
+              opt.textContent = a.acronym + " — " + a.name;
+              assocSel.appendChild(opt);
+            });
+        }
+
+        function populatePosSelect() {
+          posSel.innerHTML = '<option value="">Select position</option>';
+          (typeof DEMO_POSITIONS !== "undefined" ? DEMO_POSITIONS : [])
+            .filter(function (p) {
+              return p.active;
+            })
+            .forEach(function (p) {
+              var opt = document.createElement("option");
+              opt.value = p.id;
+              opt.textContent = p.name;
+              posSel.appendChild(opt);
+            });
+        }
+
+        populateStudentSelect();
+        populateAssocSelect();
+        populatePosSelect();
+
+        /* ------------------------------------------------------------------
+           HELPERS
+           ------------------------------------------------------------------ */
+        function lookupStudent(id) {
+          return (
+            typeof DEMO_STUDENTS !== "undefined" ? DEMO_STUDENTS : []
+          ).find(function (s) {
+            return s.id === id;
+          });
+        }
+
+        function lookupAssoc(id) {
+          return (
+            typeof DEMO_ASSOCIATIONS !== "undefined" ? DEMO_ASSOCIATIONS : []
+          ).find(function (a) {
+            return a.id === id;
+          });
+        }
+
+        function lookupPos(id) {
+          return (
+            typeof DEMO_POSITIONS !== "undefined" ? DEMO_POSITIONS : []
+          ).find(function (p) {
+            return p.id === id;
+          });
+        }
+
+        /* ------------------------------------------------------------------
+           RENDER
+           ------------------------------------------------------------------ */
         function render() {
-          const listEl = document.getElementById("leaders-list");
+          var q = searchEl.value.trim().toLowerCase();
+
+          var visible = leaders.filter(function (l) {
+            /* Filter by state */
+            if (activeFilter === "active" && l.active === false) return false;
+            if (activeFilter === "inactive" && l.active !== false) return false;
+
+            /* Filter by search */
+            if (!q) return true;
+            var student = lookupStudent(l.studentId) || {};
+            var assoc = lookupAssoc(l.associationId) || {};
+            var pos = lookupPos(l.positionId) || {};
+            var full =
+              (student.firstName || "") + " " + (student.lastName || "");
+            return (
+              full.toLowerCase().indexOf(q) !== -1 ||
+              (student.username || "").toLowerCase().indexOf(q) !== -1 ||
+              (student.matric || "").toLowerCase().indexOf(q) !== -1 ||
+              (assoc.name || "").toLowerCase().indexOf(q) !== -1 ||
+              (assoc.acronym || "").toLowerCase().indexOf(q) !== -1 ||
+              (pos.name || "").toLowerCase().indexOf(q) !== -1
+            );
+          });
+
+          /* Sort: active first, then by student name */
+          visible.sort(function (a, b) {
+            if (a.active !== b.active) return a.active ? -1 : 1;
+            var sa = lookupStudent(a.studentId) || {};
+            var sb = lookupStudent(b.studentId) || {};
+            return (sa.firstName || "").localeCompare(sb.firstName || "");
+          });
+
+          countEl.textContent =
+            visible.length +
+            " leader" +
+            (visible.length === 1 ? "" : "s") +
+            (q || activeFilter !== "all" ? " matching" : "");
+
           listEl.innerHTML = "";
-          const leaders = getLeaderList();
-          if (!leaders.length) {
+
+          if (!visible.length) {
+            var emptyMsg = q
+              ? "No leaders match your search."
+              : activeFilter === "active"
+                ? "No active leaders yet."
+                : activeFilter === "inactive"
+                  ? "No deactivated leaders."
+                  : "No leaders assigned yet.";
             listEl.innerHTML =
-              '<div class="empty-state" style="padding:40px;"><div class="empty-icon"><i class="fa-solid fa-user-tie"></i></div><h3>No leaders assigned</h3></div>';
+              '<div class="empty-state" style="padding:48px 24px;">' +
+              '<div class="empty-icon"><i class="fa-solid fa-user-tie"></i></div>' +
+              "<h3>" +
+              emptyMsg +
+              "</h3>" +
+              (!q && activeFilter === "all"
+                ? "<p>Click <strong>Assign leader</strong> to get started.</p>"
+                : "") +
+              "</div>";
             return;
           }
-          leaders.forEach((l) => {
-            const el = document.createElement("div");
-            el.className = "resource-row";
-            el.innerHTML = `
-        <span class="avatar avatar-48 avatar-fallback">${Util.initials(l.student.firstName + " " + l.student.lastName)}</span>
-        <div class="resource-info">
-          <div class="resource-name">${Util.escape(l.student.firstName + " " + l.student.lastName)} <i class="fa-solid fa-circle-check tag-verified"></i></div>
-          <div class="resource-meta">
-            <span>@${Util.escape(l.student.username)}</span>
-            <span>${Util.escape(l.pos.name)}</span>
-            <span>${Util.escape(l.assoc.acronym)}</span>
-          </div>
-        </div>
-        <button class="btn btn-ghost btn-sm" data-remove style="color:var(--danger);" aria-label="Remove leader">
-          <i class="fa-solid fa-user-minus"></i>
-        </button>`;
-            el.querySelector("[data-remove]").addEventListener(
+
+          visible.forEach(function (l) {
+            var student = lookupStudent(l.studentId);
+            var assoc = lookupAssoc(l.associationId);
+            var pos = lookupPos(l.positionId);
+
+            if (!student || !assoc || !pos) return;
+
+            var fullName = student.firstName + " " + student.lastName;
+            var initials = Util.initials(fullName);
+            var isActive = l.active !== false;
+
+            var el = document.createElement("div");
+            el.className = "leader-row" + (isActive ? "" : " is-inactive");
+
+            el.innerHTML =
+              '<div class="leader-row-avatar">' +
+              '<span class="avatar avatar-56 avatar-fallback">' +
+              initials +
+              "</span>" +
+              "</div>" +
+              '<div class="leader-row-body">' +
+              '<div class="leader-row-name">' +
+              Util.escape(fullName) +
+              ' <i class="fa-solid fa-circle-check tag-verified"></i>' +
+              "</div>" +
+              '<div class="leader-row-handle">@' +
+              Util.escape(student.username) +
+              "</div>" +
+              '<div class="leader-row-meta">' +
+              '<span class="leader-meta-tag"><i class="fa-solid fa-people-group"></i> ' +
+              Util.escape(assoc.acronym) +
+              "</span>" +
+              '<span class="leader-meta-pos"><i class="fa-solid fa-ranking-star"></i> ' +
+              Util.escape(pos.name) +
+              "</span>" +
+              '<span class="badge ' +
+              (isActive ? "badge-success" : "badge-neutral") +
+              '">' +
+              '<i class="fa-solid ' +
+              (isActive ? "fa-circle-check" : "fa-circle-pause") +
+              '"></i> ' +
+              (isActive ? "Active" : "Inactive") +
+              "</span>" +
+              "</div>" +
+              "</div>" +
+              '<div class="leader-row-actions">' +
+              '<button class="btn btn-secondary btn-sm" data-edit type="button" aria-label="Edit leader">' +
+              '<i class="fa-solid fa-pen"></i> <span>Edit</span>' +
+              "</button>" +
+              '<button class="btn btn-sm ' +
+              (isActive ? "btn-ghost" : "btn-secondary") +
+              '" data-toggle type="button" aria-label="' +
+              (isActive ? "Deactivate leader" : "Reactivate leader") +
+              '"' +
+              (isActive ? ' style="color:var(--danger);"' : "") +
+              ">" +
+              '<i class="fa-solid ' +
+              (isActive ? "fa-ban" : "fa-circle-check") +
+              '"></i> ' +
+              "<span>" +
+              (isActive ? "Deactivate" : "Activate") +
+              "</span>" +
+              "</button>" +
+              '<button class="btn btn-ghost btn-sm" data-remove type="button" aria-label="Remove leader" style="color:var(--danger);">' +
+              '<i class="fa-solid fa-user-minus"></i> <span>Remove</span>' +
+              "</button>" +
+              "</div>";
+
+            /* ---- Edit ---- */
+            el.querySelector("[data-edit]").addEventListener(
               "click",
-              async () => {
-                if (
-                  await Confirmation.confirm({
-                    title: "Remove this leader?",
-                    message:
-                      "They will lose their leadership tag and public leader profile.",
-                    confirmLabel: "Remove",
-                    variant: "danger",
-                  })
-                ) {
-                  DEMO_LEADERS.splice(
-                    DEMO_LEADERS.findIndex((x) => x.studentId === l.student.id),
-                    1,
-                  );
-                  render();
-                  Toast.success("Leader removed.", "Saved");
-                }
+              function () {
+                openEditor(l);
               },
             );
+
+            /* ---- Toggle active ---- */
+            el.querySelector("[data-toggle]").addEventListener(
+              "click",
+              async function () {
+                var ok = await Confirmation.confirm({
+                  title: isActive
+                    ? "Deactivate this leader?"
+                    : "Reactivate this leader?",
+                  message: isActive
+                    ? Util.escape(fullName) +
+                      " will be hidden from the public leader list and their association tag will stop appearing on new posts."
+                    : Util.escape(fullName) +
+                      " will appear publicly as a leader again.",
+                  confirmLabel: isActive ? "Deactivate" : "Reactivate",
+                  variant: isActive ? "danger" : "primary",
+                });
+                if (!ok) return;
+
+                l.active = !l.active;
+                persistEdit(l);
+                render();
+                Toast.success(
+                  l.active ? "Leader reactivated." : "Leader deactivated.",
+                  "Saved",
+                );
+              },
+            );
+
+            /* ---- Remove ---- */
+            el.querySelector("[data-remove]").addEventListener(
+              "click",
+              async function () {
+                var ok = await Confirmation.confirm({
+                  title: "Remove this leader?",
+                  message:
+                    Util.escape(fullName) +
+                    " will lose their leadership tag and public leader profile entirely. This cannot be undone.",
+                  confirmLabel: "Remove",
+                  variant: "danger",
+                });
+                if (!ok) return;
+
+                leaders = leaders.filter(function (x) {
+                  return x.studentId !== l.studentId;
+                });
+                persistDeleted(l.studentId);
+                render();
+                Toast.success("Leader removed.", "Saved");
+              },
+            );
+
             listEl.appendChild(el);
           });
         }
-        render();
 
+        /* ------------------------------------------------------------------
+           OPEN EDITOR — Add or Edit
+           ------------------------------------------------------------------ */
+        function openEditor(existing) {
+          form.reset();
+          form.querySelectorAll(".field").forEach(function (f) {
+            f.classList.remove("is-invalid", "is-valid");
+          });
+
+          if (existing) {
+            /* Edit mode */
+            editingStudentId = existing.studentId;
+            var student = lookupStudent(existing.studentId);
+
+            modalTitle.textContent = "Edit leadership role";
+            submitBtn.querySelector("span").textContent = "Save changes";
+
+            /* Hide student dropdown, show read-only display */
+            studentSelectWrap.style.display = "none";
+            studentDisplayWrap.style.display = "";
+
+            var avatar = document.getElementById("l-edit-avatar");
+            var nameEl = document.getElementById("l-edit-name");
+            var handleEl = document.getElementById("l-edit-handle");
+
+            if (student) {
+              var fullName = student.firstName + " " + student.lastName;
+              avatar.textContent = Util.initials(fullName);
+              nameEl.textContent = fullName;
+              handleEl.textContent = "@" + student.username;
+            }
+
+            /* Prefill association + position */
+            assocSel.value = existing.associationId;
+            posSel.value = existing.positionId;
+          } else {
+            /* Add mode */
+            editingStudentId = null;
+            modalTitle.textContent = "Assign leadership role";
+            submitBtn.querySelector("span").textContent = "Assign leader";
+
+            studentSelectWrap.style.display = "";
+            studentDisplayWrap.style.display = "none";
+            studentSel.value = "";
+            assocSel.value = "";
+            posSel.value = "";
+          }
+
+          Modal.open("assign-leader-modal");
+        }
+
+        /* ------------------------------------------------------------------
+           SUBMIT
+           ------------------------------------------------------------------ */
         bindForm(
-          document.getElementById("assign-leader-form"),
+          form,
           {
             studentId: [Rules.required],
             associationId: [Rules.required],
             positionId: [Rules.required],
           },
-          (data) => {
-            const existing = DEMO_LEADERS.findIndex(
-              (l) => l.studentId === data.get("studentId"),
-            );
-            const entry = {
-              studentId: data.get("studentId"),
-              associationId: data.get("associationId"),
-              positionId: data.get("positionId"),
-            };
-            if (existing >= 0) DEMO_LEADERS[existing] = entry;
-            else DEMO_LEADERS.push(entry);
+          function (data) {
+            var studentId = data.get("studentId");
+            var associationId = data.get("associationId");
+            var positionId = data.get("positionId");
+
+            /* Guard: association and position must not clash with another leader */
+            var clash = leaders.find(function (l) {
+              return (
+                l.studentId !== studentId &&
+                l.associationId === associationId &&
+                l.positionId === positionId &&
+                l.active !== false
+              );
+            });
+            if (clash && !editingStudentId) {
+              var clashStudent = lookupStudent(clash.studentId);
+              Toast.error(
+                "That position in this association is already held by " +
+                  (clashStudent
+                    ? clashStudent.firstName + " " + clashStudent.lastName
+                    : "another student") +
+                  ".",
+                "Position already held",
+              );
+              return;
+            }
+
+            if (editingStudentId) {
+              /* Edit */
+              var target = leaders.find(function (l) {
+                return l.studentId === editingStudentId;
+              });
+              if (target) {
+                target.associationId = associationId;
+                target.positionId = positionId;
+                persistEdit(target);
+              }
+              Toast.success("Leadership role updated.", "Saved");
+            } else {
+              /* Add */
+              var existingIdx = leaders.findIndex(function (l) {
+                return l.studentId === studentId;
+              });
+              var newRec = {
+                studentId: studentId,
+                associationId: associationId,
+                positionId: positionId,
+                active: true,
+                assignedAt: new Date().toISOString().slice(0, 10),
+                assignedBy: session.name || session.username,
+              };
+              if (existingIdx >= 0) {
+                leaders[existingIdx] = newRec;
+              } else {
+                leaders.push(newRec);
+              }
+              persistAdded(newRec);
+              Toast.success("Leadership role assigned.", "Saved");
+            }
+
             render();
             Modal.close("assign-leader-modal");
-            document.getElementById("assign-leader-form").reset();
-            Toast.success("Leadership role assigned.", "Saved");
+            form.reset();
+            editingStudentId = null;
           },
         );
+
+        /* ------------------------------------------------------------------
+           TRIGGERS
+           ------------------------------------------------------------------ */
+        document
+          .getElementById("assign-leader-btn")
+          .addEventListener("click", function () {
+            openEditor(null);
+          });
+
+        filterBar.addEventListener("click", function (e) {
+          var btn = e.target.closest("[data-filter]");
+          if (!btn) return;
+          filterBar.querySelectorAll(".chip").forEach(function (c) {
+            c.classList.remove("is-active");
+          });
+          btn.classList.add("is-active");
+          activeFilter = btn.getAttribute("data-filter");
+          render();
+        });
+
+        var debounce;
+        searchEl.addEventListener("input", function () {
+          clearTimeout(debounce);
+          debounce = setTimeout(render, 120);
+        });
+
+        /* Reset state on modal close */
+        document.addEventListener("click", function (e) {
+          if (e.target.closest("[data-modal-close]")) {
+            editingStudentId = null;
+          }
+        });
+
+        /* Initial render */
+        render();
       });
     </script>
   </body>

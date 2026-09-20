@@ -245,29 +245,33 @@ const DEMO_RESOURCES = [
 ];
 
 /* ==========================================================================
-   LECTURE & EXAM TIMETABLES — by Faculty, Department, Level
+   LECTURE TIMETABLES — by Faculty, Department, Level
    Each entry is scoped to a specific department and level.
    A student only sees entries matching their own faculty, department, level.
    ========================================================================== */
 
 const DEMO_LECTURE_TIMETABLES = [
-  /* Computing — Computer Science */
+  /* Computing — Computer Science 400L */
   {
     faculty: "Computing",
     department: "Computer Science",
     level: "400",
+    session: "2026/2027",
+    semester: "First",
     slots: [
       {
         time: "8:00 – 10:00 AM",
         periods: {
           Monday: {
             code: "CSC 401",
+            title: "Software Engineering",
             venue: "Hall A",
             lecturer: "Dr. Ogunlade",
             color: "brand",
           },
           Wednesday: {
             code: "CSC 403",
+            title: "Compiler Construction",
             venue: "Hall B",
             lecturer: "Prof. Adeleke",
             color: "marine",
@@ -278,15 +282,17 @@ const DEMO_LECTURE_TIMETABLES = [
         time: "10:00 – 12:00 PM",
         periods: {
           Tuesday: {
-            code: "CYB 301",
+            code: "CSC 405",
+            title: "Computer Graphics",
             venue: "ICT Lab 1",
-            lecturer: "Dr. Bakare",
+            lecturer: "Dr. Salako",
             color: "success",
           },
           Thursday: {
-            code: "CSC 405",
+            code: "CSC 407",
+            title: "Artificial Intelligence",
             venue: "Hall A",
-            lecturer: "Dr. Salako",
+            lecturer: "Dr. Aliyu",
             color: "warning",
           },
         },
@@ -296,14 +302,16 @@ const DEMO_LECTURE_TIMETABLES = [
         periods: {
           Wednesday: {
             code: "CSC 401",
+            title: "Software Engineering",
             venue: "Hall A",
             lecturer: "Dr. Ogunlade",
             color: "brand",
           },
           Friday: {
-            code: "EEE 305",
-            venue: "Eng Hall",
-            lecturer: "Dr. Ajayi",
+            code: "CSC 409",
+            title: "Data Mining",
+            venue: "ICT Lab 2",
+            lecturer: "Dr. Bakare",
             color: "marine",
           },
         },
@@ -312,13 +320,15 @@ const DEMO_LECTURE_TIMETABLES = [
         time: "2:00 – 4:00 PM",
         periods: {
           Monday: {
-            code: "CSC 407",
+            code: "CSC 411",
+            title: "Machine Learning",
             venue: "Lab 2",
             lecturer: "Dr. Aliyu",
             color: "warning",
           },
           Thursday: {
             code: "CSC 403",
+            title: "Compiler Construction",
             venue: "Hall B",
             lecturer: "Prof. Adeleke",
             color: "marine",
@@ -327,23 +337,28 @@ const DEMO_LECTURE_TIMETABLES = [
       },
     ],
   },
-  /* Computing — Cyber Security */
+
+  /* Computing — Cyber Security 200L */
   {
     faculty: "Computing",
     department: "Cyber Security",
     level: "200",
+    session: "2026/2027",
+    semester: "First",
     slots: [
       {
         time: "8:00 – 10:00 AM",
         periods: {
           Tuesday: {
             code: "CYB 201",
+            title: "Introduction to Cyber Security",
             venue: "ICT Lab 2",
             lecturer: "Dr. Bakare",
             color: "success",
           },
           Thursday: {
             code: "CYB 203",
+            title: "Cryptography Foundations",
             venue: "ICT Lab 1",
             lecturer: "Dr. Adeyemi",
             color: "marine",
@@ -355,34 +370,59 @@ const DEMO_LECTURE_TIMETABLES = [
         periods: {
           Monday: {
             code: "CSC 201",
+            title: "Data Structures",
             venue: "Hall C",
             lecturer: "Dr. Ogunlade",
             color: "brand",
           },
           Wednesday: {
             code: "CYB 205",
+            title: "Networking Fundamentals",
             venue: "ICT Lab 3",
             lecturer: "Dr. Yakubu",
             color: "warning",
           },
         },
       },
+      {
+        time: "12:00 – 2:00 PM",
+        periods: {
+          Friday: {
+            code: "CYB 207",
+            title: "Digital Forensics",
+            venue: "ICT Lab 1",
+            lecturer: "Dr. Adeyemi",
+            color: "success",
+          },
+        },
+      },
     ],
   },
-  /* Engineering — EEE */
+
+  /* Engineering — EEE 300L */
   {
     faculty: "Engineering and Engineering Technology",
     department: "Electrical and Electronics Engineering",
     level: "300",
+    session: "2026/2027",
+    semester: "First",
     slots: [
       {
         time: "8:00 – 10:00 AM",
         periods: {
           Monday: {
             code: "EEE 301",
+            title: "Circuit Theory II",
             venue: "Eng Hall A",
             lecturer: "Dr. Ajayi",
             color: "marine",
+          },
+          Wednesday: {
+            code: "EEE 307",
+            title: "Electrical Machines I",
+            venue: "Eng Lab 2",
+            lecturer: "Dr. Ogunbiyi",
+            color: "success",
           },
         },
       },
@@ -391,15 +431,17 @@ const DEMO_LECTURE_TIMETABLES = [
         periods: {
           Tuesday: {
             code: "EEE 305",
+            title: "Signals and Systems",
             venue: "Eng Hall B",
             lecturer: "Dr. Ajayi",
             color: "marine",
           },
           Thursday: {
-            code: "EEE 307",
-            venue: "Lab 1",
-            lecturer: "Dr. Ogunbiyi",
-            color: "success",
+            code: "EEE 309",
+            title: "Electronics II",
+            venue: "Eng Lab 1",
+            lecturer: "Dr. Salami",
+            color: "warning",
           },
         },
       },
@@ -408,28 +450,47 @@ const DEMO_LECTURE_TIMETABLES = [
         periods: {
           Wednesday: {
             code: "EEE 303",
+            title: "Electromagnetic Fields",
             venue: "Eng Hall A",
             lecturer: "Prof. Salami",
             color: "brand",
+          },
+          Friday: {
+            code: "EEE 311",
+            title: "Control Systems I",
+            venue: "Eng Hall B",
+            lecturer: "Dr. Ogunbiyi",
+            color: "success",
           },
         },
       },
     ],
   },
-  /* Sciences — Biochemistry */
+
+  /* Sciences — Biochemistry 200L */
   {
     faculty: "Sciences",
     department: "Biochemistry",
     level: "200",
+    session: "2026/2027",
+    semester: "First",
     slots: [
       {
         time: "8:00 – 10:00 AM",
         periods: {
           Tuesday: {
             code: "BCH 201",
+            title: "General Biochemistry I",
             venue: "Sci Hall A",
             lecturer: "Dr. Akintola",
             color: "brand",
+          },
+          Thursday: {
+            code: "BCH 205",
+            title: "Enzymology",
+            venue: "Sci Lab 1",
+            lecturer: "Dr. Oladipo",
+            color: "marine",
           },
         },
       },
@@ -438,67 +499,105 @@ const DEMO_LECTURE_TIMETABLES = [
         periods: {
           Monday: {
             code: "BCH 203",
+            title: "Bioenergetics",
             venue: "Sci Lab 2",
             lecturer: "Dr. Oladipo",
             color: "success",
           },
           Wednesday: {
             code: "CHM 201",
+            title: "Organic Chemistry",
             venue: "Sci Hall B",
             lecturer: "Dr. Eze",
             color: "warning",
           },
         },
       },
+      {
+        time: "12:00 – 2:00 PM",
+        periods: {
+          Friday: {
+            code: "BCH 207",
+            title: "Metabolic Pathways",
+            venue: "Sci Hall A",
+            lecturer: "Dr. Akintola",
+            color: "brand",
+          },
+        },
+      },
     ],
   },
-  /* Management — Accounting */
+
+  /* Management — Accounting 400L */
   {
     faculty: "Management Sciences",
     department: "Accounting",
     level: "400",
+    session: "2026/2027",
+    semester: "First",
     slots: [
       {
         time: "8:00 – 10:00 AM",
         periods: {
           Monday: {
             code: "ACC 401",
+            title: "Advanced Financial Accounting",
             venue: "Mgmt Hall 1",
             lecturer: "Dr. Adegoke",
             color: "brand",
           },
-        },
-      },
-      {
-        time: "10:00 – 12:00 PM",
-        periods: {
           Wednesday: {
             code: "ACC 405",
+            title: "Auditing and Assurance",
             venue: "Mgmt Hall 2",
             lecturer: "Dr. Oyedeji",
             color: "marine",
           },
         },
       },
+      {
+        time: "10:00 – 12:00 PM",
+        periods: {
+          Tuesday: {
+            code: "ACC 403",
+            title: "Management Accounting",
+            venue: "Mgmt Hall 3",
+            lecturer: "Dr. Adebayo",
+            color: "success",
+          },
+          Thursday: {
+            code: "ACC 407",
+            title: "Taxation",
+            venue: "Mgmt Hall 1",
+            lecturer: "Dr. Oyedeji",
+            color: "warning",
+          },
+        },
+      },
     ],
   },
-  /* Nursing — Nursing Science */
+
+  /* Nursing — Nursing Science 500L */
   {
     faculty: "Nursing and Allied Sciences",
     department: "Nursing Science",
     level: "500",
+    session: "2026/2027",
+    semester: "First",
     slots: [
       {
         time: "8:00 – 10:00 AM",
         periods: {
           Monday: {
             code: "NSC 501",
+            title: "Advanced Clinical Practice",
             venue: "Nursing Hall",
             lecturer: "Dr. Okafor",
             color: "brand",
           },
           Wednesday: {
             code: "NSC 503",
+            title: "Community Health Nursing",
             venue: "Clinical Lab",
             lecturer: "Dr. Adeleke",
             color: "success",
@@ -510,6 +609,7 @@ const DEMO_LECTURE_TIMETABLES = [
         periods: {
           Friday: {
             code: "NSC 507",
+            title: "Nursing Research",
             venue: "Nursing Hall",
             lecturer: "Dr. Nwosu",
             color: "marine",
@@ -520,12 +620,18 @@ const DEMO_LECTURE_TIMETABLES = [
   },
 ];
 
+/* ==========================================================================
+   EXAM TIMETABLES — by Faculty, Department, Level
+   ========================================================================== */
+
 const DEMO_EXAM_TIMETABLES = [
-  /* Computing — Computer Science Level 400 */
+  /* Computing — Computer Science 400L */
   {
     faculty: "Computing",
     department: "Computer Science",
     level: "400",
+    session: "2026/2027",
+    semester: "First",
     exams: [
       {
         date: "2026-04-20",
@@ -555,13 +661,30 @@ const DEMO_EXAM_TIMETABLES = [
         title: "Signals and Systems",
         venue: "Engineering Hall",
       },
+      {
+        date: "2026-04-28",
+        time: "1:00 PM – 4:00 PM",
+        course: "CSC 405",
+        title: "Computer Graphics",
+        venue: "Main Hall A",
+      },
+      {
+        date: "2026-04-30",
+        time: "9:00 AM – 12:00 PM",
+        course: "CSC 407",
+        title: "Artificial Intelligence",
+        venue: "Main Hall B",
+      },
     ],
   },
-  /* Computing — Cyber Security Level 200 */
+
+  /* Computing — Cyber Security 200L */
   {
     faculty: "Computing",
     department: "Cyber Security",
     level: "200",
+    session: "2026/2027",
+    semester: "First",
     exams: [
       {
         date: "2026-04-20",
@@ -581,16 +704,26 @@ const DEMO_EXAM_TIMETABLES = [
         date: "2026-04-24",
         time: "1:00 PM – 4:00 PM",
         course: "CYB 205",
-        title: "Cryptography Foundations",
+        title: "Networking Fundamentals",
         venue: "ICT Centre Lab 3",
+      },
+      {
+        date: "2026-04-27",
+        time: "9:00 AM – 12:00 PM",
+        course: "CYB 203",
+        title: "Cryptography Foundations",
+        venue: "ICT Centre Lab 1",
       },
     ],
   },
-  /* Engineering — EEE Level 300 */
+
+  /* Engineering — EEE 300L */
   {
     faculty: "Engineering and Engineering Technology",
     department: "Electrical and Electronics Engineering",
     level: "300",
+    session: "2026/2027",
+    semester: "First",
     exams: [
       {
         date: "2026-04-22",
@@ -613,13 +746,23 @@ const DEMO_EXAM_TIMETABLES = [
         title: "Electromagnetic Fields",
         venue: "Engineering Hall A",
       },
+      {
+        date: "2026-04-29",
+        time: "1:00 PM – 4:00 PM",
+        course: "EEE 307",
+        title: "Electrical Machines I",
+        venue: "Engineering Lab 2",
+      },
     ],
   },
-  /* Sciences — Biochemistry Level 200 */
+
+  /* Sciences — Biochemistry 200L */
   {
     faculty: "Sciences",
     department: "Biochemistry",
     level: "200",
+    session: "2026/2027",
+    semester: "First",
     exams: [
       {
         date: "2026-04-21",
@@ -635,13 +778,23 @@ const DEMO_EXAM_TIMETABLES = [
         title: "Organic Chemistry",
         venue: "Science Hall B",
       },
+      {
+        date: "2026-04-28",
+        time: "9:00 AM – 12:00 PM",
+        course: "BCH 203",
+        title: "Bioenergetics",
+        venue: "Science Hall A",
+      },
     ],
   },
-  /* Management — Accounting Level 400 */
+
+  /* Management — Accounting 400L */
   {
     faculty: "Management Sciences",
     department: "Accounting",
     level: "400",
+    session: "2026/2027",
+    semester: "First",
     exams: [
       {
         date: "2026-04-30",
@@ -657,13 +810,23 @@ const DEMO_EXAM_TIMETABLES = [
         title: "Auditing and Assurance",
         venue: "Management Hall",
       },
+      {
+        date: "2026-05-06",
+        time: "9:00 AM – 12:00 PM",
+        course: "ACC 403",
+        title: "Management Accounting",
+        venue: "Management Hall 2",
+      },
     ],
   },
-  /* Nursing — Nursing Science Level 500 */
+
+  /* Nursing — Nursing Science 500L */
   {
     faculty: "Nursing and Allied Sciences",
     department: "Nursing Science",
     level: "500",
+    session: "2026/2027",
+    semester: "First",
     exams: [
       {
         date: "2026-04-23",
@@ -679,30 +842,55 @@ const DEMO_EXAM_TIMETABLES = [
         title: "Community Health Nursing",
         venue: "Nursing Hall",
       },
+      {
+        date: "2026-04-30",
+        time: "9:00 AM – 12:00 PM",
+        course: "NSC 507",
+        title: "Nursing Research",
+        venue: "Nursing Hall",
+      },
     ],
   },
 ];
 
-/* Helper — find the current student's lecture timetable */
+/* Helper — find the current student's lecture timetable.
+   Merges admin-published overrides from localStorage on top of the demo data. */
 function getStudentLectureTimetable(student) {
   if (!student) return null;
-  return DEMO_LECTURE_TIMETABLES.find(function (t) {
-    return (
-      t.faculty === student.faculty &&
-      t.department === student.department &&
-      t.level === student.level
-    );
-  });
+
+  var source =
+    typeof TimetableAdmin !== "undefined"
+      ? TimetableAdmin.getMergedLectureTimetables()
+      : DEMO_LECTURE_TIMETABLES;
+
+  return (
+    source.find(function (t) {
+      return (
+        t.faculty === student.faculty &&
+        t.department === student.department &&
+        t.level === student.level
+      );
+    }) || null
+  );
 }
 
-/* Helper — find the current student's exam timetable */
+/* Helper — find the current student's exam timetable.
+   Merges admin-published overrides from localStorage on top of the demo data. */
 function getStudentExamTimetable(student) {
   if (!student) return null;
-  return DEMO_EXAM_TIMETABLES.find(function (t) {
-    return (
-      t.faculty === student.faculty &&
-      t.department === student.department &&
-      t.level === student.level
-    );
-  });
+
+  var source =
+    typeof TimetableAdmin !== "undefined"
+      ? TimetableAdmin.getMergedExamTimetables()
+      : DEMO_EXAM_TIMETABLES;
+
+  return (
+    source.find(function (t) {
+      return (
+        t.faculty === student.faculty &&
+        t.department === student.department &&
+        t.level === student.level
+      );
+    }) || null
+  );
 }

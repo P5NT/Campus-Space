@@ -45,8 +45,13 @@
   </head>
   <body class="has-session admin-body">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
-      <aside class="sidebar admin-sidebar" id="app-sidebar"></aside>
+      <aside
+        class="sidebar admin-sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
       <div class="app-main">
         <header class="app-header" id="app-header"></header>
         <main class="app-content" id="main">
@@ -58,11 +63,12 @@
                 is pulled from their student record.
               </p>
             </div>
-            <button class="btn btn-primary" data-modal-open="tag-contact-modal">
+            <button class="btn btn-primary" id="tag-contact-btn" type="button">
               <i class="fa-solid fa-shield-heart"></i> Tag a student
             </button>
           </div>
 
+          <!-- Info notice -->
           <div
             class="card"
             style="
@@ -91,33 +97,91 @@
             </div>
           </div>
 
+          <div class="toolbar">
+            <div class="input-wrap">
+              <i class="fa-solid fa-magnifying-glass input-icon"></i>
+              <input
+                class="input"
+                type="search"
+                id="ec-search"
+                placeholder="Search by name, category or note…"
+                aria-label="Search emergency contacts"
+              />
+            </div>
+          </div>
+
+          <div class="cluster-between" style="margin-bottom: 12px">
+            <p class="section-desc" style="margin: 0" id="ec-count">Loading…</p>
+          </div>
+
           <div class="grid grid-3" id="emergency-grid"></div>
         </main>
       </div>
     </div>
 
-    <div class="modal-backdrop" id="tag-contact-modal">
+    <!-- ============ Tag / Edit contact modal ============ -->
+    <div
+      class="modal-backdrop"
+      id="tag-contact-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ec-modal-title"
+    >
       <div class="modal">
         <div class="modal-head">
-          <h3>Tag student as emergency contact</h3>
+          <h3 id="ec-modal-title">Tag student as emergency contact</h3>
           <button class="btn-icon" data-modal-close aria-label="Close">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
         <form id="tag-contact-form" novalidate>
           <div class="modal-body">
-            <div class="field">
-              <label class="label">Student <span class="req">*</span></label>
+            <!-- Student — dropdown on add, read-only display on edit -->
+            <div class="field" id="ec-student-select-wrap">
+              <label class="label" for="ec-student"
+                >Student <span class="req">*</span></label
+              >
               <select class="select" name="studentId" id="ec-student">
                 <option value="">Select registered student</option>
               </select>
+              <div class="field-help">
+                Only registered students can be tagged. Their phone and identity
+                come from their student record.
+              </div>
               <div class="field-error">
                 <i class="fa-solid fa-circle-exclamation"></i
                 ><span>Please select a student.</span>
               </div>
             </div>
+
+            <div
+              class="field"
+              id="ec-student-display-wrap"
+              style="display: none"
+            >
+              <label class="label">Student</label>
+              <div class="leader-edit-student">
+                <span
+                  class="avatar avatar-40 avatar-fallback"
+                  id="ec-edit-avatar"
+                  >--</span
+                >
+                <div class="leader-edit-student-info">
+                  <div class="leader-edit-student-name" id="ec-edit-name">
+                    —
+                  </div>
+                  <div class="leader-edit-student-handle" id="ec-edit-handle">
+                    —
+                  </div>
+                </div>
+                <span class="badge badge-neutral"
+                  ><i class="fa-solid fa-lock"></i> Fixed</span
+                >
+              </div>
+            </div>
+
             <div class="field">
-              <label class="label"
+              <label class="label" for="ec-category"
                 >Emergency category <span class="req">*</span></label
               >
               <select class="select" name="categoryId" id="ec-category">
@@ -128,11 +192,13 @@
                 ><span>Please select a category.</span>
               </div>
             </div>
+
             <div class="field">
-              <label class="label">Note</label>
+              <label class="label" for="ec-note">Note</label>
               <input
                 class="input"
                 name="note"
+                id="ec-note"
                 placeholder="e.g. Campus Security Liaison"
               />
             </div>
@@ -141,8 +207,9 @@
             <button type="button" class="btn btn-secondary" data-modal-close>
               Cancel
             </button>
-            <button type="submit" class="btn btn-primary">
-              Tag as emergency contact
+            <button type="submit" class="btn btn-primary" id="ec-submit">
+              <i class="fa-solid fa-check"></i>
+              <span>Tag as emergency contact</span>
             </button>
           </div>
         </form>
@@ -161,106 +228,531 @@
     <script src="../../js/main.js"></script>
     <script src="../../js/validation.js"></script>
     <script src="../../js/auth.js"></script>
+    <script src="../../js/permissions.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
     <script src="../../js/admin.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
-        if (
-          !session ||
-          (session.role !== "admin" && session.role !== "super_admin")
-        ) {
+      /* ==========================================================================
+         Emergency Contacts — Admin workspace.
+         Tags existing students as emergency contacts. Contacts are stored
+         as references to student records — identity data lives there.
+         Full CRUD with localStorage persistence (cs_emergency_contacts_overrides).
+         ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
+        if (!session || !Permissions.isAdminRole(session)) {
           window.location.href = "../auth/login.html";
           return;
         }
+        if (!Permissions.can(session, "emergency.manage")) {
+          window.location.href = "dashboard.html";
+          return;
+        }
+
         initAppShell("admin");
 
-        const studentSel = document.getElementById("ec-student");
-        DEMO_STUDENTS.forEach((s) => {
-          studentSel.insertAdjacentHTML(
-            "beforeend",
-            `<option value="${s.id}">${Util.escape(s.firstName + " " + s.lastName)} — @${Util.escape(s.username)}</option>`,
-          );
-        });
-        const catSel = document.getElementById("ec-category");
-        EMERGENCY_CATEGORIES.forEach((c) => {
-          catSel.insertAdjacentHTML(
-            "beforeend",
-            `<option value="${c.id}">${Util.escape(c.label)}</option>`,
-          );
-        });
+        var STORAGE_KEY = "emergency_contacts_overrides";
 
-        const grid = document.getElementById("emergency-grid");
+        /* ------------------------------------------------------------------
+           LOAD — merge demo seed with saved overrides
+           ------------------------------------------------------------------ */
+        function loadContacts() {
+          var base = (
+            typeof DEMO_EMERGENCY_CONTACTS !== "undefined"
+              ? DEMO_EMERGENCY_CONTACTS
+              : []
+          ).map(function (c) {
+            return Object.assign({}, c);
+          });
+
+          var saved = Store.get(STORAGE_KEY, null);
+          if (saved && Array.isArray(saved.added)) {
+            saved.added.forEach(function (c) {
+              if (
+                !base.some(function (x) {
+                  return x.id === c.id;
+                })
+              ) {
+                base.push(c);
+              }
+            });
+          }
+          if (saved && Array.isArray(saved.deleted)) {
+            base = base.filter(function (c) {
+              return saved.deleted.indexOf(c.id) === -1;
+            });
+          }
+          if (saved && saved.edits) {
+            base.forEach(function (c) {
+              var edit = saved.edits[c.id];
+              if (edit) Object.assign(c, edit);
+            });
+          }
+          return base;
+        }
+
+        /* ------------------------------------------------------------------
+           PERSIST
+           ------------------------------------------------------------------ */
+        function persistAdded(record) {
+          var existing = Store.get(STORAGE_KEY, {}) || {};
+          existing.added = existing.added || [];
+          if (
+            !existing.added.some(function (x) {
+              return x.id === record.id;
+            })
+          ) {
+            existing.added.push(record);
+          }
+          Store.set(STORAGE_KEY, existing);
+        }
+
+        function persistEdit(record) {
+          var existing = Store.get(STORAGE_KEY, {}) || {};
+          existing.edits = existing.edits || {};
+          existing.edits[record.id] = {
+            studentId: record.studentId,
+            categoryId: record.categoryId,
+            note: record.note || "",
+          };
+          Store.set(STORAGE_KEY, existing);
+        }
+
+        function persistDeleted(id) {
+          var existing = Store.get(STORAGE_KEY, {}) || {};
+          existing.deleted = existing.deleted || [];
+          if (existing.deleted.indexOf(id) === -1) existing.deleted.push(id);
+          if (Array.isArray(existing.added)) {
+            existing.added = existing.added.filter(function (x) {
+              return x.id !== id;
+            });
+          }
+          if (existing.edits && existing.edits[id]) delete existing.edits[id];
+          Store.set(STORAGE_KEY, existing);
+        }
+
+        /* ------------------------------------------------------------------
+           STATE
+           ------------------------------------------------------------------ */
+        var contacts = loadContacts();
+        var editingId = null;
+
+        var grid = document.getElementById("emergency-grid");
+        var countEl = document.getElementById("ec-count");
+        var searchEl = document.getElementById("ec-search");
+        var modalTitle = document.getElementById("ec-modal-title");
+        var submitBtn = document.getElementById("ec-submit");
+        var form = document.getElementById("tag-contact-form");
+        var studentSelectWrap = document.getElementById(
+          "ec-student-select-wrap",
+        );
+        var studentDisplayWrap = document.getElementById(
+          "ec-student-display-wrap",
+        );
+
+        var studentSel = document.getElementById("ec-student");
+        var catSel = document.getElementById("ec-category");
+
+        /* Rebuild the styled custom select after options change.
+           initCustomSelects() runs at page load, before we populate these
+           selects — so we have to re-run it to see the new options. */
+        function rebuildCustomSelect(sel) {
+          if (!sel) return;
+          /* Remove the stale cselect wrapper sitting next to the select */
+          var next = sel.nextElementSibling;
+          while (next && next.classList && next.classList.contains("cselect")) {
+            next.remove();
+            next = sel.nextElementSibling;
+          }
+          var prev = sel.previousElementSibling;
+          if (prev && prev.classList && prev.classList.contains("cselect")) {
+            prev.remove();
+          }
+          sel.classList.remove("cselect-native");
+          sel.removeAttribute("data-customized");
+          if (typeof initCustomSelects === "function") initCustomSelects();
+        }
+
+        function populateStudentSelect() {
+          studentSel.innerHTML =
+            '<option value="">Select registered student</option>';
+          (typeof DEMO_STUDENTS !== "undefined" ? DEMO_STUDENTS : []).forEach(
+            function (s) {
+              if (s.status && s.status !== "active") return;
+              var opt = document.createElement("option");
+              opt.value = s.id;
+              opt.textContent =
+                s.firstName + " " + s.lastName + " — @" + s.username;
+              studentSel.appendChild(opt);
+            },
+          );
+          rebuildCustomSelect(studentSel);
+        }
+
+        function populateCategorySelect() {
+          catSel.innerHTML = '<option value="">Select category</option>';
+          (typeof EMERGENCY_CATEGORIES !== "undefined"
+            ? EMERGENCY_CATEGORIES
+            : []
+          ).forEach(function (c) {
+            var opt = document.createElement("option");
+            opt.value = c.id;
+            opt.textContent = c.label;
+            catSel.appendChild(opt);
+          });
+          rebuildCustomSelect(catSel);
+        }
+
+        function populateCategorySelect() {
+          catSel.innerHTML = '<option value="">Select category</option>';
+          (typeof EMERGENCY_CATEGORIES !== "undefined"
+            ? EMERGENCY_CATEGORIES
+            : []
+          ).forEach(function (c) {
+            var opt = document.createElement("option");
+            opt.value = c.id;
+            opt.textContent = c.label;
+            catSel.appendChild(opt);
+          });
+        }
+
+        populateStudentSelect();
+        populateCategorySelect();
+
+        /* Rebuild both custom selects AFTER all options are in place.
+           This runs a single teardown+rebuild pass so both dropdowns
+           reflect their final option lists. */
+        (function rebuildAllCustomSelects() {
+          [studentSel, catSel].forEach(function (sel) {
+            if (!sel) return;
+            var next = sel.nextElementSibling;
+            while (
+              next &&
+              next.classList &&
+              next.classList.contains("cselect")
+            ) {
+              next.remove();
+              next = sel.nextElementSibling;
+            }
+            var prev = sel.previousElementSibling;
+            if (prev && prev.classList && prev.classList.contains("cselect")) {
+              prev.remove();
+            }
+            sel.classList.remove("cselect-native");
+            sel.removeAttribute("data-customized");
+          });
+          if (typeof initCustomSelects === "function") initCustomSelects();
+        })();
+
+        /* ------------------------------------------------------------------
+           HELPERS
+           ------------------------------------------------------------------ */
+        function lookupStudent(id) {
+          return (
+            typeof DEMO_STUDENTS !== "undefined" ? DEMO_STUDENTS : []
+          ).find(function (s) {
+            return s.id === id;
+          });
+        }
+
+        function lookupCategory(id) {
+          return (
+            typeof EMERGENCY_CATEGORIES !== "undefined"
+              ? EMERGENCY_CATEGORIES
+              : []
+          ).find(function (c) {
+            return c.id === id;
+          });
+        }
+
+        /* ------------------------------------------------------------------
+           RENDER
+           ------------------------------------------------------------------ */
         function render() {
+          var q = searchEl.value.trim().toLowerCase();
+
+          /* Enrich contacts with student + category references */
+          var enriched = contacts
+            .map(function (c) {
+              var student = lookupStudent(c.studentId);
+              var category = lookupCategory(c.categoryId);
+              if (!student || !category) return null;
+              return { contact: c, student: student, category: category };
+            })
+            .filter(Boolean);
+
+          /* Apply search */
+          var visible = enriched.filter(function (item) {
+            if (!q) return true;
+            var full = item.student.firstName + " " + item.student.lastName;
+            return (
+              full.toLowerCase().indexOf(q) !== -1 ||
+              item.student.username.toLowerCase().indexOf(q) !== -1 ||
+              item.category.label.toLowerCase().indexOf(q) !== -1 ||
+              (item.contact.note || "").toLowerCase().indexOf(q) !== -1
+            );
+          });
+
+          countEl.textContent =
+            visible.length +
+            " contact" +
+            (visible.length === 1 ? "" : "s") +
+            (q && visible.length !== enriched.length ? " matching" : "");
+
           grid.innerHTML = "";
-          const contacts = Admin.emergencyContacts();
-          if (!contacts.length) {
+
+          if (!visible.length) {
             grid.innerHTML =
-              '<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon"><i class="fa-solid fa-shield-heart"></i></div><h3>No emergency contacts</h3><p>Tag a registered student to make them an emergency contact.</p></div>';
+              '<div class="empty-state" style="grid-column: 1 / -1; padding: 48px 24px;">' +
+              '<div class="empty-icon"><i class="fa-solid fa-shield-heart"></i></div>' +
+              "<h3>" +
+              (q ? "No contacts match" : "No emergency contacts") +
+              "</h3>" +
+              "<p>" +
+              (q
+                ? "Try a different name, category or note."
+                : "Tag a registered student to make them an emergency contact.") +
+              "</p>" +
+              "</div>";
             return;
           }
-          contacts.forEach((c) => {
-            const card = document.createElement("div");
-            card.className = "card card-pad";
-            card.innerHTML = `
-        <div class="cluster" style="margin-bottom:12px;">
-          <span class="avatar avatar-48 avatar-fallback">${Util.initials(c.student.firstName + " " + c.student.lastName)}</span>
-          <div>
-            <div class="font-semibold">${Util.escape(c.student.firstName + " " + c.student.lastName)}</div>
-            <div class="text-xs text-muted">@${Util.escape(c.student.username)}</div>
-          </div>
-        </div>
-        <div class="stack" style="gap:6px; margin-bottom:16px;">
-          <div class="text-xs text-muted"><i class="fa-solid fa-tag"></i> ${Util.escape(c.category ? c.category.label : "")}</div>
-          <div class="text-xs text-muted"><i class="fa-solid fa-phone"></i> ${Util.escape(c.student.phone)}</div>
-          ${c.note ? `<div class="text-xs text-muted"><i class="fa-solid fa-note-sticky"></i> ${Util.escape(c.note)}</div>` : ""}
-        </div>
-        <button class="btn btn-ghost btn-sm" data-remove style="color:var(--danger);"><i class="fa-solid fa-xmark"></i> Remove</button>`;
+
+          visible.forEach(function (item) {
+            var c = item.contact;
+            var student = item.student;
+            var category = item.category;
+
+            var card = document.createElement("div");
+            card.className = "card card-pad ec-card";
+
+            card.innerHTML =
+              '<div class="ec-card-head">' +
+              '<span class="avatar avatar-48 avatar-fallback">' +
+              Util.initials(student.firstName + " " + student.lastName) +
+              "</span>" +
+              '<div class="ec-card-head-info">' +
+              '<div class="ec-card-name">' +
+              Util.escape(student.firstName + " " + student.lastName) +
+              "</div>" +
+              '<div class="ec-card-handle">@' +
+              Util.escape(student.username) +
+              "</div>" +
+              "</div>" +
+              '<span class="badge ec-cat-badge ec-cat-' +
+              category.color +
+              '">' +
+              '<i class="fa-solid ' +
+              category.icon +
+              '"></i> ' +
+              Util.escape(category.label) +
+              "</span>" +
+              "</div>" +
+              '<div class="ec-card-body">' +
+              '<div class="ec-card-row">' +
+              '<i class="fa-solid fa-phone"></i>' +
+              '<a href="tel:' +
+              student.phone.replace(/\s+/g, "") +
+              '" class="ec-card-value">' +
+              Util.escape(student.phone) +
+              "</a>" +
+              "</div>" +
+              '<div class="ec-card-row">' +
+              '<i class="fa-solid fa-envelope"></i>' +
+              '<span class="ec-card-value ec-card-value-sm">' +
+              Util.escape(student.email || "—") +
+              "</span>" +
+              "</div>" +
+              (c.note
+                ? '<div class="ec-card-row">' +
+                  '<i class="fa-solid fa-note-sticky"></i>' +
+                  '<span class="ec-card-value ec-card-value-sm">' +
+                  Util.escape(c.note) +
+                  "</span>" +
+                  "</div>"
+                : "") +
+              "</div>" +
+              '<div class="ec-card-actions">' +
+              '<button class="btn btn-secondary btn-sm" data-edit type="button">' +
+              '<i class="fa-solid fa-pen"></i> <span>Edit</span>' +
+              "</button>" +
+              '<button class="btn btn-ghost btn-sm" data-remove type="button" style="color: var(--danger);">' +
+              '<i class="fa-solid fa-xmark"></i> <span>Remove</span>' +
+              "</button>" +
+              "</div>";
+
+            /* ---- Edit ---- */
+            card
+              .querySelector("[data-edit]")
+              .addEventListener("click", function () {
+                openEditor(c);
+              });
+
+            /* ---- Remove ---- */
             card
               .querySelector("[data-remove]")
-              .addEventListener("click", async () => {
-                if (
-                  await Confirmation.confirm({
-                    title: "Remove this emergency contact?",
-                    message:
-                      "They will no longer appear in Immediate Response.",
-                    confirmLabel: "Remove",
-                    variant: "danger",
-                  })
-                ) {
-                  const idx = DEMO_EMERGENCY_CONTACTS.findIndex(
-                    (x) => x.id === c.id,
-                  );
-                  DEMO_EMERGENCY_CONTACTS.splice(idx, 1);
-                  render();
-                  Toast.success("Emergency contact removed.", "Removed");
-                }
+              .addEventListener("click", async function () {
+                var ok = await Confirmation.confirm({
+                  title: "Remove this emergency contact?",
+                  message:
+                    student.firstName +
+                    " " +
+                    student.lastName +
+                    " will no longer appear in Immediate Response.",
+                  confirmLabel: "Remove",
+                  variant: "danger",
+                });
+                if (!ok) return;
+
+                contacts = contacts.filter(function (x) {
+                  return x.id !== c.id;
+                });
+                persistDeleted(c.id);
+                render();
+                Toast.success("Emergency contact removed.", "Removed");
               });
+
             grid.appendChild(card);
           });
         }
-        render();
 
+        /* ------------------------------------------------------------------
+           OPEN EDITOR — Add or Edit
+           ------------------------------------------------------------------ */
+        function openEditor(existing) {
+          form.reset();
+          form.querySelectorAll(".field").forEach(function (f) {
+            f.classList.remove("is-invalid", "is-valid");
+          });
+
+          if (existing) {
+            /* Edit mode */
+            editingId = existing.id;
+            var student = lookupStudent(existing.studentId);
+
+            modalTitle.textContent = "Edit emergency contact";
+            submitBtn.querySelector("span").textContent = "Save changes";
+
+            studentSelectWrap.style.display = "none";
+            studentDisplayWrap.style.display = "";
+
+            if (student) {
+              var fullName = student.firstName + " " + student.lastName;
+              document.getElementById("ec-edit-avatar").textContent =
+                Util.initials(fullName);
+              document.getElementById("ec-edit-name").textContent = fullName;
+              document.getElementById("ec-edit-handle").textContent =
+                "@" + student.username;
+            }
+
+            catSel.value = existing.categoryId;
+            form.querySelector('[name="note"]').value = existing.note || "";
+          } else {
+            /* Add mode */
+            editingId = null;
+            modalTitle.textContent = "Tag student as emergency contact";
+            submitBtn.querySelector("span").textContent =
+              "Tag as emergency contact";
+
+            studentSelectWrap.style.display = "";
+            studentDisplayWrap.style.display = "none";
+            studentSel.value = "";
+            catSel.value = "";
+          }
+
+          Modal.open("tag-contact-modal");
+        }
+
+        /* ------------------------------------------------------------------
+           SUBMIT
+           ------------------------------------------------------------------ */
         bindForm(
-          document.getElementById("tag-contact-form"),
+          form,
           {
             studentId: [Rules.required],
             categoryId: [Rules.required],
           },
-          (data) => {
-            DEMO_EMERGENCY_CONTACTS.push({
-              id: "ec-" + Date.now(),
-              studentId: data.get("studentId"),
-              categoryId: data.get("categoryId"),
-              note: data.get("note") || "",
-            });
+          function (data) {
+            var studentId = data.get("studentId");
+            var categoryId = data.get("categoryId");
+            var note = (data.get("note") || "").trim();
+
+            /* Duplicate check: same student can't be tagged twice with same category */
+            if (!editingId) {
+              var dup = contacts.find(function (c) {
+                return c.studentId === studentId && c.categoryId === categoryId;
+              });
+              if (dup) {
+                var dupStudent = lookupStudent(studentId);
+                var dupCat = lookupCategory(categoryId);
+                Toast.error(
+                  (dupStudent
+                    ? dupStudent.firstName + " " + dupStudent.lastName
+                    : "This student") +
+                    " is already tagged as " +
+                    (dupCat ? dupCat.label : "this category") +
+                    ".",
+                  "Already tagged",
+                );
+                return;
+              }
+            }
+
+            if (editingId) {
+              /* Edit */
+              var target = contacts.find(function (c) {
+                return c.id === editingId;
+              });
+              if (target) {
+                target.categoryId = categoryId;
+                target.note = note;
+                persistEdit(target);
+              }
+              Toast.success("Emergency contact updated.", "Saved");
+            } else {
+              /* Add */
+              var newRec = {
+                id: "ec-" + Date.now(),
+                studentId: studentId,
+                categoryId: categoryId,
+                note: note,
+                taggedAt: Date.now(),
+                taggedBy: session.name || session.username,
+              };
+              contacts.push(newRec);
+              persistAdded(newRec);
+              Toast.success("Student tagged as emergency contact.", "Saved");
+            }
+
             render();
             Modal.close("tag-contact-modal");
-            document.getElementById("tag-contact-form").reset();
-            Toast.success("Student tagged as emergency contact.", "Saved");
+            form.reset();
+            editingId = null;
           },
         );
+
+        /* ------------------------------------------------------------------
+           TRIGGERS
+           ------------------------------------------------------------------ */
+        document
+          .getElementById("tag-contact-btn")
+          .addEventListener("click", function () {
+            openEditor(null);
+          });
+
+        var debounce;
+        searchEl.addEventListener("input", function () {
+          clearTimeout(debounce);
+          debounce = setTimeout(render, 120);
+        });
+
+        document.addEventListener("click", function (e) {
+          if (e.target.closest("[data-modal-close]")) {
+            editingId = null;
+          }
+        });
+
+        render();
       });
     </script>
   </body>

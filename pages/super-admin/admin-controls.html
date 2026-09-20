@@ -45,20 +45,69 @@
   </head>
   <body class="has-session admin-body">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
-      <aside class="sidebar admin-sidebar" id="app-sidebar"></aside>
+      <aside
+        class="sidebar admin-sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
       <div class="app-main">
         <header class="app-header" id="app-header"></header>
         <main class="app-content" id="main">
           <div class="page-head">
             <div class="page-head-text">
               <h1 class="page-title">Admin Controls</h1>
-              <p class="page-subtitle">Super Admin-only system controls.</p>
+              <p class="page-subtitle">
+                Super Admin-only system controls. Settings persist across
+                reloads.
+              </p>
             </div>
           </div>
 
-          <div class="card">
-            <div class="card-head"><h3>System settings</h3></div>
+          <!-- Info banner -->
+          <div
+            class="card"
+            style="
+              border-left: 4px solid var(--brand-secondary);
+              margin-bottom: 20px;
+            "
+          >
+            <div class="card-body">
+              <div class="cluster" style="align-items: flex-start">
+                <i
+                  class="fa-solid fa-circle-info"
+                  style="
+                    color: var(--brand-secondary);
+                    font-size: 18px;
+                    margin-top: 2px;
+                  "
+                ></i>
+                <p
+                  style="
+                    font-size: var(--fs-sm);
+                    color: var(--text-secondary);
+                    margin: 0;
+                  "
+                >
+                  These controls are visible to
+                  <strong>Super Admin</strong> only. Changes are recorded in the
+                  audit trail and take effect immediately in the live product.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Access controls -->
+          <div class="card" style="margin-bottom: 20px">
+            <div class="card-head">
+              <div>
+                <h3>Access controls</h3>
+                <p class="section-desc" style="margin: 2px 0 0">
+                  Pause or resume student-facing features.
+                </p>
+              </div>
+            </div>
             <div class="card-body" style="padding-top: 0">
               <div class="setting-row">
                 <div class="setting-row-info">
@@ -69,8 +118,10 @@
                   class="toggle"
                   data-setting="allow_registration"
                   aria-checked="true"
+                  aria-label="Toggle new student registrations"
                 ></button>
               </div>
+
               <div class="setting-row">
                 <div class="setting-row-info">
                   <h4>Community posts enabled</h4>
@@ -80,8 +131,10 @@
                   class="toggle"
                   data-setting="community_enabled"
                   aria-checked="true"
+                  aria-label="Toggle community posts"
                 ></button>
               </div>
+
               <div class="setting-row">
                 <div class="setting-row-info">
                   <h4>Complaints intake enabled</h4>
@@ -91,26 +144,121 @@
                   class="toggle"
                   data-setting="complaints_enabled"
                   aria-checked="true"
+                  aria-label="Toggle complaints intake"
                 ></button>
               </div>
+
+              <div class="setting-row">
+                <div class="setting-row-info">
+                  <h4>Announcements publishing enabled</h4>
+                  <p>
+                    Turn off to prevent new announcements from being published.
+                  </p>
+                </div>
+                <button
+                  class="toggle"
+                  data-setting="announcements_enabled"
+                  aria-checked="true"
+                  aria-label="Toggle announcements publishing"
+                ></button>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-row-info">
+                  <h4>Opportunities publishing enabled</h4>
+                  <p>Turn off to pause new opportunity listings.</p>
+                </div>
+                <button
+                  class="toggle"
+                  data-setting="opportunities_enabled"
+                  aria-checked="true"
+                  aria-label="Toggle opportunities publishing"
+                ></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- System mode -->
+          <div class="card" style="margin-bottom: 20px">
+            <div class="card-head">
+              <div>
+                <h3>System mode</h3>
+                <p class="section-desc" style="margin: 2px 0 0">
+                  Put the platform into restricted or maintenance states.
+                </p>
+              </div>
+            </div>
+            <div class="card-body" style="padding-top: 0">
               <div class="setting-row">
                 <div class="setting-row-info">
                   <h4>Maintenance mode</h4>
                   <p>
-                    Show students a maintenance page. Only Admins can access.
+                    Show students a maintenance page. Only Admins can access the
+                    platform while enabled.
                   </p>
                 </div>
                 <button
                   class="toggle"
                   data-setting="maintenance_mode"
                   aria-checked="false"
+                  aria-label="Toggle maintenance mode"
                 ></button>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-row-info">
+                  <h4>Read-only mode</h4>
+                  <p>
+                    Students can browse but cannot post, submit complaints, or
+                    interact.
+                  </p>
+                </div>
+                <button
+                  class="toggle"
+                  data-setting="read_only_mode"
+                  aria-checked="false"
+                  aria-label="Toggle read-only mode"
+                ></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Danger zone -->
+          <div class="card" style="border-color: rgba(192, 57, 43, 0.25)">
+            <div
+              class="card-head"
+              style="border-bottom-color: rgba(192, 57, 43, 0.2)"
+            >
+              <div>
+                <h3 style="color: var(--danger)">Danger zone</h3>
+                <p class="section-desc" style="margin: 2px 0 0">
+                  Sensitive actions. Read carefully before proceeding.
+                </p>
+              </div>
+            </div>
+            <div class="card-body" style="padding-top: 0">
+              <div class="setting-row">
+                <div class="setting-row-info">
+                  <h4>Clear all Admin overrides</h4>
+                  <p>
+                    Wipes every admin override stored on this device — created
+                    admins, deactivations, and edits. Demo seed data remains.
+                  </p>
+                </div>
+                <button
+                  class="btn btn-danger btn-sm"
+                  id="reset-overrides-btn"
+                  type="button"
+                >
+                  <i class="fa-solid fa-rotate-left"></i> Clear overrides
+                </button>
               </div>
             </div>
           </div>
         </main>
       </div>
     </div>
+
     <div class="mobile-menu-backdrop"></div>
     <aside
       class="mobile-menu"
@@ -122,19 +270,151 @@
     <script src="../../js/main.js"></script>
     <script src="../../js/validation.js"></script>
     <script src="../../js/auth.js"></script>
+    <script src="../../js/permissions.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
     <script src="../../js/admin.js"></script>
-    <script src="../../js/settings.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
+      /* ==========================================================================
+         Admin Controls — Super Admin workspace.
+         Toggles persist to cs_system_settings in localStorage.
+         Every change is recorded in the audit trail (cs_admin_audit).
+         ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
         if (!session || session.role !== "super_admin") {
           window.location.href = "../auth/login.html";
           return;
         }
         initAppShell("admin");
-        // settings.js handles the toggles
+
+        var STORAGE_KEY = "system_settings";
+        var AUDIT_KEY = "admin_audit";
+
+        /* ------------------------------------------------------------------
+           SETTINGS DEFAULTS
+           ------------------------------------------------------------------ */
+        var DEFAULTS = {
+          allow_registration: true,
+          community_enabled: true,
+          complaints_enabled: true,
+          announcements_enabled: true,
+          opportunities_enabled: true,
+          maintenance_mode: false,
+          read_only_mode: false,
+        };
+
+        function loadSettings() {
+          var saved = Store.get(STORAGE_KEY, null);
+          return Object.assign({}, DEFAULTS, saved || {});
+        }
+
+        function saveSettings(settings) {
+          Store.set(STORAGE_KEY, settings);
+        }
+
+        /* ------------------------------------------------------------------
+           AUDIT
+           ------------------------------------------------------------------ */
+        function recordAudit(action, detail) {
+          var log = Store.get(AUDIT_KEY, []) || [];
+          log.unshift({
+            id: "aud-" + Date.now(),
+            at: Date.now(),
+            actorId: session.id,
+            actorName: session.name || session.username,
+            actorUsername: session.username,
+            action: action,
+            targetId: null,
+            targetName: "",
+            detail: detail,
+          });
+          Store.set(AUDIT_KEY, log);
+        }
+
+        /* ------------------------------------------------------------------
+           HUMAN LABELS for toggles
+           ------------------------------------------------------------------ */
+        var LABELS = {
+          allow_registration: "New student registrations",
+          community_enabled: "Community posts",
+          complaints_enabled: "Complaints intake",
+          announcements_enabled: "Announcements publishing",
+          opportunities_enabled: "Opportunities publishing",
+          maintenance_mode: "Maintenance mode",
+          read_only_mode: "Read-only mode",
+        };
+
+        /* ------------------------------------------------------------------
+           INIT TOGGLES
+           ------------------------------------------------------------------ */
+        var settings = loadSettings();
+
+        document
+          .querySelectorAll(".toggle[data-setting]")
+          .forEach(function (t) {
+            var key = t.getAttribute("data-setting");
+            var value =
+              settings[key] !== undefined ? settings[key] : DEFAULTS[key];
+            t.setAttribute("aria-checked", String(!!value));
+
+            t.addEventListener("click", function () {
+              var next = t.getAttribute("aria-checked") !== "true";
+              t.setAttribute("aria-checked", String(next));
+
+              settings[key] = next;
+              saveSettings(settings);
+
+              recordAudit(
+                "setting_change",
+                LABELS[key] + " → " + (next ? "enabled" : "disabled"),
+              );
+
+              Toast.success(
+                LABELS[key] + " " + (next ? "enabled" : "disabled") + ".",
+                "Saved",
+              );
+            });
+
+            /* Keyboard support — space and enter toggle */
+            t.addEventListener("keydown", function (e) {
+              if (e.key === " " || e.key === "Enter") {
+                e.preventDefault();
+                t.click();
+              }
+            });
+          });
+
+        /* ------------------------------------------------------------------
+           DANGER ZONE — Clear admin overrides
+           ------------------------------------------------------------------ */
+        var resetBtn = document.getElementById("reset-overrides-btn");
+        if (resetBtn) {
+          resetBtn.addEventListener("click", async function () {
+            var ok = await Confirmation.confirm({
+              title: "Clear all admin overrides?",
+              message:
+                "Every admin you created, deactivated, or edited on this device will be wiped. Demo seed admins remain. This cannot be undone.",
+              confirmLabel: "Clear overrides",
+              variant: "danger",
+            });
+            if (!ok) return;
+
+            Store.remove("admins_overrides");
+            recordAudit("setting_change", "Cleared all admin overrides");
+            Toast.success("All admin overrides cleared.", "Reset");
+          });
+        }
+
+        /* Initial settings summary toast (only on first load of the page) —
+           helps the user know the page is live. */
+        if (!Store.get("_controls_visited", false)) {
+          Store.set("_controls_visited", true);
+          Toast.info(
+            "System controls are live. Every change persists on this device.",
+            "Admin Controls",
+          );
+        }
       });
     </script>
   </body>
