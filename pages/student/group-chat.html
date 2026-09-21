@@ -1,0 +1,891 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Group Chat — Campus Space</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="../../assets/favicon/favicon.ico"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../../assets/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="../../assets/favicon/favicon-16x16.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="../../assets/favicon/apple-touch-icon.png"
+    />
+    <link rel="manifest" href="../../assets/favicon/site.webmanifest" />
+    <meta name="theme-color" content="#B33A3A" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="../../css/style.css" />
+  </head>
+  <body class="has-session">
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <div class="app-shell">
+      <aside
+        class="sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
+      <div class="app-main">
+        <header class="app-header" id="app-header"></header>
+        <main class="app-content" id="main" style="padding: 0">
+          <div class="chat-page" id="chat-root"></div>
+        </main>
+      </div>
+    </div>
+
+    <div id="mobile-nav-mount"></div>
+    <div class="mobile-menu-backdrop"></div>
+    <aside
+      class="mobile-menu"
+      id="mobile-menu-mount"
+      aria-label="Mobile menu"
+    ></aside>
+
+    <!-- Single reusable context menu, positioned by JS -->
+    <div
+      class="msg-context-menu"
+      id="msg-menu"
+      role="menu"
+      aria-hidden="true"
+    ></div>
+
+    <script src="../../data/students.js"></script>
+    <script src="../../data/courses.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/groups.js"></script>
+    <script src="../../js/navigation.js"></script>
+    <script src="../../js/notifications.js"></script>
+    <script>
+      /* ==========================================================================
+         Group Chat — full-page chat with message context menu.
+         Context menu opens on right-click (desktop) or long-press (mobile).
+         Students see only their own non-deleted messages.
+         Admin retention is handled in Batch 3.
+         ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
+        if (!session) {
+          window.location.href = "../auth/login.html";
+          return;
+        }
+        initAppShell("student");
+
+        var me = session.username;
+        var root = document.getElementById("chat-root");
+        var menuEl = document.getElementById("msg-menu");
+
+        var groupId = new URLSearchParams(location.search).get("id");
+        if (!groupId) {
+          renderNotFound();
+          return;
+        }
+        var group = Groups.get(groupId);
+        if (!group) {
+          renderNotFound();
+          return;
+        }
+        if (group.deleted) {
+          renderDeleted();
+          return;
+        }
+        if (!Groups.isMember(group, me)) {
+          renderLocked();
+          return;
+        }
+
+        renderChat();
+
+        /* ================================================================
+           RENDERERS
+           ================================================================ */
+
+        function renderNotFound() {
+          root.innerHTML =
+            '<div class="chat-lock">' +
+            '<div class="lock-icon"><i class="fa-solid fa-circle-question"></i></div>' +
+            "<h3>Group not found</h3>" +
+            "<p>This group may have been deleted or the link is incorrect.</p>" +
+            '<a class="btn btn-primary" href="study-groups.html"><i class="fa-solid fa-arrow-left"></i> Back to Study Groups</a>' +
+            "</div>";
+        }
+
+        function renderDeleted() {
+          root.innerHTML =
+            '<div class="chat-lock">' +
+            '<div class="lock-icon"><i class="fa-solid fa-trash"></i></div>' +
+            "<h3>This group no longer exists</h3>" +
+            "<p>The group has been deleted by its creator. It is no longer available.</p>" +
+            '<a class="btn btn-primary" href="study-groups.html"><i class="fa-solid fa-arrow-left"></i> Back to Study Groups</a>' +
+            "</div>";
+        }
+
+        function renderLocked() {
+          var state = Groups.membershipState(group, me);
+          var button =
+            state === "requested"
+              ? '<button class="btn btn-secondary" id="lock-cancel" type="button"><i class="fa-regular fa-clock"></i> Cancel request</button>'
+              : '<button class="btn btn-primary" id="lock-request" type="button"><i class="fa-solid fa-arrow-right-to-bracket"></i> Request to join</button>';
+          root.innerHTML =
+            '<div class="chat-lock">' +
+            '<div class="lock-icon"><i class="fa-solid fa-lock"></i></div>' +
+            "<h3>You are not a member of this group</h3>" +
+            "<p>Only members can view this group's messages and resources. Request to join and wait for the creator to approve.</p>" +
+            button +
+            "</div>";
+          var reqBtn = document.getElementById("lock-request");
+          if (reqBtn)
+            reqBtn.addEventListener("click", function () {
+              Groups.requestJoin(group.id, me);
+              Toast.success(
+                "Request sent to the group creator.",
+                "Request sent",
+              );
+              renderLocked();
+            });
+          var cancelBtn = document.getElementById("lock-cancel");
+          if (cancelBtn)
+            cancelBtn.addEventListener("click", function () {
+              Groups.cancelRequest(group.id, me);
+              Toast.info("Request cancelled.", "Cancelled");
+              renderLocked();
+            });
+        }
+
+        function renderChat() {
+          var isCreator = Groups.isCreator(group, me);
+          var creatorName = Groups.displayName(group.createdBy);
+
+          var header =
+            '<div class="chat-header">' +
+            '<a class="btn-icon back" href="study-groups.html" aria-label="Back"><i class="fa-solid fa-arrow-left"></i></a>' +
+            '<div class="meta">' +
+            '<div class="title">' +
+            Util.escape(group.name) +
+            (isCreator
+              ? ' <span class="tag-group-admin"><i class="fa-solid fa-crown"></i> Group Admin</span>'
+              : "") +
+            "</div>" +
+            '<div class="sub">' +
+            Util.escape(group.course) +
+            " · " +
+            (group.members || []).length +
+            " member" +
+            ((group.members || []).length === 1 ? "" : "s") +
+            " · Created by " +
+            Util.escape(creatorName) +
+            "</div></div>" +
+            '<div class="actions">' +
+            (isCreator
+              ? '<button class="btn-icon" data-chat-delete title="Delete group" aria-label="Delete group" style="color:var(--danger);"><i class="fa-solid fa-trash"></i></button>'
+              : '<button class="btn-icon" data-chat-leave title="Leave group" aria-label="Leave group"><i class="fa-solid fa-right-from-bracket"></i></button>') +
+            "</div></div>";
+
+          var list =
+            '<div class="chat-list" id="chat-list">' +
+            renderMessages() +
+            "</div>";
+
+          var composer =
+            '<div class="chat-composer">' +
+            '<textarea class="textarea" id="chat-input" placeholder="Write a message…" rows="1"></textarea>' +
+            '<div class="tools">' +
+            '<button class="btn-icon" id="chat-attach" type="button" title="Attach a file" aria-label="Attach a file"><i class="fa-solid fa-paperclip"></i></button>' +
+            '<button class="btn-icon" id="chat-voice" type="button" title="Record a voice note" aria-label="Record a voice note"><i class="fa-solid fa-microphone"></i></button>' +
+            '<button class="btn btn-primary" id="chat-send" type="button" style="padding: 0 18px;"><i class="fa-solid fa-paper-plane"></i></button>' +
+            "</div></div>";
+
+          var fileInput =
+            '<input type="file" id="chat-file-input" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" style="display:none;" />';
+
+          root.innerHTML = header + list + composer + fileInput;
+
+          var listEl = document.getElementById("chat-list");
+          if (listEl) listEl.scrollTop = listEl.scrollHeight;
+
+          bindChatEvents();
+        }
+
+        /* ================================================================
+           MESSAGE RENDERING
+           ================================================================ */
+
+        function renderMessages() {
+          var msgs = Groups.visibleMessages(group.id);
+          if (!msgs.length) {
+            return '<div class="chat-empty"><i class="fa-regular fa-comments" style="font-size:32px; display:block; margin-bottom:10px;"></i>No messages yet. Say hello.</div>';
+          }
+          return msgs.map(renderMessage).join("");
+        }
+
+        function renderMessage(m) {
+          var mine = m.author === me;
+          var authorName = Groups.displayName(m.author);
+          var initials = (authorName || m.author)
+            .split(" ")
+            .filter(Boolean)
+            .slice(0, 2)
+            .map(function (p) {
+              return p[0].toUpperCase();
+            })
+            .join("");
+          var isCreatorOfGroup = m.author === group.createdBy;
+
+          var body = "";
+          if (m.type === "text") {
+            body =
+              '<span class="msg-text">' + Util.escape(m.text || "") + "</span>";
+          } else if (m.type === "image") {
+            body =
+              (m.text ? "<div>" + Util.escape(m.text) + "</div>" : "") +
+              '<img class="chat-img" src="' +
+              m.dataUrl +
+              '" alt="' +
+              Util.escape(m.fileName || "image") +
+              '" />';
+          } else if (m.type === "file") {
+            body =
+              '<a class="chat-file-card" href="' +
+              m.dataUrl +
+              '" download="' +
+              Util.escape(m.fileName) +
+              '">' +
+              '<span class="icon"><i class="fa-solid ' +
+              fileIcon(m.fileName) +
+              '"></i></span>' +
+              '<span class="info"><span class="fname">' +
+              Util.escape(m.fileName) +
+              "</span>" +
+              '<span class="fsize">' +
+              humanSize(m.fileSize) +
+              "</span></span>" +
+              '<i class="fa-solid fa-download"></i></a>';
+          } else if (m.type === "voice") {
+            body =
+              '<div class="chat-voice"><i class="fa-solid fa-microphone"></i><audio controls src="' +
+              m.dataUrl +
+              '"></audio></div>';
+          }
+
+          var editedTag = m.edited
+            ? '<span class="edited-tag">(edited)</span>'
+            : "";
+
+          return (
+            '<div class="chat-msg' +
+            (mine ? " mine" : "") +
+            '" data-msg-id="' +
+            m.id +
+            '" data-msg-type="' +
+            m.type +
+            '" data-msg-own="' +
+            (mine ? "1" : "0") +
+            '">' +
+            '<span class="avatar avatar-32 avatar-fallback">' +
+            Util.escape(initials) +
+            "</span>" +
+            '<div class="bubble">' +
+            (mine
+              ? ""
+              : '<div class="author">' +
+                Util.escape(authorName) +
+                (isCreatorOfGroup
+                  ? ' <span class="tag-group-admin" style="font-size:9.5px; padding:2px 6px;"><i class="fa-solid fa-crown"></i> Group Admin</span>'
+                  : "") +
+                "</div>") +
+            body +
+            '<div class="time">' +
+            timeAgo(m.at) +
+            editedTag +
+            "</div>" +
+            "</div></div>"
+          );
+        }
+
+        function fileIcon(name) {
+          var n = (name || "").toLowerCase();
+          if (/\.(png|jpe?g|gif|webp|bmp|svg)$/.test(n)) return "fa-file-image";
+          if (/\.pdf$/.test(n)) return "fa-file-pdf";
+          if (/\.docx?$/.test(n)) return "fa-file-word";
+          if (/\.xlsx?$/.test(n)) return "fa-file-excel";
+          if (/\.pptx?$/.test(n)) return "fa-file-powerpoint";
+          return "fa-file";
+        }
+
+        function humanSize(bytes) {
+          if (!bytes) return "";
+          if (bytes < 1024) return bytes + " B";
+          if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+          return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+        }
+
+        function timeAgo(ts) {
+          if (typeof Util !== "undefined" && Util.relativeTime)
+            return Util.relativeTime(ts);
+          return new Date(ts).toLocaleString();
+        }
+
+        /* ================================================================
+           CONTEXT MENU — right-click + long-press
+           ================================================================ */
+
+        function closeMenu() {
+          menuEl.classList.remove("is-open");
+          menuEl.setAttribute("aria-hidden", "true");
+          menuEl.innerHTML = "";
+        }
+
+        function openMenu(msgEl, x, y) {
+          var msgId = msgEl.getAttribute("data-msg-id");
+          var type = msgEl.getAttribute("data-msg-type");
+          var own = msgEl.getAttribute("data-msg-own") === "1";
+
+          /* Build available actions */
+          var actions = [];
+          if (type === "text") {
+            if (own)
+              actions.push({
+                id: "edit",
+                label: "Edit",
+                icon: "fa-pen",
+                danger: false,
+              });
+            actions.push({
+              id: "copy",
+              label: "Copy",
+              icon: "fa-copy",
+              danger: false,
+            });
+            if (own)
+              actions.push({
+                id: "delete",
+                label: "Delete",
+                icon: "fa-trash",
+                danger: true,
+              });
+          } else if (type === "image" || type === "file") {
+            actions.push({
+              id: "save",
+              label: "Save",
+              icon: "fa-download",
+              danger: false,
+            });
+            if (own)
+              actions.push({
+                id: "delete",
+                label: "Delete",
+                icon: "fa-trash",
+                danger: true,
+              });
+          } else if (type === "voice") {
+            if (own)
+              actions.push({
+                id: "delete",
+                label: "Delete",
+                icon: "fa-trash",
+                danger: true,
+              });
+          }
+
+          if (!actions.length) return;
+
+          /* Render menu items */
+          var html = "";
+          actions.forEach(function (a, i) {
+            if (a.danger && i > 0) {
+              html += "<hr />";
+            }
+            html +=
+              '<button role="menuitem" data-action="' +
+              a.id +
+              '"' +
+              (a.danger ? ' class="is-danger"' : "") +
+              ">" +
+              '<i class="fa-solid ' +
+              a.icon +
+              '"></i><span>' +
+              a.label +
+              "</span></button>";
+          });
+          menuEl.innerHTML = html;
+          menuEl.classList.add("is-open");
+          menuEl.setAttribute("aria-hidden", "false");
+
+          /* Position — with viewport flipping */
+          var menuRect = menuEl.getBoundingClientRect();
+          var vw = window.innerWidth;
+          var vh = window.innerHeight;
+          var left = x;
+          var top = y;
+          if (left + menuRect.width > vw - 8) left = vw - menuRect.width - 8;
+          if (top + menuRect.height > vh - 8) top = vh - menuRect.height - 8;
+          if (left < 8) left = 8;
+          if (top < 8) top = 8;
+          menuEl.style.left = left + "px";
+          menuEl.style.top = top + "px";
+
+          /* Bind actions */
+          menuEl.querySelectorAll("[data-action]").forEach(function (btn) {
+            btn.addEventListener("click", function (e) {
+              e.stopPropagation();
+              var action = btn.getAttribute("data-action");
+              handleAction(action, msgId, type, own);
+              closeMenu();
+            });
+          });
+        }
+
+        function handleAction(action, msgId, type, own) {
+          if (action === "copy") {
+            var m = Groups.messages(group.id).find(function (x) {
+              return x.id === msgId;
+            });
+            if (!m) return;
+            var text = m.text || "";
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard
+                .writeText(text)
+                .then(function () {
+                  Toast.success("Message copied to clipboard.", "Copied");
+                })
+                .catch(function () {
+                  Toast.error("Could not copy.", "Copy failed");
+                });
+            } else {
+              var ta = document.createElement("textarea");
+              ta.value = text;
+              ta.style.position = "fixed";
+              ta.style.opacity = "0";
+              document.body.appendChild(ta);
+              ta.select();
+              try {
+                document.execCommand("copy");
+                Toast.success("Message copied.", "Copied");
+              } catch (e) {
+                Toast.error("Could not copy.", "Copy failed");
+              }
+              document.body.removeChild(ta);
+            }
+          } else if (action === "edit") {
+            startInlineEdit(msgId);
+          } else if (action === "delete") {
+            var msg = Groups.messages(group.id).find(function (x) {
+              return x.id === msgId;
+            });
+            if (!msg) return;
+            Confirmation.confirm({
+              title: "Delete this message?",
+              message:
+                "This message will be removed for everyone in the group.",
+              confirmLabel: "Delete",
+              variant: "danger",
+            }).then(function (ok) {
+              if (!ok) return;
+              Groups.deleteMessage(group.id, msgId, me);
+              refreshMessages();
+              Toast.success("Message deleted.", "Deleted");
+            });
+          } else if (action === "save") {
+            var msg2 = Groups.messages(group.id).find(function (x) {
+              return x.id === msgId;
+            });
+            if (!msg2 || !msg2.dataUrl) return;
+            var a = document.createElement("a");
+            a.href = msg2.dataUrl;
+            a.download = msg2.fileName || "download";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            Toast.success("Download started.", "Saved");
+          }
+        }
+
+        /* ================================================================
+           INLINE EDIT
+           ================================================================ */
+
+        function startInlineEdit(msgId) {
+          var msgEl = document.querySelector('[data-msg-id="' + msgId + '"]');
+          if (!msgEl) return;
+          var bubble = msgEl.querySelector(".bubble");
+          if (!bubble) return;
+          var msg = Groups.messages(group.id).find(function (x) {
+            return x.id === msgId;
+          });
+          if (!msg) return;
+
+          var originalHtml = bubble.innerHTML;
+
+          bubble.innerHTML =
+            '<div class="chat-edit-wrap">' +
+            '<textarea id="edit-textarea">' +
+            Util.escape(msg.text || "") +
+            "</textarea>" +
+            '<div class="chat-edit-actions">' +
+            '<button class="btn btn-secondary" id="edit-cancel" type="button">Cancel</button>' +
+            '<button class="btn btn-primary" id="edit-save" type="button">Save</button>' +
+            "</div></div>";
+
+          var ta = document.getElementById("edit-textarea");
+          ta.focus();
+          ta.setSelectionRange(ta.value.length, ta.value.length);
+
+          document
+            .getElementById("edit-cancel")
+            .addEventListener("click", function () {
+              bubble.innerHTML = originalHtml;
+              bindMessageContext(msgEl);
+            });
+
+          document
+            .getElementById("edit-save")
+            .addEventListener("click", function () {
+              var newText = ta.value.trim();
+              if (!newText) {
+                Toast.warning("Message cannot be empty.", "Empty");
+                return;
+              }
+              Groups.editMessage(group.id, msgId, newText);
+              refreshMessages();
+              Toast.success("Message updated.", "Saved");
+            });
+
+          ta.addEventListener("keydown", function (e) {
+            if (e.key === "Escape") {
+              bubble.innerHTML = originalHtml;
+              bindMessageContext(msgEl);
+            } else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+              document.getElementById("edit-save").click();
+            }
+          });
+        }
+
+        /* ================================================================
+           BIND CONTEXT MENU ON EACH MESSAGE
+           ================================================================ */
+
+        function bindMessageContext(msgEl) {
+          /* Right-click (desktop) */
+          msgEl.addEventListener("contextmenu", function (e) {
+            e.preventDefault();
+            openMenu(msgEl, e.clientX, e.clientY);
+          });
+
+          /* Long-press (mobile) — 500ms hold, cancel on move or early release */
+          var holdTimer = null;
+          var startX = 0,
+            startY = 0;
+
+          msgEl.addEventListener(
+            "touchstart",
+            function (e) {
+              if (e.touches.length !== 1) return;
+              startX = e.touches[0].clientX;
+              startY = e.touches[0].clientY;
+              holdTimer = setTimeout(function () {
+                if (navigator.vibrate) navigator.vibrate(20);
+                openMenu(msgEl, startX, startY);
+                holdTimer = null;
+              }, 500);
+            },
+            { passive: true },
+          );
+
+          msgEl.addEventListener(
+            "touchmove",
+            function (e) {
+              if (!holdTimer) return;
+              var dx = Math.abs(e.touches[0].clientX - startX);
+              var dy = Math.abs(e.touches[0].clientY - startY);
+              if (dx > 10 || dy > 10) {
+                clearTimeout(holdTimer);
+                holdTimer = null;
+              }
+            },
+            { passive: true },
+          );
+
+          msgEl.addEventListener("touchend", function () {
+            if (holdTimer) {
+              clearTimeout(holdTimer);
+              holdTimer = null;
+            }
+          });
+        }
+
+        /* Global listeners to dismiss the menu */
+        document.addEventListener("click", function (e) {
+          if (!menuEl.contains(e.target)) closeMenu();
+        });
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape") closeMenu();
+        });
+        window.addEventListener("scroll", closeMenu, true);
+
+        /* ================================================================
+           CHAT EVENTS
+           ================================================================ */
+
+        function bindChatEvents() {
+          var input = document.getElementById("chat-input");
+          var sendBtn = document.getElementById("chat-send");
+          var attachBtn = document.getElementById("chat-attach");
+          var voiceBtn = document.getElementById("chat-voice");
+          var fileInput = document.getElementById("chat-file-input");
+
+          function sendText() {
+            var text = (input.value || "").trim();
+            if (!text) return;
+            Groups.addMessage(group.id, {
+              id: "msg-" + Date.now(),
+              author: me,
+              type: "text",
+              text: text,
+              at: Date.now(),
+            });
+            input.value = "";
+            refreshMessages();
+          }
+
+          sendBtn.addEventListener("click", sendText);
+          input.addEventListener("keydown", function (e) {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              sendText();
+            }
+          });
+          input.addEventListener("input", function () {
+            input.style.height = "auto";
+            input.style.height = Math.min(input.scrollHeight, 120) + "px";
+          });
+
+          attachBtn.addEventListener("click", function () {
+            fileInput.click();
+          });
+          fileInput.addEventListener("change", function () {
+            var file = fileInput.files[0];
+            if (!file) return;
+            var MAX = 2 * 1024 * 1024;
+            if (file.size > MAX) {
+              Toast.error("File is too large. Maximum 2 MB.", "File too large");
+              fileInput.value = "";
+              return;
+            }
+            var reader = new FileReader();
+            reader.onload = function () {
+              var isImage = file.type.indexOf("image/") === 0;
+              Groups.addMessage(group.id, {
+                id: "msg-" + Date.now(),
+                author: me,
+                type: isImage ? "image" : "file",
+                text: "",
+                fileName: file.name,
+                fileType: file.type,
+                fileSize: file.size,
+                dataUrl: reader.result,
+                at: Date.now(),
+              });
+              fileInput.value = "";
+              refreshMessages();
+              Toast.success(isImage ? "Image sent." : "File sent.", "Sent");
+            };
+            reader.onerror = function () {
+              Toast.error("Could not read the file.", "Upload failed");
+            };
+            reader.readAsDataURL(file);
+          });
+
+          voiceBtn.addEventListener("click", function () {
+            if (!navigator.mediaDevices || !window.MediaRecorder) {
+              Toast.error(
+                "Voice recording is not supported in this browser.",
+                "Not supported",
+              );
+              return;
+            }
+            startVoiceRecording();
+          });
+
+          var deleteBtn = document.querySelector("[data-chat-delete]");
+          if (deleteBtn) {
+            deleteBtn.addEventListener("click", async function () {
+              var ok = await Confirmation.confirm({
+                title: "Delete this group?",
+                message:
+                  '"' +
+                  group.name +
+                  '" will be deleted permanently. All members will be removed, the chat will be closed, and this group will no longer appear anywhere in Campus Space. This action cannot be undone.',
+                confirmLabel: "Delete group",
+                variant: "danger",
+              });
+              if (!ok) return;
+              Groups.softDelete(group.id, me);
+              Toast.success("Group deleted.", "Deleted");
+              setTimeout(function () {
+                window.location.href = "study-groups.html";
+              }, 400);
+            });
+          }
+
+          var leaveBtn = document.querySelector("[data-chat-leave]");
+          if (leaveBtn) {
+            leaveBtn.addEventListener("click", async function () {
+              var ok = await Confirmation.confirm({
+                title: "Leave this group?",
+                message:
+                  "You will lose access to this group's messages and resources. You can request to join again later.",
+                confirmLabel: "Leave group",
+                variant: "danger",
+              });
+              if (!ok) return;
+              Groups.leave(group.id, me);
+              Toast.info("You left the group.", "Left");
+              setTimeout(function () {
+                window.location.href = "study-groups.html";
+              }, 400);
+            });
+          }
+
+          /* Bind context menu to each message */
+          document.querySelectorAll(".chat-msg").forEach(bindMessageContext);
+        }
+
+        function refreshMessages() {
+          var listEl = document.getElementById("chat-list");
+          if (!listEl) return;
+          listEl.innerHTML = renderMessages();
+          listEl.scrollTop = listEl.scrollHeight;
+          document.querySelectorAll(".chat-msg").forEach(bindMessageContext);
+        }
+
+        /* ================================================================
+           VOICE RECORDING
+           ================================================================ */
+        function startVoiceRecording() {
+          var MAX_SECONDS = 60;
+          var chunks = [];
+          var recorder;
+          var seconds = 0;
+          var timerId;
+
+          var composer = document.querySelector(".chat-composer");
+          var savedComposerHtml = composer.innerHTML;
+          composer.innerHTML =
+            '<div class="rec-indicator" style="flex:1;"><span class="rec-dot"></span>' +
+            '<span id="rec-timer">0:00</span>' +
+            '<span style="opacity:0.7;">Recording… max 60s</span></div>' +
+            '<button class="btn btn-secondary" id="rec-cancel" type="button">Cancel</button>' +
+            '<button class="btn btn-primary" id="rec-stop" type="button"><i class="fa-solid fa-check"></i> Send</button>';
+
+          var timerEl = document.getElementById("rec-timer");
+          function tick() {
+            seconds++;
+            var mm = Math.floor(seconds / 60);
+            var ss = String(seconds % 60).padStart(2, "0");
+            if (timerEl) timerEl.textContent = mm + ":" + ss;
+            if (seconds >= MAX_SECONDS) finish();
+          }
+
+          function restoreComposer() {
+            clearInterval(timerId);
+            composer.innerHTML = savedComposerHtml;
+            bindChatEvents();
+          }
+
+          function cancel() {
+            try {
+              recorder.stop();
+            } catch (e) {}
+            restoreComposer();
+            Toast.info("Recording cancelled.", "Cancelled");
+          }
+
+          function finish() {
+            clearInterval(timerId);
+            try {
+              recorder.stop();
+            } catch (e) {}
+          }
+
+          navigator.mediaDevices
+            .getUserMedia({ audio: true })
+            .then(function (stream) {
+              recorder = new MediaRecorder(stream);
+              recorder.ondataavailable = function (e) {
+                if (e.data && e.data.size) chunks.push(e.data);
+              };
+              recorder.onstop = function () {
+                stream.getTracks().forEach(function (t) {
+                  t.stop();
+                });
+                if (!chunks.length) {
+                  restoreComposer();
+                  return;
+                }
+                var blob = new Blob(chunks, { type: "audio/webm" });
+                var reader = new FileReader();
+                reader.onload = function () {
+                  Groups.addMessage(group.id, {
+                    id: "msg-" + Date.now(),
+                    author: me,
+                    type: "voice",
+                    dataUrl: reader.result,
+                    duration: seconds,
+                    at: Date.now(),
+                  });
+                  restoreComposer();
+                  refreshMessages();
+                  Toast.success("Voice note sent.", "Sent");
+                };
+                reader.readAsDataURL(blob);
+              };
+              recorder.start();
+              timerId = setInterval(tick, 1000);
+              document
+                .getElementById("rec-cancel")
+                .addEventListener("click", cancel);
+              document
+                .getElementById("rec-stop")
+                .addEventListener("click", finish);
+            })
+            .catch(function (err) {
+              restoreComposer();
+              Toast.error(
+                "Could not access the microphone. Check browser permissions.",
+                "Mic blocked",
+              );
+              console.error(err);
+            });
+        }
+      });
+    </script>
+  </body>
+</html>

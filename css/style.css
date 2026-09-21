@@ -13072,3 +13072,1198 @@ input[type="file"].input {
     font-size: 12.5px;
   }
 }
+
+/* ==========================================================================
+   STUDENT ANNOUNCEMENTS — mobile UI refinement
+   Scoped to #ann-list so it only affects the student page.
+   ========================================================================== */
+
+/* Ensure cards have comfortable vertical rhythm on mobile */
+@media (max-width: 768px) {
+  #ann-list {
+    gap: 12px;
+  }
+
+  #ann-list .announcement {
+    padding: 16px 16px 18px;
+    border-radius: var(--radius-lg);
+  }
+
+  /* Header: avatar + author info + optional badge */
+  #ann-list .announcement-head {
+    display: grid;
+    grid-template-columns: 32px 1fr auto;
+    grid-template-areas: "avatar info badge";
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  #ann-list .announcement-head > .avatar {
+    grid-area: avatar;
+  }
+
+  #ann-list .announcement-head .announcement-head-info {
+    grid-area: info;
+    min-width: 0;
+  }
+
+  #ann-list .announcement-head .badge {
+    grid-area: badge;
+    flex-shrink: 0;
+    margin: 0;
+    white-space: nowrap;
+  }
+
+  /* Stack the header if the badge is long or the space is very tight */
+  #ann-list .announcement h3 {
+    font-size: var(--fs-md);
+    line-height: 1.35;
+    margin: 0 0 10px;
+    font-weight: 700;
+  }
+
+  /* Body paragraphs — comfortable line-height, tighter margins */
+  #ann-list .announcement p {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    margin: 0 0 10px;
+  }
+  #ann-list .announcement p:last-of-type {
+    margin-bottom: 0;
+  }
+
+  /* Footer — separated from body, tags align left */
+  #ann-list .announcement-foot {
+    margin-top: 14px;
+    padding-top: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    font-size: 12px;
+  }
+  #ann-list .announcement-foot > span {
+    margin-left: 0 !important;
+  }
+}
+
+/* Very narrow phones — pull the important badge to its own row */
+@media (max-width: 420px) {
+  #ann-list .announcement-head {
+    grid-template-columns: 32px 1fr;
+    grid-template-areas:
+      "avatar info"
+      "badge  badge";
+    row-gap: 6px;
+  }
+
+  #ann-list .announcement-head .badge {
+    justify-self: start;
+    margin-top: 4px !important;
+  }
+
+  #ann-list .announcement {
+    padding: 14px 14px 16px;
+  }
+
+  #ann-list .announcement h3 {
+    font-size: 15px;
+    margin: 4px 0 8px;
+  }
+
+  #ann-list .announcement p {
+    font-size: 13.5px;
+  }
+}
+
+/* Ensure the search bar and filter chips fit without overflow */
+@media (max-width: 480px) {
+  #main > .toolbar {
+    padding: 0;
+  }
+
+  #main > .filter-bar {
+    padding-bottom: 4px;
+    margin-bottom: 12px;
+  }
+
+  #main > .cluster-between {
+    margin-bottom: 10px !important;
+  }
+}
+
+/* Give extra bottom padding so the mobile nav doesn't overlap the last card */
+@media (max-width: 860px) {
+  #main {
+    padding-bottom: 110px !important;
+  }
+}
+
+/* ==========================================================================
+   VIEW TOGGLE — for student admins switching between Admin and Student views
+   ========================================================================== */
+
+.view-toggle-wrap {
+  padding: 8px 12px 12px;
+}
+
+.view-toggle {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: linear-gradient(
+    135deg,
+    var(--brand-primary-soft) 0%,
+    var(--brand-secondary-soft) 100%
+  );
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition:
+    border-color 120ms ease,
+    transform 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.view-toggle:hover {
+  border-color: var(--brand-primary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.view-toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.view-toggle-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  color: var(--brand-primary);
+  flex-shrink: 0;
+  box-shadow: var(--shadow-xs);
+}
+
+.view-toggle-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.view-toggle-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.view-toggle-target {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.view-toggle-arrow {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+/* Mobile adjustments */
+@media (max-width: 640px) {
+  .view-toggle-wrap {
+    padding: 8px;
+  }
+  .view-toggle {
+    padding: 12px;
+  }
+  .view-toggle-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+}
+
+/* ==========================================================================
+   COMPLAINTS — visibility picker, badges, and admin identity panels
+   ========================================================================== */
+
+/* ---------- Visibility picker (student submission form) ---------- */
+.visibility-picker {
+  display: grid;
+  gap: 10px;
+  border-radius: var(--radius-md);
+  transition: box-shadow 120ms ease;
+}
+.visibility-picker.is-invalid {
+  box-shadow:
+    0 0 0 2px var(--danger),
+    var(--shadow-focus);
+  padding: 6px;
+  margin: -6px;
+}
+
+.visibility-option {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease;
+}
+
+.visibility-option:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-subtle);
+}
+
+/* When the radio inside is checked, highlight the whole option */
+.visibility-option:has(input:checked) {
+  border-color: var(--brand-primary);
+  background: var(--brand-primary-soft);
+}
+
+.visibility-option input[type="radio"] {
+  margin-top: 2px;
+  accent-color: var(--brand-primary);
+  cursor: pointer;
+}
+
+.visibility-option-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.visibility-option-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.visibility-option-head i {
+  color: var(--brand-primary);
+  font-size: 14px;
+}
+
+.visibility-option-desc {
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+/* ---------- Author line on complaint cards ---------- */
+.cm-author {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* ---------- Student complaint row layout ---------- */
+.cm-student-row {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto auto;
+  gap: 14px;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  text-decoration: none;
+  color: inherit;
+  transition: background 120ms ease;
+}
+.cm-student-row:last-child {
+  border-bottom: 0;
+}
+.cm-student-row:hover {
+  background: var(--bg-subtle);
+}
+
+.cm-student-row-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.cm-student-row-chevron {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+/* ---------- Admin complaint row — extra badges column ---------- */
+.cm-admin-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+/* ---------- Filer strip (admin complaint modal) ---------- */
+.cm-filer-strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg-subtle);
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+}
+
+.cm-filer-strip > i {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--brand-secondary-soft);
+  color: var(--brand-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.cm-filer-strip > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.cm-filer-name {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.cm-filer-handle {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+
+/* ---------- Identity preview (admin response panel) ---------- */
+.cm-identity-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: var(--brand-primary-soft);
+  border-left: 3px solid var(--brand-primary);
+  margin-bottom: 20px;
+}
+
+.cm-identity-preview > i {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  color: var(--brand-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.cm-identity-preview > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.cm-identity-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 3px;
+}
+
+.cm-identity-value {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* ---------- Public notice callout ---------- */
+.cm-public-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--brand-secondary-soft);
+  border-left: 3px solid var(--brand-secondary);
+  border-radius: var(--radius-md);
+}
+
+.cm-public-notice > i {
+  font-size: 16px;
+  color: var(--brand-secondary);
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.cm-public-notice > div {
+  min-width: 0;
+}
+
+.cm-public-notice strong {
+  display: block;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 3px;
+}
+
+.cm-public-notice p {
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ---------- Meta row on complaint detail ---------- */
+.cm-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.cm-author-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+}
+.cm-author-row i {
+  color: var(--text-tertiary);
+  font-size: 13px;
+}
+
+/* ---------- Response thread tweaks ---------- */
+.cm-response-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.cm-response-head strong {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.cm-response-time {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  margin-left: auto;
+}
+
+.cm-response-text {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.cm-thread-empty {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--text-tertiary);
+  font-size: var(--fs-sm);
+}
+.cm-thread-empty i {
+  font-size: 24px;
+  display: block;
+  margin-bottom: 10px;
+  opacity: 0.6;
+}
+
+/* ---------- Mobile — stack rows and adjust panels ---------- */
+@media (max-width: 768px) {
+  .cm-student-row {
+    grid-template-columns: 42px 1fr;
+    grid-template-areas:
+      "icon info"
+      "badges badges"
+      "actions actions";
+    row-gap: 12px;
+    padding: 16px;
+  }
+  .cm-student-row .complaint-icon {
+    grid-area: icon;
+  }
+  .cm-student-row .complaint-info {
+    grid-area: info;
+  }
+  .cm-student-row-badges {
+    grid-area: badges;
+    justify-content: flex-start;
+    margin-left: 54px;
+  }
+  .cm-student-row-chevron {
+    grid-area: actions;
+    justify-self: end;
+  }
+
+  .cm-admin-row {
+    grid-template-columns: 42px 1fr;
+    grid-template-areas:
+      "icon info"
+      "badges badges"
+      "actions actions";
+    row-gap: 12px;
+    padding: 16px;
+  }
+  .cm-admin-row .complaint-icon {
+    grid-area: icon;
+  }
+  .cm-admin-row .complaint-info {
+    grid-area: info;
+  }
+  .cm-admin-badges {
+    grid-area: badges;
+    justify-content: flex-start;
+    margin-left: 54px;
+  }
+  .cm-admin-actions {
+    grid-area: actions;
+    width: 100%;
+  }
+  .cm-admin-actions .btn {
+    width: 100%;
+    justify-content: center;
+    padding: 11px 14px;
+    font-size: 13px;
+  }
+
+  /* Modal two-column grid → single column */
+  .cm-modal-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  /* Meta row stacks more cleanly */
+  .cm-meta-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .cm-filer-strip {
+    flex-wrap: wrap;
+  }
+  .cm-filer-strip .badge {
+    margin-left: 0 !important;
+    flex-basis: 100%;
+    margin-top: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .visibility-option {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+  .visibility-option-head {
+    font-size: 13px;
+  }
+  .visibility-option-desc {
+    font-size: 11.5px;
+  }
+
+  .cm-identity-preview {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .cm-identity-preview > i {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* ---------- Dark mode polish ---------- */
+[data-theme="dark"] .visibility-option:has(input:checked) {
+  background: rgba(179, 58, 58, 0.14);
+}
+
+[data-theme="dark"] .cm-public-notice {
+  background: rgba(0, 59, 92, 0.28);
+}
+[data-theme="dark"] .cm-public-notice > i {
+  color: #7fb3d5;
+}
+
+[data-theme="dark"] .cm-identity-preview {
+  background: rgba(179, 58, 58, 0.14);
+}
+
+/* ==========================================================================
+   STUDY GROUPS — chat view, composer, request inbox, file/voice cards
+   ========================================================================== */
+
+/* ---------- Group Admin badge ---------- */
+.tag-group-admin {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 3px 7px;
+  border-radius: var(--radius-xs);
+  background: #e8e2f5;
+  color: #5b3fa8;
+}
+[data-theme="dark"] .tag-group-admin {
+  background: #2a2340;
+  color: #b8a4e8;
+}
+
+/* ---------- Join-request inbox on the group card ---------- */
+.grp-requests {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-subtle);
+}
+.grp-requests-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 8px;
+}
+.grp-request-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+}
+.grp-request-row .avatar {
+  flex-shrink: 0;
+}
+.grp-request-row .info {
+  flex: 1;
+  min-width: 0;
+}
+.grp-request-row .name {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.grp-request-row .handle {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+.grp-request-row .actions {
+  display: flex;
+  gap: 6px;
+}
+.grp-request-row .actions .btn {
+  padding: 6px 10px;
+  font-size: var(--fs-xs);
+}
+
+/* ---------- Chat page shell ---------- */
+.chat-page {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--header-h));
+  max-height: calc(100vh - var(--header-h));
+  overflow: hidden;
+}
+.chat-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  flex-shrink: 0;
+}
+.chat-header .back {
+  color: var(--text-secondary);
+}
+.chat-header .meta {
+  flex: 1;
+  min-width: 0;
+}
+.chat-header .title {
+  font-family: var(--font-heading);
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.chat-header .sub {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+.chat-header .actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* ---------- Message list ---------- */
+.chat-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--bg-page);
+}
+.chat-empty {
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: var(--fs-sm);
+  margin: auto;
+  padding: 40px 20px;
+}
+
+/* Message bubble layout */
+.chat-msg {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  max-width: 80%;
+}
+.chat-msg.mine {
+  margin-left: auto;
+  flex-direction: row-reverse;
+}
+.chat-msg .bubble {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 10px 14px;
+  font-size: var(--fs-sm);
+  color: var(--text-primary);
+  line-height: 1.55;
+  word-break: break-word;
+  min-width: 0;
+}
+.chat-msg.mine .bubble {
+  background: var(--brand-primary);
+  border-color: var(--brand-primary);
+  color: #fff;
+}
+.chat-msg.mine .bubble .author,
+.chat-msg.mine .bubble .time {
+  color: rgba(255, 255, 255, 0.75);
+}
+.chat-msg .author {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--brand-secondary);
+  margin-bottom: 3px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.chat-msg .time {
+  font-size: 10.5px;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+}
+
+/* File / image / voice inside a bubble */
+.chat-msg .bubble img.chat-img {
+  max-width: 260px;
+  max-height: 260px;
+  border-radius: var(--radius-md);
+  display: block;
+  margin-top: 4px;
+}
+.chat-file-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--bg-subtle);
+  border-radius: var(--radius-md);
+  margin-top: 4px;
+  text-decoration: none;
+  color: inherit;
+}
+.chat-msg.mine .chat-file-card {
+  background: rgba(255, 255, 255, 0.15);
+}
+.chat-file-card .icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--brand-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.chat-msg.mine .chat-file-card .icon {
+  background: rgba(255, 255, 255, 0.9);
+}
+.chat-file-card .info {
+  min-width: 0;
+  flex: 1;
+}
+.chat-file-card .fname {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chat-file-card .fsize {
+  font-size: 10.5px;
+  opacity: 0.7;
+}
+
+/* Voice note player */
+.chat-voice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.chat-voice audio {
+  height: 34px;
+  max-width: 240px;
+}
+
+/* ---------- Composer ---------- */
+.chat-composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  flex-shrink: 0;
+}
+.chat-composer .textarea {
+  flex: 1;
+  min-height: 42px;
+  max-height: 120px;
+  resize: none;
+  padding: 10px 14px;
+}
+.chat-composer .tools {
+  display: flex;
+  gap: 4px;
+}
+.chat-composer .tools .btn-icon {
+  width: 42px;
+  height: 42px;
+}
+
+/* ---------- Lock screen for non-members ---------- */
+.chat-lock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  flex: 1;
+  padding: 60px 24px;
+  color: var(--text-secondary);
+}
+.chat-lock .lock-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--bg-subtle);
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  margin-bottom: 20px;
+}
+.chat-lock h3 {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+.chat-lock p {
+  font-size: var(--fs-sm);
+  max-width: 380px;
+  margin-bottom: 20px;
+}
+
+/* ---------- Recording indicator ---------- */
+.rec-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: var(--danger-soft);
+  color: var(--danger);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.rec-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--danger);
+  animation: recPulse 1.2s ease-in-out infinite;
+}
+@keyframes recPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* ---------- Admin Study Groups page ---------- */
+.admin-groups-table .member-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.admin-groups-table .member-pills .pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-subtle);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.admin-groups-table .badge-deleted {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 640px) {
+  .chat-page {
+    height: calc(100vh - 56px); /* mobile header height */
+  }
+  .chat-header {
+    padding: 10px 14px;
+  }
+  .chat-list {
+    padding: 14px;
+  }
+  .chat-composer {
+    padding: 10px 14px;
+  }
+  .chat-msg {
+    max-width: 92%;
+  }
+  .chat-composer .tools .btn-icon {
+    width: 38px;
+    height: 38px;
+  }
+}
+
+/* ==========================================================================
+   MESSAGE CONTEXT MENU, EDIT MODE, EDITED TAG
+   ========================================================================== */
+
+/* Edited tag next to timestamp */
+.chat-msg .edited-tag {
+  font-size: 10.5px;
+  color: var(--text-tertiary);
+  margin-left: 6px;
+  font-style: italic;
+}
+.chat-msg.mine .edited-tag {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Inline edit textarea inside a bubble */
+.chat-edit-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 220px;
+}
+.chat-edit-wrap textarea {
+  width: 100%;
+  min-height: 60px;
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  resize: vertical;
+  line-height: 1.5;
+}
+.chat-edit-wrap textarea:focus {
+  outline: none;
+  border-color: var(--brand-primary);
+  box-shadow: var(--shadow-focus);
+}
+.chat-edit-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.chat-edit-actions .btn {
+  padding: 6px 12px;
+  font-size: var(--fs-xs);
+}
+
+/* Context menu — anchored to the click/touch point */
+.msg-context-menu {
+  position: fixed;
+  z-index: 90;
+  min-width: 160px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 4px;
+  display: none;
+  flex-direction: column;
+  opacity: 0;
+  transform: scale(0.96) translateY(-2px);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+  pointer-events: auto;
+}
+.msg-context-menu.is-open {
+  display: flex;
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+.msg-context-menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  font-size: var(--fs-sm);
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+}
+.msg-context-menu button:hover {
+  background: var(--bg-subtle);
+}
+.msg-context-menu button i {
+  width: 16px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 13px;
+}
+.msg-context-menu button.is-danger {
+  color: var(--danger);
+}
+.msg-context-menu button.is-danger i {
+  color: var(--danger);
+}
+.msg-context-menu button.is-danger:hover {
+  background: var(--danger-soft);
+}
+.msg-context-menu hr {
+  height: 1px;
+  background: var(--border-subtle);
+  border: 0;
+  margin: 4px 0;
+}
+
+/* Pending requests banner on Study Groups page */
+.sg-pending-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: var(--radius-lg);
+  background: var(--brand-primary-soft);
+  border: 1px solid rgba(179, 58, 58, 0.2);
+  color: var(--brand-primary);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+.sg-pending-banner i {
+  font-size: 18px;
+}
+
+/* Deleted message rendering — only shown to Admins (Batch 3) */
+.chat-msg.is-deleted .bubble {
+  opacity: 0.55;
+  border-style: dashed;
+}
+.chat-msg.is-deleted .deleted-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--danger);
+  background: var(--danger-soft);
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+  margin-bottom: 4px;
+}
+.chat-msg.is-deleted .bubble .msg-text {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}

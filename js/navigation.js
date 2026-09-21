@@ -1,25 +1,32 @@
 /* ==========================================================================
    CAMPUS SPACE — navigation.js
    Sidebar, header and mobile navigation logic for authenticated pages.
+
    Admin navigation is role-aware (super_admin, senior_admin, academia, su_pro).
 
-   Super Admin pages are gated two ways:
-     1. Capability check via Permissions.can(session, "admins.manage")
-     2. Hard role check via `superAdminOnly: true` on the group + items
-   Either check failing keeps the group hidden.
+   Student admins (academia, su_pro) can toggle between Admin view and
+   Student view. The toggle is exposed at the top of the sidebar.
    ========================================================================== */
 "use strict";
 
 /* ==========================================================================
    HOME LINK RESOLVER
-   Returns the path to the correct dashboard for the current page's location.
-   Works from pages/student/*, pages/admin/*, and pages/super-admin/*.
    ========================================================================== */
-function resolveHomeHref(role) {
+function resolveHomeHref(role, viewMode) {
   var path = window.location.pathname;
-  if (path.indexOf("/super-admin/") !== -1) {
-    return "../admin/dashboard.html";
-  }
+  var isSuperAdminPath = path.indexOf("/super-admin/") !== -1;
+  var isAdminPath = path.indexOf("/pages/admin/") !== -1;
+  var isStudentPath = path.indexOf("/pages/student/") !== -1;
+
+  /* If we're on a super-admin page, always go back to the admin dashboard */
+  if (isSuperAdminPath) return "../admin/dashboard.html";
+
+  /* If we're on an admin page, stay in admin context */
+  if (isAdminPath) return "dashboard.html";
+
+  /* If we're on a student page, stay in student context */
+  if (isStudentPath) return "dashboard.html";
+
   return "dashboard.html";
 }
 
@@ -84,10 +91,6 @@ const STUDENT_NAV = [
 
 /* ==========================================================================
    ADMIN NAVIGATION — role-aware
-   ==========================================================================
-   Each item can carry:
-     requires: [capability]    → filtered by Permissions.can(session, cap)
-     superAdminOnly: true      → hidden unless session role is exactly super_admin
    ========================================================================== */
 const ADMIN_NAV_ITEMS = [
   {
@@ -242,30 +245,24 @@ const ADMIN_NAV_ITEMS = [
 
 /* ==========================================================================
    ROLE RESOLVER
-   Safely reads the resolved role from Permissions, falling back to session.role.
    ========================================================================== */
 function resolveRole(session) {
   if (!session) return null;
   if (typeof Permissions !== "undefined" && Permissions.getRole) {
     return Permissions.getRole(session);
   }
-  /* Legacy fallback */
   if (session.role === "super_admin") return "super_admin";
   if (session.role === "admin") return "senior_admin";
   return session.role || null;
 }
 
 /* ==========================================================================
-   ADMIN NAV FILTER
-   Fail-closed: if Permissions isn't loaded, no capability-gated item passes.
-   Super Admin items are also gated by an explicit role check — two
-   independent guarantees against the group leaking to non-super-admins.
+   ADMIN NAV FILTER — fail-closed, dual-gated for Super Admin items
    ========================================================================== */
 function getAdminNav(session) {
   var role = resolveRole(session);
   var isSuperAdmin = role === "super_admin";
 
-  /* Capability checker — fail closed if Permissions isn't available */
   var canFn;
   if (typeof Permissions !== "undefined" && Permissions.can) {
     canFn = Permissions.can.bind(Permissions);
@@ -276,24 +273,16 @@ function getAdminNav(session) {
   }
 
   return ADMIN_NAV_ITEMS.map(function (group) {
-    /* Entire group blocked for non-super-admins */
     if (group.superAdminOnly && !isSuperAdmin) {
       return { group: group.group, items: [] };
     }
-
     var items = group.items.filter(function (item) {
-      /* Individual item blocked for non-super-admins */
       if (item.superAdminOnly && !isSuperAdmin) return false;
-
-      /* No capability requirement — visible to any admin */
       if (!item.requires || !item.requires.length) return true;
-
-      /* Every required capability must pass */
       return item.requires.every(function (cap) {
         return canFn(session, cap);
       });
     });
-
     return { group: group.group, items: items };
   }).filter(function (group) {
     return group.items.length > 0;
@@ -312,12 +301,54 @@ function resolveAvatar(session) {
 }
 
 /* ==========================================================================
+   VIEW TOGGLE — shown only for student admins
+   ========================================================================== */
+function buildViewToggle(session, target) {
+  /* target is the view we'll switch TO: "admin" or "student" */
+  if (!session || !session.studentId) return "";
+
+  var isAdminCurrently =
+    session.role === "admin" || session.role === "super_admin";
+  var isSuperAdmin = session.role === "super_admin";
+
+  /* Super Admins never have a student side (they aren't linked to a student) */
+  if (isSuperAdmin) return "";
+
+  var label = target === "student" ? "Student view" : "Admin view";
+  var icon = target === "student" ? "fa-user-graduate" : "fa-shield-halved";
+  var hint =
+    target === "student"
+      ? "See Campus Space the way students do"
+      : "Return to your admin workspace";
+
+  return (
+    '<button type="button" class="view-toggle" data-view-switch="' +
+    target +
+    '" title="' +
+    hint +
+    '">' +
+    '<span class="view-toggle-icon"><i class="fa-solid ' +
+    icon +
+    '"></i></span>' +
+    '<span class="view-toggle-body">' +
+    '<span class="view-toggle-label">Switch to</span>' +
+    '<span class="view-toggle-target">' +
+    label +
+    "</span>" +
+    "</span>" +
+    '<i class="fa-solid fa-right-left view-toggle-arrow"></i>' +
+    "</button>"
+  );
+}
+
+/* ==========================================================================
    SIDEBAR
    ========================================================================== */
 function buildSidebar(nav, options) {
   options = options || {};
   var role = options.role;
   var session = options.session;
+  var viewMode = options.viewMode; /* "admin" | "student" */
 
   var roleBadge;
   var label =
@@ -384,7 +415,11 @@ function buildSidebar(nav, options) {
       avatar.initials +
       "</span>";
 
-  var homeHref = resolveHomeHref(role);
+  var homeHref = resolveHomeHref(role, viewMode);
+
+  /* The view toggle — only rendered for student admins */
+  var toggleTarget = viewMode === "admin" ? "student" : "admin";
+  var toggleHtml = buildViewToggle(session, toggleTarget);
 
   return (
     '<a href="' +
@@ -396,6 +431,10 @@ function buildSidebar(nav, options) {
     '<nav class="sidebar-nav" aria-label="Primary">' +
     (role !== "student" && roleBadge
       ? '<div style="padding: 0 12px 8px;">' + roleBadge + "</div>"
+      : "") +
+    /* View toggle sits right below the role badge */
+    (toggleHtml
+      ? '<div class="view-toggle-wrap">' + toggleHtml + "</div>"
       : "") +
     navHtml +
     '<a href="immediate-response.html" class="nav-emergency">' +
@@ -442,10 +481,11 @@ function buildSidebar(nav, options) {
    ========================================================================== */
 function buildHeader(options) {
   var session = options.session;
+  var viewMode = options.viewMode;
   var notifCount = Store.get("notif_unread", 3);
   var avatar = resolveAvatar(session);
   var firstName = (session.name || session.username || "").split(" ")[0];
-  var homeHref = resolveHomeHref(session.role);
+  var homeHref = resolveHomeHref(session.role, viewMode);
 
   var avatarHtml = avatar.url
     ? '<img src="' + avatar.url + '" alt="" class="avatar avatar-32">'
@@ -525,6 +565,25 @@ function buildMobileNav() {
 }
 
 /* ==========================================================================
+   VIEW TOGGLE HANDLER — delegates clicks to Auth.switchView()
+   ========================================================================== */
+function initViewToggle() {
+  if (document._viewToggleBound) return;
+  document._viewToggleBound = true;
+
+  document.addEventListener("click", function (e) {
+    var btn = e.target.closest("[data-view-switch]");
+    if (!btn) return;
+    e.preventDefault();
+
+    var target = btn.getAttribute("data-view-switch");
+    if (typeof Auth !== "undefined" && Auth.switchView) {
+      Auth.switchView(target);
+    }
+  });
+}
+
+/* ==========================================================================
    APP SHELL MOUNT
    ========================================================================== */
 function initAppShell(role) {
@@ -539,11 +598,9 @@ function initAppShell(role) {
     nav = getAdminNav(session);
   }
 
-  /* Compute the correct home link once, and rewrite nav item hrefs to
-     be absolute from the current location. This makes the sidebar work
-     whether it's on pages/admin/* or pages/super-admin/*. */
   var isSuperAdminPage =
     window.location.pathname.indexOf("/super-admin/") !== -1;
+  var viewMode = session.viewMode || (role === "admin" ? "admin" : "student");
 
   /* Sidebar */
   var sidebarEl = document.getElementById("app-sidebar");
@@ -557,12 +614,15 @@ function initAppShell(role) {
     sidebarEl.innerHTML = buildSidebar(nav, {
       role: sidebarRole,
       session: session,
+      viewMode: viewMode,
     });
   }
 
   /* Header */
   var headerEl = document.getElementById("app-header");
-  if (headerEl) headerEl.innerHTML = buildHeader({ session: session });
+  if (headerEl) {
+    headerEl.innerHTML = buildHeader({ session: session, viewMode: viewMode });
+  }
 
   /* Mobile bottom nav (student only) */
   if (role === "student") {
@@ -584,6 +644,12 @@ function initAppShell(role) {
       "</button>" +
       "</div>" +
       '<div style="padding:16px;">' +
+      /* Mobile view toggle for student admins */
+      (session.studentId && session.role !== "super_admin"
+        ? '<div style="margin-bottom:16px;">' +
+          buildViewToggle(session, viewMode === "admin" ? "student" : "admin") +
+          "</div>"
+        : "") +
       nav
         .map(function (g) {
           return (
@@ -645,6 +711,9 @@ function initAppShell(role) {
       var href = el.getAttribute("href");
       if (href && href.split("/").pop() === here) el.classList.add("is-active");
     });
+
+  /* Wire view toggle */
+  initViewToggle();
 
   /* Post-render hooks */
   if (typeof initMobileMenu === "function") initMobileMenu();

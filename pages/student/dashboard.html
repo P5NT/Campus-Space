@@ -296,6 +296,17 @@
           return;
         }
 
+        /* Resolve the current student's record.
+           Works for regular students AND student admins viewing
+           their student account (looked up by studentId when available). */
+        const student =
+          typeof DEMO_STUDENTS !== "undefined"
+            ? DEMO_STUDENTS.find(
+                (s) =>
+                  s.id === session.studentId || s.username === session.username,
+              ) || null
+            : null;
+
         // Personalised greeting — username only (per spec)
         const greeting = document.getElementById("greeting");
         greeting.textContent = "Welcome Back, @" + session.username;

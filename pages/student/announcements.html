@@ -326,8 +326,11 @@
               '<div class="announcement-head">' +
               '<span class="avatar avatar-32 avatar-fallback" style="background:var(--brand-secondary); flex-shrink:0;">SA</span>' +
               '<div class="announcement-head-info">' +
-              '<div class="font-semibold" style="font-size:var(--fs-sm);">' +
+              '<div class="font-semibold" style="font-size:var(--fs-sm); display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">' +
               Util.escape(a.author || "Space Admin") +
+              (a.isAdminAuthor || a.authorTag === "ADMIN"
+                ? '<span class="tag-admin"><i class="fa-solid fa-shield-halved"></i> Admin</span>'
+                : "") +
               "</div>" +
               '<div class="text-xs text-muted">' +
               Util.formatDate(a.date, {

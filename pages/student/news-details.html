@@ -222,6 +222,15 @@
           })
           .join("");
 
+        /* Build the author line with an optional admin badge */
+        var authorHtml =
+          '<span><i class="fa-solid fa-user"></i> ' +
+          Util.escape(article.author || "Space Admin") +
+          (article.isAdminAuthor || article.authorTag === "ADMIN"
+            ? ' <span class="tag-admin"><i class="fa-solid fa-shield-halved"></i> Admin</span>'
+            : "") +
+          "</span>";
+
         el.innerHTML =
           '<span class="badge badge-brand" style="margin-bottom:16px;">' +
           Util.escape(article.category) +
@@ -230,9 +239,7 @@
           Util.escape(article.title) +
           "</h1>" +
           '<div class="cluster" style="font-size:var(--fs-sm); color:var(--text-tertiary); margin-bottom:24px; gap:16px;">' +
-          '<span><i class="fa-solid fa-user"></i> ' +
-          Util.escape(article.author || "Admin") +
-          "</span>" +
+          authorHtml +
           '<span><i class="fa-regular fa-calendar"></i> ' +
           fullDate +
           "</span>" +

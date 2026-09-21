@@ -858,10 +858,25 @@
               }
               Toast.success("Announcement updated.", "Saved");
             } else {
+              /* Resolve the correct public byline for this admin.
+               Super/Senior admins → "Space Admin"
+               SU PRO → "PRO, OAUSTECHSU"
+               Academia → their student name (student admin as themselves) */
+              var byline =
+                typeof Permissions !== "undefined" && Permissions.getByline
+                  ? Permissions.getByline(session)
+                  : {
+                      name: session.name || session.username,
+                      tag: "",
+                      isAdmin: false,
+                    };
+
               var newRec = {
                 id: "ann-" + Date.now(),
                 title: title,
-                author: session.name || session.username,
+                author: byline.name,
+                authorTag: byline.tag,
+                isAdminAuthor: byline.isAdmin,
                 date: publishDate,
                 important: important,
                 body: body,

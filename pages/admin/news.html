@@ -898,15 +898,25 @@
               Toast.success("Article updated.", "Saved");
             } else {
               /* Add */
+              var byline =
+                typeof Permissions !== "undefined" && Permissions.getByline
+                  ? Permissions.getByline(session)
+                  : {
+                      name: session.name || session.username,
+                      tag: "",
+                      isAdmin: false,
+                    };
+
               var newRec = {
                 id: "news-" + Date.now(),
                 title: title,
                 category: category,
                 excerpt: excerpt,
                 body: body,
-                image:
-                  image /* may be "" if no image — handled by placeholder */,
-                author: session.name || session.username,
+                image: image,
+                author: byline.name,
+                authorTag: byline.tag,
+                isAdminAuthor: byline.isAdmin,
                 date: publishDate,
                 expiresAt: expiresAt,
                 createdAt: Date.now(),

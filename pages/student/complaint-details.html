@@ -83,9 +83,11 @@
     <script src="../../js/complaints.js"></script>
     <script>
       /* ==========================================================================
-   Complaint details — hero + status timeline.
-   No conversation panel: complaints are one-way reports from the student.
-   ========================================================================== */
+         Complaint details — handles both private and public complaints.
+         Private: only the filer + admins can view.
+         Public: everyone can view, but the filer shows as @username.
+         Admin responses render with their office byline (tag if present).
+         ========================================================================== */
       document.addEventListener("DOMContentLoaded", function () {
         var session = Auth.current();
         if (!session) {
@@ -94,35 +96,136 @@
         }
         initAppShell("student");
 
-        var id = new URLSearchParams(location.search).get("id");
         var wrap = document.getElementById("complaint-detail");
-        var c = Complaints.all().find(function (x) {
-          return x.id === id;
-        });
+        var id = new URLSearchParams(location.search).get("id");
+
+        /* Find the complaint among ALL records, then verify visibility */
+        var all = Complaints.all();
+        var c = id
+          ? all.find(function (x) {
+              return x.id === id;
+            })
+          : null;
 
         /* ---- Not found ---- */
         if (!c) {
           wrap.innerHTML =
-            '<div class="empty-state">' +
+            '<div class="empty-state" style="padding: 64px 24px; max-width: 480px; margin: 0 auto;">' +
             '<div class="empty-icon"><i class="fa-solid fa-file-shield"></i></div>' +
             "<h3>Complaint not found</h3>" +
             "<p>This complaint may have been removed or the link is incorrect.</p>" +
-            '<a class="btn btn-primary" href="complaints.html">Back to complaints</a>' +
+            '<a class="btn btn-secondary" href="complaints.html">' +
+            '<i class="fa-solid fa-arrow-left"></i> Back to complaints' +
+            "</a>" +
             "</div>";
           return;
         }
 
-        /* ---- Status → color/theme mapping ---- */
-        var STATUS_TONE = {
-          Submitted: { cls: "badge-info", icon: "fa-paper-plane" },
-          "Under Review": { cls: "badge-warning", icon: "fa-magnifying-glass" },
-          "In Progress": { cls: "badge-brand", icon: "fa-spinner" },
-          Resolved: { cls: "badge-success", icon: "fa-circle-check" },
-        };
-        var tone = STATUS_TONE[c.status] || STATUS_TONE["Submitted"];
+        var isAdmin =
+          session.role === "admin" || session.role === "super_admin";
+        var isOwn = c.submittedBy === session.username;
+        var isPublic = c.visibility === "public";
 
-        /* ---- History rendering ---- */
-        var historyHtml = (c.history || [])
+        /* ---- Visibility check — private complaints are filer + admins only ---- */
+        if (!isAdmin && !isPublic && !isOwn) {
+          wrap.innerHTML =
+            '<div class="empty-state" style="padding: 64px 24px; max-width: 480px; margin: 0 auto;">' +
+            '<div class="empty-icon" style="background: var(--warning-soft); color: var(--warning);">' +
+            '<i class="fa-solid fa-lock"></i>' +
+            "</div>" +
+            "<h3>This complaint is private</h3>" +
+            "<p>Only the student who filed it and Admins can view this complaint.</p>" +
+            '<a class="btn btn-secondary" href="complaints.html">' +
+            '<i class="fa-solid fa-arrow-left"></i> Back to complaints' +
+            "</a>" +
+            "</div>";
+          return;
+        }
+
+        /* ---- Category icon ---- */
+        var ICONS = {
+          Facilities: "fa-building",
+          Academic: "fa-graduation-cap",
+          Welfare: "fa-heart",
+          Hostel: "fa-house",
+          Security: "fa-shield-halved",
+          Finance: "fa-coins",
+          Other: "fa-circle-info",
+        };
+
+        /* ---- Visibility + author line ---- */
+        var visibilityBadge = isPublic
+          ? '<span class="badge badge-marine"><i class="fa-solid fa-globe"></i> Public</span>'
+          : '<span class="badge badge-neutral"><i class="fa-solid fa-lock"></i> Private</span>';
+
+        /* On public complaints, show the filer as @username (not full name) */
+        var authorHtml = "";
+        if (isPublic) {
+          authorHtml =
+            '<div class="cm-author-row">' +
+            '<i class="fa-solid fa-user"></i> ' +
+            (isOwn
+              ? "<span>You</span>"
+              : "<span>@" + Util.escape(c.submittedBy) + "</span>") +
+            "</div>";
+        } else {
+          /* Private — the filer is either the viewer or an admin */
+          authorHtml =
+            '<div class="cm-author-row">' +
+            '<i class="fa-solid fa-user"></i> ' +
+            (isAdmin
+              ? "<span>" +
+                Util.escape(c.submittedByName || c.submittedBy || "Unknown") +
+                " · @" +
+                Util.escape(c.submittedBy || "") +
+                "</span>"
+              : "<span>You</span>") +
+            "</div>";
+        }
+
+        /* ---- Build response thread ---- */
+        var threadHtml = "";
+        if (!c.responses || !c.responses.length) {
+          threadHtml =
+            '<div class="cm-thread-empty">' +
+            '<i class="fa-regular fa-comments"></i>' +
+            "<p>No responses yet. Admin will respond to this complaint.</p>" +
+            "</div>";
+        } else {
+          c.responses.forEach(function (r) {
+            /* Response may carry a tag (e.g. ADMIN) */
+            var rtagHtml =
+              r.tag === "ADMIN"
+                ? '<span class="tag-admin"><i class="fa-solid fa-shield-halved"></i> Admin</span>'
+                : r.tag
+                  ? '<span class="tag-leader">' + Util.escape(r.tag) + "</span>"
+                  : "";
+
+            threadHtml +=
+              '<div class="thread-msg from-admin">' +
+              '<span class="avatar avatar-32 avatar-fallback" style="background: var(--brand-primary);">' +
+              Util.initials(r.name || "Admin") +
+              "</span>" +
+              '<div class="thread-msg-bubble">' +
+              '<div class="cm-response-head">' +
+              "<strong>" +
+              Util.escape(r.name || "Space Admin") +
+              "</strong> " +
+              rtagHtml +
+              '<span class="cm-response-time">' +
+              Util.relativeTime(r.at) +
+              "</span>" +
+              "</div>" +
+              '<div class="cm-response-text">' +
+              Util.escape(r.text) +
+              "</div>" +
+              "</div>" +
+              "</div>";
+          });
+        }
+
+        /* ---- Timeline ---- */
+        var timelineHtml = (c.history || [])
           .map(function (h) {
             return (
               '<div class="timeline-item">' +
@@ -140,57 +243,87 @@
           })
           .join("");
 
-        /* ---- Meta line at top ---- */
-        var submittedOn = Util.formatDate(c.date, {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        });
-
-        /* ---- Build the page ---- */
+        /* ---- Render the page ---- */
         wrap.innerHTML =
-          '<div class="complaint-hero">' +
-          '<div class="complaint-hero-top">' +
+          /* Header card */
+          '<div class="card card-pad-lg" style="margin-bottom: 20px;">' +
+          '<div class="cluster-between" style="margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">' +
+          '<div class="cluster" style="gap: 8px; flex-wrap: wrap;">' +
+          '<span class="badge badge-neutral"><i class="fa-solid ' +
+          (ICONS[c.category] || ICONS.Other) +
+          '"></i> ' +
+          Util.escape(c.category) +
+          "</span>" +
           '<span class="badge badge-neutral"><i class="fa-solid fa-hashtag"></i> ' +
           Util.escape(c.id) +
           "</span>" +
-          '<span class="badge badge-neutral"><i class="fa-solid fa-tag"></i> ' +
-          Util.escape(c.category) +
-          "</span>" +
-          '<span class="complaint-status ' +
-          tone.cls +
-          '">' +
-          '<i class="fa-solid ' +
-          tone.icon +
-          '"></i> ' +
-          Util.escape(c.status) +
-          "</span>" +
+          visibilityBadge +
           "</div>" +
-          '<h1 class="complaint-title">' +
+          complaintStatusPill(c.status) +
+          "</div>" +
+          '<h1 class="page-title" style="font-size: var(--fs-xl); margin-bottom: 10px;">' +
           Util.escape(c.subject) +
           "</h1>" +
-          '<div class="complaint-meta">' +
-          '<span><i class="fa-regular fa-calendar"></i> Submitted ' +
-          submittedOn +
-          "</span>" +
-          '<span><i class="fa-regular fa-clock"></i> Updated ' +
-          Util.relativeTime(c.updated) +
+          '<div class="cm-meta-row">' +
+          authorHtml +
+          '<div class="cm-author-row">' +
+          '<i class="fa-regular fa-calendar"></i>' +
+          "<span>Submitted " +
+          Util.formatDate(c.date, {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          }) +
           "</span>" +
           "</div>" +
-          '<div class="complaint-description">' +
-          '<div class="complaint-description-label">Description</div>' +
-          "<p>" +
+          (c.updated && c.updated !== c.date
+            ? '<div class="cm-author-row">' +
+              '<i class="fa-solid fa-rotate"></i>' +
+              "<span>Updated " +
+              Util.relativeTime(c.updated) +
+              "</span>" +
+              "</div>"
+            : "") +
+          "</div>" +
+          (isPublic && !isOwn
+            ? '<div class="cm-public-notice">' +
+              '<i class="fa-solid fa-globe"></i>' +
+              "<div>" +
+              "<strong>This is a public complaint</strong>" +
+              "<p>Anyone on Campus Space can see this and its responses. The filer\u2019s username (@' + Util.escape(c.submittedBy) + ') is shown, not their full name.</p>" +
+              "</div>" +
+              "</div>"
+            : "") +
+          (isPublic && isOwn
+            ? '<div class="cm-public-notice">' +
+              '<i class="fa-solid fa-globe"></i>' +
+              "<div>" +
+              "<strong>You shared this publicly</strong>" +
+              "<p>The whole campus can see this complaint and its responses. Your username (@' + Util.escape(c.submittedBy) + ') is shown, not your full name.</p>" +
+              "</div>" +
+              "</div>"
+            : "") +
+          '<div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-subtle);">' +
+          '<div class="text-xs text-muted font-semibold" style="text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Description</div>' +
+          '<p style="line-height: 1.7; color: var(--text-secondary); margin: 0;">' +
           Util.escape(c.description) +
           "</p>" +
           "</div>" +
           "</div>" +
-          '<div class="complaint-grid">' +
-          '<aside class="complaint-grid-side">' +
-          '<div class="card card-pad">' +
-          '<h3 class="complaint-side-title"><i class="fa-solid fa-list-check"></i> Status timeline</h3>' +
-          '<div class="timeline">' +
-          historyHtml +
+          /* Two-column: conversation + timeline */
+          '<div class="grid" style="grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; align-items: start;">' +
+          '<div class="card">' +
+          '<div class="card-head"><h3>Conversation</h3></div>' +
+          '<div class="card-body">' +
+          '<div class="complaint-thread">' +
+          threadHtml +
           "</div>" +
+          "</div>" +
+          "</div>" +
+          '<aside class="card card-pad">' +
+          '<h3 style="font-size: var(--fs-md); margin-bottom: 14px;">Status timeline</h3>' +
+          '<div class="timeline">' +
+          timelineHtml +
           "</div>" +
           "</aside>" +
           "</div>";

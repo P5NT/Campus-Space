@@ -3,10 +3,15 @@
    Frontend authentication simulation: login, register, verification,
    password reset, session handling.
 
-   Admin lookup merges:
-     - DEMO_ADMINS from data/students.js (seed admins + seed student admins)
-     - cs_admins_overrides.created (dynamically created admins)
-     - Deactivations from cs_admins_overrides.deactivated are honored
+   Student admin support:
+     Student admins (academia / su_pro) have BOTH an admin record and a
+     linked student record. Their session carries:
+       - studentId: pointer to the student record
+       - adminRole / adminRoles: preserved so the admin view still works
+       - viewMode: "admin" | "student" — which view is currently active
+     A deactivated student admin is auto-downgraded to student view on
+     their next page load — they keep their student account and never
+     lose their student-side access.
    ========================================================================== */
 "use strict";
 
@@ -28,7 +33,6 @@ function getAllAdminsForAuth() {
   }
   if (!saved) return base;
 
-  /* Merge created admins */
   if (Array.isArray(saved.created)) {
     saved.created.forEach(function (a) {
       if (
@@ -40,22 +44,17 @@ function getAllAdminsForAuth() {
       }
     });
   }
-
-  /* Apply edits */
   if (saved.edits) {
     base.forEach(function (a) {
       var edit = saved.edits[a.id];
       if (edit) Object.assign(a, edit);
     });
   }
-
-  /* Apply deactivations — set status to "deactivated" on matching records */
   if (Array.isArray(saved.deactivated)) {
     base.forEach(function (a) {
       if (saved.deactivated.indexOf(a.id) !== -1) a.status = "deactivated";
     });
   }
-
   return base;
 }
 
@@ -71,18 +70,64 @@ const Auth = {
   },
 
   save(user) {
+    /* Preserve existing viewMode if we're re-saving the same user */
+    var existing = Auth.current();
+    var viewMode = "admin";
+    if (existing && existing.id === user.id && existing.viewMode) {
+      viewMode = existing.viewMode;
+    } else if (user.role === "student" && !user.adminRole) {
+      viewMode = "student";
+    }
+
     Store.set("session", {
       id: user.id,
       username: user.username,
       role: user.role || "student",
       adminRole: user.adminRole || null,
       adminRoles: user.adminRoles || null,
+      studentId: user.studentId || null,
+      viewMode: viewMode,
       name:
         [user.firstName, user.lastName].filter(Boolean).join(" ") ||
         user.username,
       avatar: user.avatar || "",
       loggedAt: Date.now(),
     });
+  },
+
+  /* Switch between admin and student views for a student admin.
+     Only works if the session has a studentId. */
+  switchView(target) {
+    var session = Auth.current();
+    if (!session) return false;
+    if (!session.studentId) return false;
+    if (target !== "admin" && target !== "student") return false;
+
+    /* If switching to admin, verify the admin record is still active */
+    if (target === "admin") {
+      var adminList = getAllAdminsForAuth();
+      var record = adminList.find(function (a) {
+        return a.id === session.id || a.username === session.username;
+      });
+      if (!record || record.status === "deactivated") {
+        Toast.warning(
+          "Your admin access has been revoked.",
+          "Admin deactivated",
+        );
+        return false;
+      }
+    }
+
+    session.viewMode = target;
+    Store.set("session", session);
+
+    var base = window.location.pathname.includes("/pages/") ? "../../" : "";
+    if (target === "admin") {
+      window.location.href = base + "pages/admin/dashboard.html";
+    } else {
+      window.location.href = base + "pages/student/dashboard.html";
+    }
+    return true;
   },
 
   logout() {
@@ -112,6 +157,20 @@ function initLoginPage() {
     const notice = document.getElementById("expired-notice");
     if (notice) notice.style.display = "block";
   }
+  if (new URLSearchParams(location.search).get("deactivated") === "1") {
+    const notice = document.getElementById("expired-notice");
+    if (notice) {
+      notice.style.display = "block";
+      var h5 = notice.querySelector("h5");
+      var row = notice.querySelector(".row");
+      if (h5)
+        h5.innerHTML =
+          '<i class="fa-solid fa-user-slash"></i> Account deactivated';
+      if (row)
+        row.textContent =
+          "Your admin access has been revoked. Contact the Super Admin if this was a mistake.";
+    }
+  }
 
   bindForm(
     form,
@@ -140,13 +199,10 @@ function initLoginPage() {
       }
 
       setTimeout(() => {
-        /* ---- Try student first ---- */
         const student = DEMO_STUDENTS.find(
           (s) =>
             s.username.toLowerCase() === id || s.email.toLowerCase() === id,
         );
-
-        /* ---- Then try admin (merged with overrides) ---- */
         const adminList = getAllAdminsForAuth();
         const admin = adminList.find(
           (a) =>
@@ -155,27 +211,33 @@ function initLoginPage() {
 
         let matched = null;
 
-        if (student) {
-          matched = {
-            user: student,
-            expected:
-              typeof DEMO_CREDENTIALS !== "undefined" &&
-              DEMO_CREDENTIALS.student
-                ? DEMO_CREDENTIALS.student.password
-                : "Campus@2026",
-          };
-        } else if (admin) {
-          /* Use the admin's own stored password (created admins have their own) */
-          const expected =
-            admin.password ||
-            (admin.adminRole === "super_admin"
-              ? DEMO_CREDENTIALS?.superadmin?.password || "Super@2026!"
+        /* Prefer the admin record when the account is an admin.
+         Seun and Temilade exist in BOTH DEMO_STUDENTS and DEMO_ADMINS —
+         we want the admin password to win for them. */
+        if (admin) {
+          const roleKey =
+            admin.adminRole === "super_admin"
+              ? "superadmin"
               : admin.adminRole === "academia"
-                ? DEMO_CREDENTIALS?.academia?.password || "Academia@2026!"
+                ? "academia"
                 : admin.adminRole === "su_pro"
-                  ? DEMO_CREDENTIALS?.supro?.password || "Supro@2026!"
-                  : DEMO_CREDENTIALS?.admin?.password || "Admin@2026!");
-          matched = { user: admin, expected: expected };
+                  ? "supro"
+                  : "admin";
+
+          const fallback =
+            typeof DEMO_CREDENTIALS !== "undefined" && DEMO_CREDENTIALS[roleKey]
+              ? DEMO_CREDENTIALS[roleKey].password
+              : "";
+
+          const expected = admin.password || fallback;
+          matched = { user: admin, expected: expected, isAdmin: true };
+        } else if (student) {
+          const expected =
+            student.password ||
+            (typeof DEMO_CREDENTIALS !== "undefined" && DEMO_CREDENTIALS.student
+              ? DEMO_CREDENTIALS.student.password
+              : "Campus@2026");
+          matched = { user: student, expected: expected, isAdmin: false };
         }
 
         if (btn) {
@@ -191,7 +253,26 @@ function initLoginPage() {
           return;
         }
 
+        /* Deactivation check — student admins get auto-downgraded, others blocked */
         if (matched.user.status === "deactivated") {
+          if (matched.isAdmin && matched.user.studentId) {
+            /* Student admin whose admin access was revoked → auto-downgrade to
+             their student account. They never lose student-side access. */
+            var studentRecord = DEMO_STUDENTS.find(function (s) {
+              return s.id === matched.user.studentId;
+            });
+            if (studentRecord) {
+              Auth.save(
+                Object.assign({}, studentRecord, { viewMode: "student" }),
+              );
+              Toast.warning(
+                "Your admin access has been revoked. You've been signed in as a student.",
+                "Admin access revoked",
+              );
+              setTimeout(() => Auth.redirectByRole("student"), 700);
+              return;
+            }
+          }
           Toast.warning(
             "This account has been deactivated. Contact Admin to reactivate.",
             "Account deactivated",
@@ -214,10 +295,23 @@ function initLoginPage() {
           return;
         }
 
-        Auth.save(matched.user);
+        /* Determine the initial view mode */
+        var initialView = "student";
+        if (matched.isAdmin) {
+          /* Admins default to admin view */
+          initialView = "admin";
+        }
+        Auth.save(Object.assign({}, matched.user, { viewMode: initialView }));
+
         Toast.success("Signed in successfully. Welcome back!", "Welcome");
 
-        setTimeout(() => Auth.redirectByRole(matched.user.role), 500);
+        setTimeout(() => {
+          if (initialView === "admin") {
+            Auth.redirectByRole("admin");
+          } else {
+            Auth.redirectByRole("student");
+          }
+        }, 500);
       }, 600);
     },
   );
@@ -353,6 +447,7 @@ function initEmailVerificationPage() {
         firstName: pending.firstName,
         lastName: pending.lastName,
         role: "student",
+        viewMode: "student",
         avatar: "",
       });
       Store.remove("pending_registration");
@@ -448,9 +543,11 @@ function initLogoutButtons() {
 
 /* -------------------------------------------------------------------------
    Page guard
-   Checks for a valid session, and — if the user is an admin — verifies
-   that their account hasn't been deactivated by a Super Admin since login.
-   Deactivated admins get signed out on their next page load.
+   - Redirects to login if there's no session
+   - Enforces admin deactivation: a deactivated student admin is
+     auto-downgraded to student view; a deactivated non-student admin is
+     signed out.
+   - Enforces the correct view for the page (admin vs student)
    ------------------------------------------------------------------------- */
 function guardPage(requiredRole) {
   const session = Auth.current();
@@ -461,13 +558,37 @@ function guardPage(requiredRole) {
     return false;
   }
 
-  /* Admin deactivation check — Super Admin can revoke access mid-session */
+  /* ---- Admin deactivation check ---- */
   if (session.role === "admin" || session.role === "super_admin") {
     const adminList = getAllAdminsForAuth();
     const record = adminList.find(
       (a) => a.id === session.id || a.username === session.username,
     );
     if (record && record.status === "deactivated") {
+      /* Student admin → auto-downgrade to student view */
+      if (session.studentId) {
+        var studentRecord = (
+          typeof DEMO_STUDENTS !== "undefined" ? DEMO_STUDENTS : []
+        ).find(function (s) {
+          return s.id === session.studentId;
+        });
+        if (studentRecord) {
+          session.role = "student";
+          session.adminRole = null;
+          session.adminRoles = null;
+          session.viewMode = "student";
+          Store.set("session", session);
+          Toast.warning(
+            "Your admin access has been revoked. You've been switched to student view.",
+            "Admin access revoked",
+          );
+          setTimeout(function () {
+            window.location.href = base + "pages/student/dashboard.html";
+          }, 900);
+          return false;
+        }
+      }
+      /* Non-student admin → sign out */
       Store.remove("session");
       Toast.warning(
         "Your admin account has been deactivated. You have been signed out.",
@@ -480,18 +601,45 @@ function guardPage(requiredRole) {
     }
   }
 
-  if (requiredRole && session.role !== requiredRole) {
-    if (session.role === "student" && requiredRole !== "student") {
-      window.location.href =
-        base + "pages/student/dashboard.html?unauthorized=1";
-    } else if (
-      (session.role === "admin" || session.role === "super_admin") &&
-      requiredRole === "student"
-    ) {
-      window.location.href = base + "pages/admin/dashboard.html";
+  /* ---- Page access check ---- */
+  if (requiredRole) {
+    const isAdminPage = requiredRole === "admin";
+    const isAdminSession =
+      session.role === "admin" || session.role === "super_admin";
+
+    /* Viewing admin page requires admin role AND admin view mode */
+    if (isAdminPage) {
+      if (!isAdminSession) {
+        window.location.href =
+          base + "pages/student/dashboard.html?unauthorized=1";
+        return false;
+      }
+      if (session.viewMode === "student") {
+        /* Student admin with student view active trying to open admin page →
+           silently switch back to admin view */
+        session.viewMode = "admin";
+        Store.set("session", session);
+      }
+      return true;
     }
-    return false;
+
+    /* Viewing student page */
+    if (requiredRole === "student") {
+      /* Admins (non-student) shouldn't be here — send them to the admin dashboard */
+      if (isAdminSession && !session.studentId) {
+        window.location.href = base + "pages/admin/dashboard.html";
+        return false;
+      }
+      /* Student admins in admin view mode landing on a student page →
+         treat it as an implicit switch to student view */
+      if (isAdminSession && session.studentId && session.viewMode === "admin") {
+        session.viewMode = "student";
+        Store.set("session", session);
+      }
+      return true;
+    }
   }
+
   return true;
 }
 
@@ -505,16 +653,4 @@ document.addEventListener("DOMContentLoaded", () => {
   initForgotPasswordPage();
   initResetPasswordPage();
   initLogoutButtons();
-
-  /* Session-expired notice */
-  if (new URLSearchParams(location.search).get("deactivated") === "1") {
-    const notice = document.getElementById("expired-notice");
-    if (notice) {
-      notice.style.display = "block";
-      notice.querySelector("h5").innerHTML =
-        '<i class="fa-solid fa-user-slash"></i> Account deactivated';
-      notice.querySelector(".row").textContent =
-        "Your admin access has been revoked. Contact the Super Admin if this was a mistake.";
-    }
-  }
 });

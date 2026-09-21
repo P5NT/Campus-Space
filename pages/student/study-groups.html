@@ -59,7 +59,7 @@
             <div class="page-head-text">
               <h1 class="page-title">Study Groups</h1>
               <p class="page-subtitle" id="sg-subtitle">
-                Study together, prepare better.
+                Join a group, request to join one, or start your own.
               </p>
             </div>
             <button
@@ -69,6 +69,33 @@
             >
               <i class="fa-solid fa-plus"></i> Create group
             </button>
+          </div>
+
+          <div class="toolbar">
+            <div class="input-wrap">
+              <i class="fa-solid fa-magnifying-glass input-icon"></i>
+              <input
+                class="input"
+                type="search"
+                id="sg-search"
+                placeholder="Search groups by name or course…"
+                aria-label="Search study groups"
+              />
+            </div>
+            <select
+              class="select"
+              id="sg-filter"
+              aria-label="Filter by membership"
+            >
+              <option value="">All groups</option>
+              <option value="mine">My groups</option>
+              <option value="requested">Requested</option>
+              <option value="creator">Created by me</option>
+            </select>
+          </div>
+
+          <div class="cluster-between" style="margin-bottom: 16px">
+            <p class="section-desc" style="margin: 0" id="sg-count">Loading…</p>
           </div>
 
           <div class="grid grid-3" id="groups-grid"></div>
@@ -106,7 +133,7 @@
               />
               <div class="field-error">
                 <i class="fa-solid fa-circle-exclamation"></i
-                ><span>Please enter a group name.</span>
+                ><span>Please enter a group name (at least 3 characters).</span>
               </div>
             </div>
 
@@ -118,8 +145,7 @@
                 <option value="">Select a course</option>
               </select>
               <div class="field-help">
-                You can only create groups for courses in your own department
-                and level.
+                You can create a group for any course.
               </div>
               <div class="field-error">
                 <i class="fa-solid fa-circle-exclamation"></i
@@ -147,6 +173,8 @@
       </div>
     </div>
 
+    <!-- Delete group confirmation is handled via Confirmation.confirm() in JS -->
+
     <div id="mobile-nav-mount"></div>
     <div class="mobile-menu-backdrop"></div>
     <aside
@@ -160,14 +188,15 @@
     <script src="../../js/main.js"></script>
     <script src="../../js/validation.js"></script>
     <script src="../../js/auth.js"></script>
+    <script src="../../js/groups.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
     <script>
       /* ==========================================================================
-   Study Groups — students see and create groups only for their own
-   department + level. Groups are scoped like the course catalog and
-   course materials pages.
-   ========================================================================== */
+         Study Groups — student page.
+         Shows all non-deleted groups. Three-state join button.
+         Creator-only request inbox and delete.
+         ========================================================================== */
       document.addEventListener("DOMContentLoaded", function () {
         var session = Auth.current();
         if (!session) {
@@ -176,237 +205,359 @@
         }
         initAppShell("student");
 
-        var student = DEMO_STUDENTS.find(function (s) {
-          return s.username === session.username;
-        });
-        if (!student) {
-          return;
-        }
+        var me = session.username;
 
         /* ------------------------------------------------------------------
-     Subtitle — reflect the student's own department and level
-     ------------------------------------------------------------------ */
-        var sub = document.getElementById("sg-subtitle");
-        if (sub) {
-          sub.textContent =
-            "Study groups for " +
-            student.department +
-            " · " +
-            student.level +
-            " Level";
-        }
-
-        /* ------------------------------------------------------------------
-     Seed groups — scoped by department + level
-     ------------------------------------------------------------------ */
-        var SEED_GROUPS = [
-          /* Computer Science 400 */
-          {
-            name: "CSC 401 Study Circle",
-            course: "CSC 401",
-            department: "Computer Science",
-            level: "400",
-            members: 6,
-            location: "Library — Group Room B",
-            time: "Tue & Thu · 6pm",
-          },
-          {
-            name: "Compiler Construction Mentoring",
-            course: "CSC 403",
-            department: "Computer Science",
-            level: "400",
-            members: 7,
-            location: "Faculty Auditorium",
-            time: "Sun · 2pm",
-          },
-
-          /* Cyber Security 200 */
-          {
-            name: "CYB 201 Foundations",
-            course: "CYB 201",
-            department: "Cyber Security",
-            level: "200",
-            members: 5,
-            location: "ICT Lab 3",
-            time: "Wed · 4pm",
-          },
-
-          /* Electrical and Electronics Engineering 300 */
-          {
-            name: "EEE 305 Tutorial Group",
-            course: "EEE 305",
-            department: "Electrical and Electronics Engineering",
-            level: "300",
-            members: 4,
-            location: "Engineering Block C",
-            time: "Mon · 5pm",
-          },
-
-          /* Biochemistry 200 */
-          {
-            name: "BCH 201 Revision Squad",
-            course: "BCH 201",
-            department: "Biochemistry",
-            level: "200",
-            members: 8,
-            location: "Science Library",
-            time: "Sat · 10am",
-          },
-
-          /* Accounting 400 */
-          {
-            name: "ACC 401 Problem Solving",
-            course: "ACC 401",
-            department: "Accounting",
-            level: "400",
-            members: 5,
-            location: "Management Building",
-            time: "Wed · 4pm",
-          },
-
-          /* Nursing Science 500 */
-          {
-            name: "NSC 501 Clinical Prep",
-            course: "NSC 501",
-            department: "Nursing Science",
-            level: "500",
-            members: 6,
-            location: "Nursing Hall — Room 2",
-            time: "Tue · 6pm",
-          },
-        ];
-
-        /* Load any custom groups the student has created (persisted) */
-        var customGroups = Store.get("study_groups_custom", []) || [];
-
-        /* Combine seeds + custom, then scope to the student */
-        var allGroups = SEED_GROUPS.concat(customGroups);
-        var groups = allGroups.filter(function (g) {
-          return (
-            g.department === student.department && g.level === student.level
-          );
-        });
-
-        /* Track joined groups (in-memory for demo) */
-        var joined = {};
-
-        /* ------------------------------------------------------------------
-     Render
-     ------------------------------------------------------------------ */
+           DOM refs
+           ------------------------------------------------------------------ */
         var grid = document.getElementById("groups-grid");
-
-        function render() {
-          grid.innerHTML = "";
-
-          if (!groups.length) {
-            grid.innerHTML =
-              '<div class="card" style="grid-column: 1 / -1;">' +
-              '<div class="empty-state">' +
-              '<div class="empty-icon"><i class="fa-solid fa-users"></i></div>' +
-              "<h3>No study groups yet</h3>" +
-              "<p>No one has started a study group for " +
-              Util.escape(student.department) +
-              " at " +
-              Util.escape(student.level) +
-              " Level yet. Be the first.</p>" +
-              '<button class="btn btn-primary" data-modal-open="create-group-modal" type="button">' +
-              '<i class="fa-solid fa-plus"></i> Create the first group' +
-              "</button>" +
-              "</div>" +
-              "</div>";
-            return;
-          }
-
-          groups.forEach(function (g) {
-            var card = document.createElement("div");
-            card.className = "card card-pad";
-
-            var isJoined = joined[g.name];
-            var joinBtnHtml = isJoined
-              ? '<span class="badge badge-success" style="display:flex; justify-content:center; padding:8px 12px;"><i class="fa-solid fa-circle-check"></i> Joined</span>'
-              : '<button class="btn btn-secondary btn-sm btn-block" data-join><i class="fa-solid fa-arrow-right-to-bracket"></i> Join group</button>';
-
-            card.innerHTML =
-              '<div class="cluster" style="margin-bottom:12px;">' +
-              '<span class="qa-icon marine"><i class="fa-solid fa-users"></i></span>' +
-              '<span class="badge badge-marine">' +
-              Util.escape(g.course) +
-              "</span>" +
-              "</div>" +
-              '<h3 style="font-size:var(--fs-md); margin-bottom:6px;">' +
-              Util.escape(g.name) +
-              "</h3>" +
-              '<div class="stack" style="font-size:var(--fs-xs); color:var(--text-tertiary); gap:6px; margin-bottom:16px;">' +
-              '<div><i class="fa-solid fa-location-dot"></i> ' +
-              Util.escape(g.location) +
-              "</div>" +
-              '<div><i class="fa-regular fa-clock"></i> ' +
-              Util.escape(g.time) +
-              "</div>" +
-              '<div><i class="fa-solid fa-user-group"></i> ' +
-              g.members +
-              " member" +
-              (g.members === 1 ? "" : "s") +
-              "</div>" +
-              "</div>" +
-              joinBtnHtml;
-
-            var joinBtn = card.querySelector("[data-join]");
-            if (joinBtn) {
-              joinBtn.addEventListener("click", function () {
-                joined[g.name] = true;
-                g.members += 1;
-                render();
-                Toast.success(
-                  'You joined "' + g.name + '" (simulated).',
-                  "Joined",
-                );
-              });
-            }
-
-            grid.appendChild(card);
-          });
-
-          /* Rebind any "create first group" buttons that appear in the empty state */
-          document
-            .querySelectorAll('[data-modal-open="create-group-modal"]')
-            .forEach(function (btn) {
-              if (btn.dataset.bound === "true") return;
-              btn.dataset.bound = "true";
-            });
-        }
+        var searchEl = document.getElementById("sg-search");
+        var filterEl = document.getElementById("sg-filter");
+        var countEl = document.getElementById("sg-count");
 
         /* ------------------------------------------------------------------
-     Populate the course dropdown with the student's own courses
-     ------------------------------------------------------------------ */
+           Course dropdown — allow ALL courses
+           ------------------------------------------------------------------ */
         var courseSelect = document.getElementById("cg-course");
-        if (courseSelect) {
-          var myCourses = DEMO_COURSES.filter(function (c) {
-            return (
-              c.department === student.department && c.level === student.level
-            );
-          });
-
-          if (myCourses.length) {
-            myCourses.forEach(function (c) {
+        if (courseSelect && typeof DEMO_COURSES !== "undefined") {
+          DEMO_COURSES.slice()
+            .sort(function (a, b) {
+              return a.code.localeCompare(b.code);
+            })
+            .forEach(function (c) {
               var opt = document.createElement("option");
               opt.value = c.code;
               opt.textContent = c.code + " — " + c.title;
               courseSelect.appendChild(opt);
             });
-          } else {
-            var emptyOpt = document.createElement("option");
-            emptyOpt.value = "";
-            emptyOpt.disabled = true;
-            emptyOpt.textContent =
-              "No courses for your department and level yet";
-            courseSelect.appendChild(emptyOpt);
-          }
         }
 
         /* ------------------------------------------------------------------
-     Create group form
-     ------------------------------------------------------------------ */
+           Helpers
+           ------------------------------------------------------------------ */
+        function timeAgo(ts) {
+          if (typeof Util !== "undefined" && Util.relativeTime) {
+            return Util.relativeTime(ts);
+          }
+          return new Date(ts).toLocaleDateString();
+        }
+
+        function memberCountLabel(n) {
+          return n + " member" + (n === 1 ? "" : "s");
+        }
+
+        /* ------------------------------------------------------------------
+           Render a single group card
+           ------------------------------------------------------------------ */
+        function renderCard(g) {
+          var card = document.createElement("div");
+          card.className = "card card-pad";
+
+          var state = Groups.membershipState(g, me);
+          var isCreator = Groups.isCreator(g, me);
+          var creatorName = Groups.displayName(g.createdBy);
+
+          /* --- Top row: course badge + Group Admin badge (if creator) --- */
+          var topRow =
+            '<div class="cluster" style="margin-bottom:12px;">' +
+            '<span class="qa-icon marine"><i class="fa-solid fa-users"></i></span>' +
+            '<span class="badge badge-marine">' +
+            Util.escape(g.course) +
+            "</span>" +
+            (isCreator
+              ? '<span class="tag-group-admin"><i class="fa-solid fa-crown"></i> Group Admin</span>'
+              : "") +
+            "</div>";
+
+          /* --- Title + creator line --- */
+          var titleHtml =
+            '<h3 style="font-size:var(--fs-md); margin-bottom:6px;">' +
+            Util.escape(g.name) +
+            "</h3>";
+
+          var creatorHtml =
+            '<div style="font-size:var(--fs-xs); color:var(--text-tertiary); margin-bottom:10px;">' +
+            '<i class="fa-solid fa-user-pen"></i> Created by ' +
+            '<strong style="color:var(--text-secondary);">' +
+            Util.escape(creatorName) +
+            "</strong>" +
+            " · " +
+            timeAgo(g.createdAt) +
+            "</div>";
+
+          /* --- Meta block --- */
+          var metaHtml =
+            '<div class="stack" style="font-size:var(--fs-xs); color:var(--text-tertiary); gap:6px; margin-bottom:16px;">' +
+            '<div><i class="fa-solid fa-location-dot"></i> ' +
+            Util.escape(g.location) +
+            "</div>" +
+            '<div><i class="fa-regular fa-clock"></i> ' +
+            Util.escape(g.time) +
+            "</div>" +
+            '<div><i class="fa-solid fa-user-group"></i> ' +
+            memberCountLabel((g.members || []).length) +
+            "</div>" +
+            "</div>";
+
+          /* --- Action button --- */
+          var actionHtml = "";
+          if (isCreator) {
+            actionHtml =
+              '<div class="cluster" style="gap:8px;">' +
+              '<a class="btn btn-primary btn-sm" style="flex:1;" href="group-chat.html?id=' +
+              encodeURIComponent(g.id) +
+              '">' +
+              '<i class="fa-solid fa-comments"></i> View Group' +
+              "</a>" +
+              '<button class="btn btn-danger btn-sm" data-delete-group title="Delete group" type="button" aria-label="Delete group">' +
+              '<i class="fa-solid fa-trash"></i>' +
+              "</button>" +
+              "</div>";
+          } else if (state === "member") {
+            actionHtml =
+              '<a class="btn btn-primary btn-sm btn-block" href="group-chat.html?id=' +
+              encodeURIComponent(g.id) +
+              '">' +
+              '<i class="fa-solid fa-comments"></i> View Group' +
+              "</a>";
+          } else if (state === "requested") {
+            actionHtml =
+              '<button class="btn btn-secondary btn-sm btn-block" data-cancel-request type="button">' +
+              '<i class="fa-regular fa-clock"></i> Request Sent' +
+              "</button>";
+          } else {
+            actionHtml =
+              '<button class="btn btn-secondary btn-sm btn-block" data-request-join type="button">' +
+              '<i class="fa-solid fa-arrow-right-to-bracket"></i> Join Group' +
+              "</button>";
+          }
+
+          /* --- Creator's request inbox --- */
+          var requestsHtml = "";
+          if (isCreator && (g.joinRequests || []).length) {
+            requestsHtml =
+              '<div class="grp-requests">' +
+              '<div class="grp-requests-title">' +
+              g.joinRequests.length +
+              " join request" +
+              (g.joinRequests.length === 1 ? "" : "s") +
+              "</div>" +
+              g.joinRequests
+                .map(function (username) {
+                  var name = Groups.displayName(username);
+                  var initials = (name || username)
+                    .split(" ")
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .map(function (p) {
+                      return p[0].toUpperCase();
+                    })
+                    .join("");
+                  return (
+                    '<div class="grp-request-row" data-req-user="' +
+                    Util.escape(username) +
+                    '">' +
+                    '<span class="avatar avatar-32 avatar-fallback">' +
+                    Util.escape(initials) +
+                    "</span>" +
+                    '<div class="info">' +
+                    '<div class="name">' +
+                    Util.escape(name) +
+                    "</div>" +
+                    '<div class="handle">@' +
+                    Util.escape(username) +
+                    "</div>" +
+                    "</div>" +
+                    '<div class="actions">' +
+                    '<button class="btn btn-primary btn-sm" data-accept type="button">' +
+                    '<i class="fa-solid fa-check"></i> Accept' +
+                    "</button>" +
+                    '<button class="btn btn-ghost btn-sm" data-reject type="button" style="color:var(--danger);">' +
+                    '<i class="fa-solid fa-xmark"></i>' +
+                    "</button>" +
+                    "</div>" +
+                    "</div>"
+                  );
+                })
+                .join("") +
+              "</div>";
+          }
+
+          card.innerHTML =
+            topRow +
+            titleHtml +
+            creatorHtml +
+            metaHtml +
+            actionHtml +
+            requestsHtml;
+
+          /* ---- Bind: Request Join ---- */
+          var reqBtn = card.querySelector("[data-request-join]");
+          if (reqBtn) {
+            reqBtn.addEventListener("click", function () {
+              Groups.requestJoin(g.id, me);
+              render();
+              Toast.success(
+                "Request sent to the group creator.",
+                "Request sent",
+              );
+            });
+          }
+
+          /* ---- Bind: Cancel Request ---- */
+          var cancelBtn = card.querySelector("[data-cancel-request]");
+          if (cancelBtn) {
+            cancelBtn.addEventListener("click", function () {
+              Groups.cancelRequest(g.id, me);
+              render();
+              Toast.info("Request cancelled.", "Cancelled");
+            });
+          }
+
+          /* ---- Bind: Delete Group (creator only) ---- */
+          var delBtn = card.querySelector("[data-delete-group]");
+          if (delBtn) {
+            delBtn.addEventListener("click", async function () {
+              var ok = await Confirmation.confirm({
+                title: "Delete this group?",
+                message:
+                  '"' +
+                  g.name +
+                  '" will be deleted permanently. All members will be removed, the chat will be closed, and this group will no longer appear anywhere in Campus Space. This action cannot be undone.',
+                confirmLabel: "Delete group",
+                variant: "danger",
+              });
+              if (!ok) return;
+              Groups.softDelete(g.id, me);
+              render();
+              Toast.success("Group deleted.", "Deleted");
+            });
+          }
+
+          /* ---- Bind: Accept / Reject requests ---- */
+          card.querySelectorAll("[data-req-user]").forEach(function (row) {
+            var username = row.getAttribute("data-req-user");
+            var accept = row.querySelector("[data-accept]");
+            var reject = row.querySelector("[data-reject]");
+            if (accept) {
+              accept.addEventListener("click", function () {
+                Groups.acceptRequest(g.id, username);
+                render();
+                Toast.success(
+                  Groups.displayName(username) +
+                    " has been added to the group.",
+                  "Accepted",
+                );
+              });
+            }
+            if (reject) {
+              reject.addEventListener("click", function () {
+                Groups.rejectRequest(g.id, username);
+                render();
+                Toast.info("Request rejected.", "Rejected");
+              });
+            }
+          });
+
+          return card;
+        }
+
+        /* ------------------------------------------------------------------
+           Render all cards (with search + filter)
+           ------------------------------------------------------------------ */
+        function render() {
+          var list = Groups.all(); // non-deleted only
+          var q = (searchEl.value || "").trim().toLowerCase();
+          var filter = filterEl.value;
+
+          if (q) {
+            list = list.filter(function (g) {
+              return (
+                g.name.toLowerCase().indexOf(q) !== -1 ||
+                (g.course || "").toLowerCase().indexOf(q) !== -1
+              );
+            });
+          }
+
+          if (filter === "mine") {
+            list = list.filter(function (g) {
+              return Groups.isMember(g, me);
+            });
+          } else if (filter === "requested") {
+            list = list.filter(function (g) {
+              return Groups.hasRequested(g, me);
+            });
+          } else if (filter === "creator") {
+            list = list.filter(function (g) {
+              return Groups.isCreator(g, me);
+            });
+          }
+
+          grid.innerHTML = "";
+
+          if (!list.length) {
+            grid.innerHTML =
+              '<div class="card" style="grid-column: 1 / -1;">' +
+              '<div class="empty-state">' +
+              '<div class="empty-icon"><i class="fa-solid fa-users"></i></div>' +
+              "<h3>No groups match</h3>" +
+              "<p>Try a different search term or filter. Or create a new group.</p>" +
+              '<button class="btn btn-primary" data-modal-open="create-group-modal" type="button">' +
+              '<i class="fa-solid fa-plus"></i> Create a group' +
+              "</button>" +
+              "</div>" +
+              "</div>";
+          } else {
+            list.forEach(function (g) {
+              grid.appendChild(renderCard(g));
+            });
+          }
+
+          countEl.textContent =
+            list.length + " group" + (list.length === 1 ? "" : "s");
+
+          /* Pending requests banner — shown to creators who have pending requests */
+          renderPendingBanner();
+        }
+
+        function renderPendingBanner() {
+          var mount = document.getElementById("sg-pending-banner-mount");
+          if (!mount) return;
+          var allMine = Groups.all().filter(function (g) {
+            return Groups.isCreator(g, me) && (g.joinRequests || []).length > 0;
+          });
+          var total = allMine.reduce(function (sum, g) {
+            return sum + (g.joinRequests || []).length;
+          }, 0);
+          if (!total) {
+            mount.innerHTML = "";
+            return;
+          }
+          mount.innerHTML =
+            '<div class="sg-pending-banner">' +
+            '<i class="fa-solid fa-bell"></i>' +
+            "<span>You have " +
+            total +
+            " pending join request" +
+            (total === 1 ? "" : "s") +
+            ". Open the relevant group card below to accept or reject." +
+            "</span>" +
+            "</div>";
+        }
+
+        /* ------------------------------------------------------------------
+           Search + filter events
+           ------------------------------------------------------------------ */
+        var debounce;
+        searchEl.addEventListener("input", function () {
+          clearTimeout(debounce);
+          debounce = setTimeout(render, 120);
+        });
+        filterEl.addEventListener("change", render);
+
+        /* ------------------------------------------------------------------
+           Create group form
+           ------------------------------------------------------------------ */
         var createForm = document.getElementById("create-group-form");
         if (createForm) {
           bindForm(
@@ -416,30 +567,28 @@
               course: [Rules.required],
             },
             function (data) {
-              var newGroup = {
+              /* Look up the selected course to derive dept + level for the
+                 group's own metadata, so Admin can filter by dept later. */
+              var courseCode = data.get("course");
+              var course =
+                typeof DEMO_COURSES !== "undefined"
+                  ? DEMO_COURSES.find(function (c) {
+                      return c.code === courseCode;
+                    })
+                  : null;
+
+              Groups.create({
                 name: data.get("name"),
-                course: data.get("course"),
-                department: student.department,
-                level: student.level,
-                members: 1,
-                location: "TBD",
-                time: "To be scheduled",
-                createdBy: student.username,
-                createdAt: Date.now(),
-              };
-
-              /* Persist to localStorage so it survives reload */
-              var stored = Store.get("study_groups_custom", []) || [];
-              stored.unshift(newGroup);
-              Store.set("study_groups_custom", stored);
-
-              /* Add to the visible list */
-              groups.unshift(newGroup);
-              joined[newGroup.name] = true; /* Creator is auto-joined */
-              render();
+                course: courseCode,
+                description: data.get("description") || "",
+                department: course ? course.department : "—",
+                level: course ? course.level : "—",
+                creator: session,
+              });
 
               Modal.close("create-group-modal");
               createForm.reset();
+              render();
               Toast.success("Study group created.", "Group created");
             },
           );

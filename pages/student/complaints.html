@@ -45,6 +45,7 @@
   </head>
   <body class="has-session">
     <a href="#main" class="skip-link">Skip to main content</a>
+
     <div class="app-shell">
       <aside
         class="sidebar"
@@ -58,26 +59,32 @@
             <div class="page-head-text">
               <h1 class="page-title">Complaints</h1>
               <p class="page-subtitle">
-                Submit issues and track their resolution. Handled privately by
-                Admin.
+                Submit issues and track their resolution. Choose to keep it
+                private or share it with the campus community.
               </p>
             </div>
             <button
               class="btn btn-primary"
-              data-modal-open="new-complaint-modal"
+              id="new-complaint-btn"
+              type="button"
             >
               <i class="fa-solid fa-plus"></i> New complaint
             </button>
           </div>
 
-          <div class="filter-bar">
-            <button class="chip is-active" data-status="all">All</button>
-            <button class="chip" data-status="Submitted">Submitted</button>
-            <button class="chip" data-status="Under Review">
-              Under Review
+          <!-- Filter tabs -->
+          <div class="filter-bar" id="cm-tabs" role="tablist">
+            <button class="chip is-active" data-tab="all" role="tab">
+              All
             </button>
-            <button class="chip" data-status="In Progress">In Progress</button>
-            <button class="chip" data-status="Resolved">Resolved</button>
+            <button class="chip" data-tab="mine" role="tab">
+              My complaints
+            </button>
+            <button class="chip" data-tab="public" role="tab">Public</button>
+          </div>
+
+          <div class="cluster-between" style="margin-bottom: 12px">
+            <p class="section-desc" style="margin: 0" id="cm-count">Loading…</p>
           </div>
 
           <div class="card">
@@ -87,16 +94,29 @@
       </div>
     </div>
 
-    <!-- New complaint modal -->
+    <!-- ============ New complaint modal ============ -->
     <div
       class="modal-backdrop"
       id="new-complaint-modal"
       role="dialog"
       aria-modal="true"
+      aria-labelledby="nc-title"
     >
       <div class="modal modal-lg">
         <div class="modal-head">
-          <h3>New complaint</h3>
+          <div style="min-width: 0">
+            <h3 id="nc-title">New complaint</h3>
+            <p
+              style="
+                font-size: var(--fs-xs);
+                color: var(--text-tertiary);
+                margin-top: 2px;
+              "
+            >
+              Choose visibility carefully — it can't be changed after
+              submission.
+            </p>
+          </div>
           <button class="btn-icon" data-modal-close aria-label="Close">
             <i class="fa-solid fa-xmark"></i>
           </button>
@@ -122,6 +142,7 @@
                 ><span>Please select a category.</span>
               </div>
             </div>
+
             <div class="field">
               <label class="label" for="nc-subject"
                 >Subject <span class="req">*</span></label
@@ -138,6 +159,7 @@
                 ><span>Please provide a subject.</span>
               </div>
             </div>
+
             <div class="field">
               <label class="label" for="nc-desc"
                 >Description <span class="req">*</span></label
@@ -153,11 +175,43 @@
                 ><span>Please describe the issue.</span>
               </div>
             </div>
+
+            <!-- Visibility picker — REQUIRED, no default -->
             <div class="field">
-              <label class="label" for="nc-file"
-                >Attachment <span class="label-hint">Optional</span></label
-              >
-              <input class="input" type="file" id="nc-file" name="attachment" />
+              <label class="label">Visibility <span class="req">*</span></label>
+              <div class="visibility-picker" id="nc-visibility">
+                <label class="visibility-option">
+                  <input type="radio" name="visibility" value="private" />
+                  <span class="visibility-option-body">
+                    <span class="visibility-option-head">
+                      <i class="fa-solid fa-lock"></i>
+                      <span>Admins only</span>
+                    </span>
+                    <span class="visibility-option-desc"
+                      >Only you and Admins will see this complaint and any
+                      responses.</span
+                    >
+                  </span>
+                </label>
+                <label class="visibility-option">
+                  <input type="radio" name="visibility" value="public" />
+                  <span class="visibility-option-body">
+                    <span class="visibility-option-head">
+                      <i class="fa-solid fa-globe"></i>
+                      <span>Public</span>
+                    </span>
+                    <span class="visibility-option-desc"
+                      >Everyone on Campus Space will see this. Your username
+                      (@<span id="nc-username-hint">username</span>) will be
+                      shown, not your full name.</span
+                    >
+                  </span>
+                </label>
+              </div>
+              <div class="field-error" id="nc-visibility-error">
+                <i class="fa-solid fa-circle-exclamation"></i
+                ><span>Please choose a visibility option.</span>
+              </div>
             </div>
           </div>
           <div class="modal-foot">
@@ -165,7 +219,7 @@
               Cancel
             </button>
             <button type="submit" class="btn btn-primary">
-              Submit complaint
+              <i class="fa-solid fa-paper-plane"></i> Submit complaint
             </button>
           </div>
         </form>
@@ -187,20 +241,34 @@
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
     <script src="../../js/complaints.js"></script>
-    <script src="../../js/leaders.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const session = Auth.current();
+      /* ==========================================================================
+         Student Complaints page.
+         Lists complaints the student can see (their own private + all public),
+         with a required visibility choice when submitting a new one.
+         ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
         if (!session) {
           window.location.href = "../auth/login.html";
           return;
         }
         initAppShell("student");
 
-        const listEl = document.getElementById("complaints-list");
-        let filter = "all";
+        var listEl = document.getElementById("complaints-list");
+        var countEl = document.getElementById("cm-count");
+        var tabs = document.getElementById("cm-tabs");
+        var form = document.getElementById("new-complaint-form");
+        var visibilityPicker = document.getElementById("nc-visibility");
 
-        const ICONS = {
+        var activeTab = "all";
+
+        /* Fill the username hint in the public option description */
+        var hint = document.getElementById("nc-username-hint");
+        if (hint) hint.textContent = session.username || "username";
+
+        /* Category → icon mapping */
+        var ICONS = {
           Facilities: "fa-building",
           Academic: "fa-graduation-cap",
           Welfare: "fa-heart",
@@ -210,77 +278,227 @@
           Other: "fa-circle-info",
         };
 
+        /* ------------------------------------------------------------------
+           RENDER
+           ------------------------------------------------------------------ */
         function render() {
+          var all = Complaints.visibleTo(session);
+
+          /* Apply tab filter */
+          var visible = all;
+          if (activeTab === "mine") {
+            visible = all.filter(function (c) {
+              return c.submittedBy === session.username;
+            });
+          } else if (activeTab === "public") {
+            visible = all.filter(function (c) {
+              return c.visibility === "public";
+            });
+          }
+
+          /* Sort: unresolved first, newest first within each */
+          var statusOrder = {
+            Submitted: 0,
+            "Under Review": 1,
+            "In Progress": 2,
+            Resolved: 3,
+          };
+          visible.sort(function (a, b) {
+            var sa =
+              statusOrder[a.status] !== undefined ? statusOrder[a.status] : 9;
+            var sb =
+              statusOrder[b.status] !== undefined ? statusOrder[b.status] : 9;
+            if (sa !== sb) return sa - sb;
+            return (b.updated || b.date) - (a.updated || a.date);
+          });
+
+          countEl.textContent =
+            visible.length +
+            " complaint" +
+            (visible.length === 1 ? "" : "s") +
+            (activeTab !== "all" ? " · " + activeTab : "");
+
           listEl.innerHTML = "";
-          let list = Complaints.all();
-          if (filter !== "all") list = list.filter((c) => c.status === filter);
-          if (!list.length) {
-            listEl.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-icon"><i class="fa-solid fa-file-shield"></i></div>
-          <h3>No complaints ${filter === "all" ? "yet" : "in this status"}</h3>
-          <p>When you submit a complaint, it will appear here and you can track its progress.</p>
-        </div>`;
+
+          if (!visible.length) {
+            var emptyMsg =
+              activeTab === "mine"
+                ? "You haven't submitted any complaints yet"
+                : activeTab === "public"
+                  ? "No public complaints yet"
+                  : "No complaints yet";
+            var emptySub =
+              activeTab === "mine"
+                ? "Complaints you submit will appear here."
+                : activeTab === "public"
+                  ? "Public complaints shared by the campus community will appear here."
+                  : "Submit a complaint to get started.";
+            listEl.innerHTML =
+              '<div class="empty-state" style="padding: 48px 24px;">' +
+              '<div class="empty-icon"><i class="fa-solid fa-file-shield"></i></div>' +
+              "<h3>" +
+              emptyMsg +
+              "</h3>" +
+              "<p>" +
+              emptySub +
+              "</p>" +
+              (activeTab === "all"
+                ? '<button class="btn btn-primary" type="button" id="empty-new-complaint">' +
+                  '<i class="fa-solid fa-plus"></i> New complaint' +
+                  "</button>"
+                : "") +
+              "</div>";
+            var emptyBtn = document.getElementById("empty-new-complaint");
+            if (emptyBtn) {
+              emptyBtn.addEventListener("click", function () {
+                Modal.open("new-complaint-modal");
+              });
+            }
             return;
           }
-          list.forEach((c) => {
-            const row = document.createElement("a");
-            row.href = "complaint-details.html?id=" + c.id;
-            row.className = "complaint-row";
-            row.innerHTML = `
-        <span class="complaint-icon"><i class="fa-solid ${ICONS[c.category] || "fa-circle-info"}"></i></span>
-        <div class="complaint-info">
-          <h4>${Util.escape(c.subject)}</h4>
-          <div class="meta">
-            <span>${Util.escape(c.category)}</span>
-            <span>${Util.escape(c.id)}</span>
-            <span>${Util.relativeTime(c.updated)}</span>
-          </div>
-        </div>
-        ${complaintStatusPill(c.status)}`;
+
+          visible.forEach(function (c) {
+            var isOwn = c.submittedBy === session.username;
+            var isPublic = c.visibility === "public";
+
+            /* Author line — only shown for public complaints that aren't ours */
+            var authorLine = "";
+            if (isPublic) {
+              authorLine = isOwn
+                ? '<span class="cm-author"><i class="fa-solid fa-user"></i> You</span>'
+                : '<span class="cm-author"><i class="fa-solid fa-user"></i> @' +
+                  Util.escape(c.submittedBy) +
+                  "</span>";
+            }
+
+            var visibilityBadge = isPublic
+              ? '<span class="badge badge-marine"><i class="fa-solid fa-globe"></i> Public</span>'
+              : '<span class="badge badge-neutral"><i class="fa-solid fa-lock"></i> Private</span>';
+
+            var row = document.createElement("a");
+            row.href = "complaint-details.html?id=" + encodeURIComponent(c.id);
+            row.className = "complaint-row cm-student-row";
+
+            row.innerHTML =
+              '<span class="complaint-icon"><i class="fa-solid ' +
+              (ICONS[c.category] || ICONS.Other) +
+              '"></i></span>' +
+              '<div class="complaint-info">' +
+              "<h4>" +
+              Util.escape(c.subject) +
+              "</h4>" +
+              '<div class="meta">' +
+              '<span><i class="fa-solid fa-tag"></i> ' +
+              Util.escape(c.category) +
+              "</span>" +
+              authorLine +
+              '<span><i class="fa-regular fa-clock"></i> ' +
+              Util.relativeTime(c.updated || c.date) +
+              "</span>" +
+              "</div>" +
+              "</div>" +
+              '<div class="cm-student-row-badges">' +
+              visibilityBadge +
+              complaintStatusPill(c.status) +
+              "</div>" +
+              '<i class="fa-solid fa-chevron-right cm-student-row-chevron"></i>';
+
             listEl.appendChild(row);
           });
         }
 
-        document.querySelectorAll("[data-status]").forEach((btn) => {
-          btn.addEventListener("click", () => {
-            document
-              .querySelectorAll("[data-status]")
-              .forEach((b) => b.classList.remove("is-active"));
-            btn.classList.add("is-active");
-            filter = btn.getAttribute("data-status");
-            render();
+        /* ------------------------------------------------------------------
+           TABS
+           ------------------------------------------------------------------ */
+        tabs.addEventListener("click", function (e) {
+          var btn = e.target.closest("[data-tab]");
+          if (!btn) return;
+          tabs.querySelectorAll(".chip").forEach(function (c) {
+            c.classList.remove("is-active");
           });
+          btn.classList.add("is-active");
+          activeTab = btn.getAttribute("data-tab");
+          render();
         });
 
-        // New complaint form
-        const form = document.getElementById("new-complaint-form");
+        /* ------------------------------------------------------------------
+           NEW COMPLAINT — validation and submission
+           ------------------------------------------------------------------ */
+        function clearVisibilityError() {
+          visibilityPicker.classList.remove("is-invalid");
+        }
+
+        visibilityPicker.addEventListener("change", function (e) {
+          if (e.target.name === "visibility") clearVisibilityError();
+        });
+
         bindForm(
           form,
           {
             category: [Rules.required],
-            subject: [Rules.required, Rules.minLen(4)],
+            subject: [Rules.required, Rules.minLen(5)],
             description: [Rules.required, Rules.minLen(20)],
           },
-          (data) => {
-            const c = Complaints.add({
+          function (data) {
+            /* Visibility is required — validated manually since it's radio buttons */
+            var visibilityInput = form.querySelector(
+              'input[name="visibility"]:checked',
+            );
+            if (!visibilityInput) {
+              visibilityPicker.classList.add("is-invalid");
+              visibilityPicker.scrollIntoView({
+                behavior: "smooth",
+                block: "center",
+              });
+              Toast.warning(
+                "Please choose whether this complaint is private or public.",
+                "Visibility required",
+              );
+              return;
+            }
+
+            var newComplaint = Complaints.add({
+              visibility: visibilityInput.value,
+              submittedBy: session.username,
+              submittedByName: session.name || session.username,
               category: data.get("category"),
-              subject: data.get("subject"),
-              description: data.get("description"),
+              subject: data.get("subject").trim(),
+              description: data.get("description").trim(),
             });
+
             Modal.close("new-complaint-modal");
             form.reset();
+            clearVisibilityError();
             render();
+
             Toast.success(
-              "Your complaint has been submitted. Admin has been notified.",
+              visibilityInput.value === "public"
+                ? "Your complaint has been submitted publicly. Admins have been notified."
+                : "Your complaint has been submitted privately. Admins have been notified.",
               "Complaint submitted",
             );
-            setTimeout(() => {
-              window.location.href = "complaint-details.html?id=" + c.id;
+
+            setTimeout(function () {
+              window.location.href =
+                "complaint-details.html?id=" +
+                encodeURIComponent(newComplaint.id);
             }, 900);
           },
         );
 
+        /* Open modal button */
+        document
+          .getElementById("new-complaint-btn")
+          .addEventListener("click", function () {
+            form.reset();
+            clearVisibilityError();
+            form.querySelectorAll(".field").forEach(function (f) {
+              f.classList.remove("is-invalid", "is-valid");
+            });
+            Modal.open("new-complaint-modal");
+          });
+
+        /* Initial render */
         render();
       });
     </script>

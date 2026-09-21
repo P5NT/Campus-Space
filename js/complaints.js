@@ -1,15 +1,38 @@
 /* ==========================================================================
    CAMPUS SPACE — complaints.js
-   Complaint store, list rendering and status flow.
+   Complaints: submission, visibility (private/public), status flow,
+   responses, history.
+
+   Visibility rules:
+     - "private"  → only the filer and admins see it
+     - "public"   → everyone sees it, but only as @username (not full name)
+     - Locked at submission — cannot be changed later (per spec)
+
+   All responses inherit their parent's visibility.
+
+   Data shape (per complaint):
+     {
+       id, visibility, submittedBy, submittedByName,
+       category, subject, description, attachment,
+       status, priority, date, updated,
+       history:   [{ at, actor, action }],
+       responses: [{ from, name, tag, at, text }]
+     }
    ========================================================================== */
 "use strict";
 
 const Complaints = (() => {
   const KEY = "complaints";
 
+  /* ------------------------------------------------------------------
+     SEED — demo complaints. All private by default.
+     ------------------------------------------------------------------ */
   const SEED = [
     {
       id: "C001",
+      visibility: "private",
+      submittedBy: "akinola",
+      submittedByName: "Akinola Adeyemi",
       category: "Facilities",
       subject: "Broken reading lamp in Library Group Room B",
       description:
@@ -39,6 +62,7 @@ const Complaints = (() => {
         {
           from: "admin",
           name: "Folake Akinyemi",
+          tag: "",
           at: Date.now() - 4 * 86400000,
           text: "Thank you for reporting this. We have escalated it to the Facilities Department and will update you once we hear back.",
         },
@@ -46,6 +70,9 @@ const Complaints = (() => {
     },
     {
       id: "C002",
+      visibility: "private",
+      submittedBy: "akinola",
+      submittedByName: "Akinola Adeyemi",
       category: "Academic",
       subject: "Delay in publishing CSC 403 results",
       description:
@@ -75,6 +102,7 @@ const Complaints = (() => {
         {
           from: "admin",
           name: "Folake Akinyemi",
+          tag: "",
           at: Date.now() - 5 * 86400000,
           text: "The results have now been published. Thank you for your patience.",
         },
@@ -82,6 +110,9 @@ const Complaints = (() => {
     },
     {
       id: "C003",
+      visibility: "public",
+      submittedBy: "ibrahim",
+      submittedByName: "Ibrahim Suleiman",
       category: "Welfare",
       subject: "Water supply in Female Hostel B",
       description:
@@ -101,6 +132,9 @@ const Complaints = (() => {
     },
   ];
 
+  /* ------------------------------------------------------------------
+     READ / WRITE
+     ------------------------------------------------------------------ */
   function all() {
     let list = Store.get(KEY, null);
     if (!list) {
@@ -109,11 +143,40 @@ const Complaints = (() => {
     }
     return list;
   }
+
   function save(list) {
     Store.set(KEY, list);
   }
 
+  /* ------------------------------------------------------------------
+     VISIBILITY — returns the complaints the given session can see
+     ------------------------------------------------------------------
+       Public complaints     → visible to everyone
+       Private complaints    → visible only to the filer + admins
+     ------------------------------------------------------------------ */
+  function visibleTo(session) {
+    if (!session) return [];
+    const isAdmin = session.role === "admin" || session.role === "super_admin";
+    return all().filter((c) => {
+      if (isAdmin) return true; /* admins see everything */
+      if (c.visibility === "public") return true; /* public → everyone */
+      return c.submittedBy === session.username; /* private → filer only */
+    });
+  }
+
+  /* ------------------------------------------------------------------
+     CREATE
+     ------------------------------------------------------------------
+       visibility is REQUIRED — the form enforces this.
+     ------------------------------------------------------------------ */
   function add(data) {
+    if (
+      !data.visibility ||
+      (data.visibility !== "public" && data.visibility !== "private")
+    ) {
+      throw new Error("Complaint visibility is required");
+    }
+
     const list = all();
     const c = {
       id:
@@ -121,6 +184,9 @@ const Complaints = (() => {
         String(list.length + 1).padStart(3, "0") +
         "-" +
         Date.now().toString().slice(-4),
+      visibility: data.visibility,
+      submittedBy: data.submittedBy || "unknown",
+      submittedByName: data.submittedByName || "Unknown student",
       category: data.category,
       subject: data.subject,
       description: data.description,
@@ -139,6 +205,9 @@ const Complaints = (() => {
     return c;
   }
 
+  /* ------------------------------------------------------------------
+     UPDATE STATUS
+     ------------------------------------------------------------------ */
   function updateStatus(id, status, actor) {
     const list = all();
     const c = list.find((x) => x.id === id);
@@ -153,20 +222,44 @@ const Complaints = (() => {
     save(list);
   }
 
-  function respond(id, text, name) {
+  /* ------------------------------------------------------------------
+     RESPOND — accepts either a plain string (legacy) or an object
+     { name, tag }
+     ------------------------------------------------------------------ */
+  function respond(id, text, author) {
     const list = all();
     const c = list.find((x) => x.id === id);
     if (!c) return;
-    c.responses.push({ from: "admin", name, at: Date.now(), text });
+
+    let name = "";
+    let tag = "";
+    if (typeof author === "string") {
+      name = author;
+    } else if (author && typeof author === "object") {
+      name = author.name || "";
+      tag = author.tag || "";
+    }
+
+    c.responses.push({ from: "admin", name, tag, at: Date.now(), text });
     c.updated = Date.now();
     save(list);
   }
 
-  return { all, add, updateStatus, respond, save };
+  /* ------------------------------------------------------------------
+     PUBLIC API
+     ------------------------------------------------------------------ */
+  return {
+    all,
+    visibleTo,
+    add,
+    updateStatus,
+    respond,
+    save,
+  };
 })();
 
 /* -------------------------------------------------------------------------
-   Status label helpers
+   Helpers — kept for backward compatibility with existing pages
    ------------------------------------------------------------------------- */
 const COMPLAINT_STATUS_CLASS = {
   Submitted: "status-submitted",
@@ -177,5 +270,5 @@ const COMPLAINT_STATUS_CLASS = {
 
 function complaintStatusPill(status) {
   const cls = COMPLAINT_STATUS_CLASS[status] || "status-submitted";
-  return `<span class="status-pill ${cls}">${Util.escape(status)}</span>`;
+  return `<span class="status-pill ${cls}">${typeof Util !== "undefined" ? Util.escape(status) : status}</span>`;
 }

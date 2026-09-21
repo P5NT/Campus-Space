@@ -288,6 +288,15 @@
                 "</div>"
               : '<div class="news-card-media is-placeholder"></div>';
 
+            /* Build the author line with an optional admin badge */
+            var authorHtml =
+              '<span><i class="fa-solid fa-user"></i> ' +
+              Util.escape(n.author || "Space Admin") +
+              (n.isAdminAuthor || n.authorTag === "ADMIN"
+                ? ' <span class="tag-admin"><i class="fa-solid fa-shield-halved"></i> Admin</span>'
+                : "") +
+              "</span>";
+
             card.innerHTML =
               mediaHtml +
               '<div class="news-card-body">' +
@@ -301,9 +310,7 @@
               Util.escape(n.excerpt) +
               "</p>" +
               '<div class="news-card-meta">' +
-              '<span><i class="fa-solid fa-user"></i> ' +
-              Util.escape(n.author) +
-              "</span>" +
+              authorHtml +
               '<span><i class="fa-regular fa-clock"></i> ' +
               Util.relativeTime(n.date) +
               "</span>" +

@@ -59,7 +59,8 @@
             <div class="page-head-text">
               <h1 class="page-title">Complaints</h1>
               <p class="page-subtitle">
-                Review student complaints and update their status.
+                Review student complaints, respond with the office byline, and
+                update statuses.
               </p>
             </div>
           </div>
@@ -112,6 +113,7 @@
             </div>
           </div>
 
+          <!-- Search -->
           <div class="toolbar">
             <div class="input-wrap">
               <i class="fa-solid fa-magnifying-glass input-icon"></i>
@@ -119,13 +121,14 @@
                 class="input"
                 type="search"
                 id="cm-search"
-                placeholder="Search by subject, ID or category…"
+                placeholder="Search by subject, ID, category or filer…"
                 aria-label="Search complaints"
               />
             </div>
           </div>
 
-          <div class="filter-bar" id="cm-filter" role="tablist">
+          <!-- Status tabs -->
+          <div class="filter-bar" id="cm-status-filter" role="tablist">
             <button class="chip is-active" data-status="all" role="tab">
               All
             </button>
@@ -140,6 +143,19 @@
             </button>
             <button class="chip" data-status="Resolved" role="tab">
               Resolved
+            </button>
+          </div>
+
+          <!-- Visibility tabs -->
+          <div class="filter-bar" id="cm-visibility-filter" role="tablist">
+            <button class="chip is-active" data-visibility="all" role="tab">
+              All complaints
+            </button>
+            <button class="chip" data-visibility="private" role="tab">
+              Private
+            </button>
+            <button class="chip" data-visibility="public" role="tab">
+              Public
             </button>
           </div>
 
@@ -173,8 +189,14 @@
     <script>
       /* ==========================================================================
          Complaints — Admin workspace.
-         Uses the shared Complaints module (js/complaints.js) for CRUD.
-         Complaints module persists to cs_complaints in localStorage.
+         - Lists ALL complaints (private + public)
+         - Filter tabs for status and visibility
+         - Opens a modal with full details, history, responses
+         - Status updates and responses are recorded with:
+             PUBLIC identity:  Permissions.getByline(session)  →  office byline
+             INTERNAL audit:   session.name + office
+         - Admin responses display as the office (Space Admin / PRO, OAUSTECHSU)
+           rather than the responding admin's personal name.
          ========================================================================== */
       document.addEventListener("DOMContentLoaded", function () {
         var session = Auth.current();
@@ -186,7 +208,6 @@
           window.location.href = "dashboard.html";
           return;
         }
-
         initAppShell("admin");
 
         var canRespond = Permissions.can(session, "complaints.respond");
@@ -194,9 +215,13 @@
         var listEl = document.getElementById("admin-complaints-list");
         var countEl = document.getElementById("cm-count");
         var searchEl = document.getElementById("cm-search");
-        var filterBar = document.getElementById("cm-filter");
+        var statusFilterBar = document.getElementById("cm-status-filter");
+        var visibilityFilterBar = document.getElementById(
+          "cm-visibility-filter",
+        );
 
-        var activeFilter = "all";
+        var statusFilter = "all";
+        var visibilityFilter = "all";
 
         /* ------------------------------------------------------------------
            HELPERS
@@ -215,14 +240,6 @@
           return CATEGORY_ICONS[category] || CATEGORY_ICONS.Other;
         }
 
-        function getRelativeSubmitted(c) {
-          return Util.relativeTime(c.date);
-        }
-
-        function getRelativeUpdated(c) {
-          return Util.relativeTime(c.updated || c.date);
-        }
-
         /* ------------------------------------------------------------------
            RENDER
            ------------------------------------------------------------------ */
@@ -230,7 +247,7 @@
           var all = Complaints.all();
           var q = searchEl.value.trim().toLowerCase();
 
-          /* Update stat cards — counts across ALL complaints, not just visible */
+          /* Update stat cards — count across ALL complaints */
           var counts = {
             Submitted: 0,
             "Under Review": 0,
@@ -249,19 +266,23 @@
           document.getElementById("stat-resolved").textContent =
             counts["Resolved"];
 
-          /* Filter + search */
+          /* Filter */
           var visible = all.filter(function (c) {
-            if (activeFilter !== "all" && c.status !== activeFilter)
+            if (statusFilter !== "all" && c.status !== statusFilter)
+              return false;
+            if (visibilityFilter !== "all" && c.visibility !== visibilityFilter)
               return false;
             if (!q) return true;
             return (
               (c.subject || "").toLowerCase().indexOf(q) !== -1 ||
               (c.id || "").toLowerCase().indexOf(q) !== -1 ||
-              (c.category || "").toLowerCase().indexOf(q) !== -1
+              (c.category || "").toLowerCase().indexOf(q) !== -1 ||
+              (c.submittedBy || "").toLowerCase().indexOf(q) !== -1 ||
+              (c.submittedByName || "").toLowerCase().indexOf(q) !== -1
             );
           });
 
-          /* Sort: unresolved first (Submitted → Under Review → In Progress), then resolved; newest first within each */
+          /* Sort: unresolved first, newest first within each */
           var statusOrder = {
             Submitted: 0,
             "Under Review": 1,
@@ -281,34 +302,33 @@
             visible.length +
             " complaint" +
             (visible.length === 1 ? "" : "s") +
-            (q || activeFilter !== "all" ? " matching" : "");
+            (q || statusFilter !== "all" || visibilityFilter !== "all"
+              ? " matching"
+              : "");
 
           listEl.innerHTML = "";
 
           if (!visible.length) {
             var emptyMsg = q
               ? "No complaints match your search."
-              : activeFilter === "all"
-                ? "No complaints yet"
-                : "No complaints in this status";
+              : "No complaints in this filter";
             listEl.innerHTML =
               '<div class="empty-state" style="padding: 48px 24px;">' +
               '<div class="empty-icon"><i class="fa-solid fa-file-shield"></i></div>' +
               "<h3>" +
               emptyMsg +
               "</h3>" +
-              "<p>" +
-              (q
-                ? "Try a different subject, ID or category."
-                : activeFilter === "all"
-                  ? "When students submit complaints, they'll appear here."
-                  : "Try a different filter.") +
-              "</p>" +
+              "<p>Try a different filter or search term.</p>" +
               "</div>";
             return;
           }
 
           visible.forEach(function (c) {
+            var isPublic = c.visibility === "public";
+            var visibilityBadge = isPublic
+              ? '<span class="badge badge-marine"><i class="fa-solid fa-globe"></i> Public</span>'
+              : '<span class="badge badge-neutral"><i class="fa-solid fa-lock"></i> Private</span>';
+
             var row = document.createElement("div");
             row.className = "complaint-row cm-admin-row";
 
@@ -327,17 +347,16 @@
               '<span><i class="fa-solid fa-tag"></i> ' +
               Util.escape(c.category) +
               "</span>" +
-              '<span><i class="fa-regular fa-clock"></i> Submitted ' +
-              getRelativeSubmitted(c) +
+              '<span><i class="fa-solid fa-user"></i> @' +
+              Util.escape(c.submittedBy || "unknown") +
               "</span>" +
-              (c.updated && c.updated !== c.date
-                ? '<span><i class="fa-solid fa-rotate"></i> Updated ' +
-                  getRelativeUpdated(c) +
-                  "</span>"
-                : "") +
+              '<span><i class="fa-regular fa-clock"></i> ' +
+              Util.relativeTime(c.updated || c.date) +
+              "</span>" +
               "</div>" +
               "</div>" +
-              '<div class="cm-admin-status">' +
+              '<div class="cm-admin-badges">' +
+              visibilityBadge +
               complaintStatusPill(c.status) +
               "</div>" +
               '<div class="cm-admin-actions">' +
@@ -357,7 +376,7 @@
         }
 
         /* ------------------------------------------------------------------
-           OPEN COMPLAINT — full modal with history and response
+           OPEN COMPLAINT — full modal with details, history, responses, actions
            ------------------------------------------------------------------ */
         function openComplaint(id) {
           var c = Complaints.all().find(function (x) {
@@ -368,13 +387,9 @@
           var existing = document.getElementById("admin-complaint-modal");
           if (existing) existing.remove();
 
-          var modal = document.createElement("div");
-          modal.className = "modal-backdrop";
-          modal.id = "admin-complaint-modal";
-          modal.setAttribute("role", "dialog");
-          modal.setAttribute("aria-modal", "true");
+          var isPublic = c.visibility === "public";
 
-          /* Build history timeline */
+          /* --- Build history timeline --- */
           var historyHtml = (c.history || [])
             .map(function (h) {
               return (
@@ -392,19 +407,28 @@
             })
             .join("");
 
-          /* Build existing responses */
+          /* --- Build responses --- */
           var responsesHtml = (c.responses || []).length
             ? (c.responses || [])
                 .map(function (r) {
+                  var rtagHtml =
+                    r.tag === "ADMIN"
+                      ? ' <span class="tag-admin"><i class="fa-solid fa-shield-halved"></i> Admin</span>'
+                      : r.tag
+                        ? ' <span class="tag-leader">' +
+                          Util.escape(r.tag) +
+                          "</span>"
+                        : "";
                   return (
                     '<div class="cm-response">' +
                     '<div class="cm-response-head">' +
                     '<span class="avatar avatar-32 avatar-fallback" style="background:var(--brand-primary);">' +
-                    Util.initials(r.name) +
+                    Util.initials(r.name || "Admin") +
                     "</span>" +
                     "<div>" +
-                    '<div class="font-semibold" style="font-size:var(--fs-sm);">' +
-                    Util.escape(r.name) +
+                    '<div class="font-semibold" style="font-size:var(--fs-sm); display:flex; align-items:center; gap:6px; flex-wrap:wrap;">' +
+                    Util.escape(r.name || "Space Admin") +
+                    rtagHtml +
                     "</div>" +
                     '<div class="text-xs text-muted">' +
                     Util.relativeTime(r.at) +
@@ -420,6 +444,44 @@
                 .join("")
             : '<p style="font-size:var(--fs-sm); color:var(--text-tertiary); margin:0 0 20px;">No responses yet.</p>';
 
+          /* --- Visibility notice --- */
+          var visibilityNotice = isPublic
+            ? '<div class="cm-public-notice" style="margin-bottom: 20px;">' +
+              '<i class="fa-solid fa-globe"></i>' +
+              "<div>" +
+              "<strong>This is a public complaint</strong>" +
+              "<p>The campus community can see this and any responses you post. The filer\u2019s username (@' + Util.escape(c.submittedBy) + ') is shown, not their full name.</p>" +
+              "</div>" +
+              "</div>"
+            : '<div class="cm-public-notice" style="margin-bottom: 20px; background: var(--bg-subtle); border-left-color: var(--text-tertiary);">' +
+              '<i class="fa-solid fa-lock" style="color: var(--text-tertiary);"></i>' +
+              "<div>" +
+              "<strong>This is a private complaint</strong>" +
+              "<p>Only the student who filed it and Admins can see this complaint.</p>" +
+              "</div>" +
+              "</div>";
+
+          /* --- Filer identity strip (admin sees full identity) --- */
+          var filerStrip =
+            '<div class="cm-filer-strip">' +
+            '<i class="fa-solid fa-user"></i>' +
+            "<div>" +
+            '<div class="cm-filer-name">' +
+            Util.escape(c.submittedByName || c.submittedBy || "Unknown") +
+            "</div>" +
+            '<div class="cm-filer-handle">@' +
+            Util.escape(c.submittedBy || "unknown") +
+            "</div>" +
+            "</div>" +
+            '<span class="badge badge-neutral" style="margin-left:auto;">Only visible to you</span>' +
+            "</div>";
+
+          var modal = document.createElement("div");
+          modal.className = "modal-backdrop";
+          modal.id = "admin-complaint-modal";
+          modal.setAttribute("role", "dialog");
+          modal.setAttribute("aria-modal", "true");
+
           modal.innerHTML =
             '<div class="modal modal-lg">' +
             '<div class="modal-head">' +
@@ -431,6 +493,8 @@
             Util.escape(c.id) +
             " · " +
             Util.escape(c.category) +
+            " · " +
+            (isPublic ? "Public" : "Private") +
             "</p>" +
             "</div>" +
             '<button class="btn-icon" data-modal-close aria-label="Close"><i class="fa-solid fa-xmark"></i></button>' +
@@ -441,6 +505,10 @@
             '<span class="text-xs text-muted" style="text-transform:uppercase; letter-spacing:.05em; font-weight:700;">Current status</span>' +
             complaintStatusPill(c.status) +
             "</div>" +
+            /* Filer identity */
+            filerStrip +
+            /* Visibility notice */
+            visibilityNotice +
             /* Description */
             '<div style="margin-bottom:24px;">' +
             '<div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Description</div>' +
@@ -461,9 +529,24 @@
             responsesHtml +
             "</div>" +
             "</div>" +
+            /* Action panel */
             (canRespond
               ? '<div style="margin-top:24px; padding-top:20px; border-top:1px solid var(--border-subtle);">' +
                 '<div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px;">Take action</div>' +
+                '<div class="cm-identity-preview">' +
+                '<i class="fa-solid fa-shield-halved"></i>' +
+                "<div>" +
+                '<div class="cm-identity-label">Your response will be published as</div>' +
+                '<div class="cm-identity-value">' +
+                Util.escape(Permissions.getByline(session).name) +
+                (Permissions.getByline(session).tag
+                  ? ' <span class="tag-admin"><i class="fa-solid fa-shield-halved"></i> ' +
+                    Util.escape(Permissions.getByline(session).tag) +
+                    "</span>"
+                  : "") +
+                "</div>" +
+                "</div>" +
+                "</div>" +
                 '<div class="field">' +
                 '<label class="label" for="cm-status">Update status</label>' +
                 '<select class="select" id="cm-status">' +
@@ -499,6 +582,7 @@
 
           document.body.appendChild(modal);
 
+          /* --- Submit handler --- */
           if (canRespond) {
             modal
               .querySelector("#cm-submit")
@@ -507,20 +591,27 @@
                 var response = modal.querySelector("#cm-response").value.trim();
                 var changed = false;
 
+                /* Public-facing byline (what students see) */
+                var byline = Permissions.getByline(session);
+
+                /* Internal audit identity (name + office) */
+                var role = Permissions.getRole(session);
+                var auditIdentity =
+                  (session.name || session.username) +
+                  " (" +
+                  (Permissions.getRoleLabel(role) || "Admin") +
+                  ")";
+
                 if (newStatus !== c.status) {
-                  Complaints.updateStatus(
-                    c.id,
-                    newStatus,
-                    (session.name || session.username) + " (Admin)",
-                  );
+                  Complaints.updateStatus(c.id, newStatus, auditIdentity);
                   changed = true;
                 }
                 if (response) {
-                  Complaints.respond(
-                    c.id,
-                    response,
-                    session.name || session.username,
-                  );
+                  /* Pass the office byline so students see the office, not the admin's name */
+                  Complaints.respond(c.id, response, {
+                    name: byline.name,
+                    tag: byline.tag,
+                  });
                   changed = true;
                 }
 
@@ -542,16 +633,27 @@
         }
 
         /* ------------------------------------------------------------------
-           TRIGGERS
+           FILTERS
            ------------------------------------------------------------------ */
-        filterBar.addEventListener("click", function (e) {
+        statusFilterBar.addEventListener("click", function (e) {
           var btn = e.target.closest("[data-status]");
           if (!btn) return;
-          filterBar.querySelectorAll(".chip").forEach(function (c) {
+          statusFilterBar.querySelectorAll(".chip").forEach(function (c) {
             c.classList.remove("is-active");
           });
           btn.classList.add("is-active");
-          activeFilter = btn.getAttribute("data-status");
+          statusFilter = btn.getAttribute("data-status");
+          render();
+        });
+
+        visibilityFilterBar.addEventListener("click", function (e) {
+          var btn = e.target.closest("[data-visibility]");
+          if (!btn) return;
+          visibilityFilterBar.querySelectorAll(".chip").forEach(function (c) {
+            c.classList.remove("is-active");
+          });
+          btn.classList.add("is-active");
+          visibilityFilter = btn.getAttribute("data-visibility");
           render();
         });
 
