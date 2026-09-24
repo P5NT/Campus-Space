@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Student Verification — Campus Space</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="../../assets/favicon/favicon.ico"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../../assets/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="../../assets/favicon/favicon-16x16.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="../../assets/favicon/apple-touch-icon.png"
+    />
+    <link rel="manifest" href="../../assets/favicon/site.webmanifest" />
+    <meta name="theme-color" content="#B33A3A" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="../../css/style.css" />
+  </head>
+  <body class="has-session admin-body">
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <div class="app-shell">
+      <aside
+        class="sidebar admin-sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
+      <div class="app-main">
+        <header class="app-header" id="app-header"></header>
+        <main class="app-content" id="main">
+          <div class="page-head">
+            <div class="page-head-text">
+              <h1 class="page-title">Student Verification</h1>
+              <p class="page-subtitle">
+                Review new student registrations. Approve to grant full access —
+                students move to Registered Students once verified.
+              </p>
+            </div>
+          </div>
+
+          <!-- Summary stats -->
+          <div class="grid grid-4" style="margin-bottom: 24px">
+            <div class="stat">
+              <div class="stat-label">Pending</div>
+              <div
+                class="stat-value"
+                id="stat-pending"
+                style="color: var(--warning)"
+              >
+                —
+              </div>
+              <div class="stat-meta">Awaiting review</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Verified</div>
+              <div
+                class="stat-value"
+                id="stat-verified"
+                style="color: var(--success)"
+              >
+                —
+              </div>
+              <div class="stat-meta">Full access granted</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Rejected</div>
+              <div
+                class="stat-value"
+                id="stat-rejected"
+                style="color: var(--danger)"
+              >
+                —
+              </div>
+              <div class="stat-meta">Access blocked</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Total reviewed</div>
+              <div class="stat-value" id="stat-total">—</div>
+              <div class="stat-meta">All-time</div>
+            </div>
+          </div>
+
+          <!-- Tabs -->
+          <div
+            class="filter-bar"
+            id="verif-tabs"
+            role="tablist"
+            style="margin-bottom: 20px"
+          >
+            <button class="chip is-active" data-tab="pending" role="tab">
+              <i class="fa-solid fa-hourglass-half"></i> Pending
+            </button>
+            <button class="chip" data-tab="verified" role="tab">
+              <i class="fa-solid fa-circle-check"></i> Verified
+            </button>
+            <button class="chip" data-tab="rejected" role="tab">
+              <i class="fa-solid fa-circle-xmark"></i> Rejected
+            </button>
+          </div>
+
+          <!-- Toolbar -->
+          <div class="toolbar">
+            <div class="input-wrap">
+              <i class="fa-solid fa-magnifying-glass input-icon"></i>
+              <input
+                class="input"
+                type="search"
+                id="verif-search"
+                placeholder="Search by name, matric, email or phone…"
+                aria-label="Search students"
+              />
+            </div>
+            <select
+              class="select"
+              id="verif-faculty"
+              aria-label="Filter by faculty"
+            >
+              <option value="">All faculties</option>
+            </select>
+            <select
+              class="select"
+              id="verif-dept"
+              aria-label="Filter by department"
+            >
+              <option value="">All departments</option>
+            </select>
+            <button
+              class="btn btn-secondary"
+              id="verif-sort"
+              type="button"
+              aria-label="Sort by name"
+            >
+              <i class="fa-solid fa-arrow-down-a-z"></i> <span>Name A–Z</span>
+            </button>
+          </div>
+
+          <div class="cluster-between" style="margin-bottom: 12px">
+            <p class="section-desc" style="margin: 0" id="verif-count">
+              Loading…
+            </p>
+            <button
+              class="btn btn-ghost btn-sm"
+              id="verif-clear"
+              type="button"
+              style="display: none"
+            >
+              <i class="fa-solid fa-rotate-left"></i> Clear filters
+            </button>
+          </div>
+
+          <!-- Verification table -->
+          <div class="verif-table-wrap">
+            <div class="verif-table-scroll">
+              <table class="verif-table" id="verif-table">
+                <thead>
+                  <tr>
+                    <th class="vt-col-student">Student</th>
+                    <th class="vt-col-matric">Matric</th>
+                    <th class="vt-col-academic">Academic</th>
+                    <th class="vt-col-email">Email</th>
+                    <th class="vt-col-phone">Phone</th>
+                    <th class="vt-col-joined">Joined</th>
+                    <th class="vt-col-actions">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="verif-rows"></tbody>
+              </table>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <div class="mobile-menu-backdrop"></div>
+    <aside
+      class="mobile-menu"
+      id="mobile-menu-mount"
+      aria-label="Mobile menu"
+    ></aside>
+
+    <script src="../../data/students.js"></script>
+    <script src="../../data/faculties.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/permissions.js"></script>
+    <script src="../../js/navigation.js"></script>
+    <script src="../../js/notifications.js"></script>
+    <script src="../../js/admin.js"></script>
+    <script>
+      /* ==========================================================================
+         Student Verification — Admin + Super Admin workspace.
+         ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
+        if (!session || !Permissions.isAdminRole(session)) {
+          window.location.href = "../auth/login.html";
+          return;
+        }
+        if (!Permissions.can(session, "students.verify")) {
+          window.location.href = "dashboard.html";
+          return;
+        }
+
+        initAppShell("admin");
+
+        /* ------------------------------------------------------------------
+           LOAD
+           ------------------------------------------------------------------ */
+        function loadAllStudents() {
+          return getAllStudentsForAuth();
+        }
+
+        function loadOverrides() {
+          return Store.get("student_overrides", {}) || {};
+        }
+
+        function persistOverride(studentId, patch) {
+          var overrides = loadOverrides();
+          overrides.edits = overrides.edits || {};
+          overrides.edits[studentId] = Object.assign(
+            {},
+            overrides.edits[studentId] || {},
+            patch,
+          );
+          Store.set("student_overrides", overrides);
+        }
+
+        function getStatus(student) {
+          var overrides = loadOverrides();
+          var edit = overrides.edits && overrides.edits[student.id];
+          if (edit && edit.verificationStatus) return edit.verificationStatus;
+          return student.verificationStatus || "pending";
+        }
+
+        /* ------------------------------------------------------------------
+           STATE
+           ------------------------------------------------------------------ */
+        var allStudents = loadAllStudents();
+        var tab = "pending";
+        var query = "";
+        var facultyFilter = "";
+        var deptFilter = "";
+        var sortAsc = true;
+
+        var rowsEl = document.getElementById("verif-rows");
+        var countEl = document.getElementById("verif-count");
+        var searchEl = document.getElementById("verif-search");
+        var facultySel = document.getElementById("verif-faculty");
+        var deptSel = document.getElementById("verif-dept");
+        var sortBtn = document.getElementById("verif-sort");
+        var clearBtn = document.getElementById("verif-clear");
+        var tabsEl = document.getElementById("verif-tabs");
+
+        /* ------------------------------------------------------------------
+           FACULTY + DEPARTMENT DROPDOWNS
+           ------------------------------------------------------------------ */
+        var faculties = (
+          typeof DEMO_FACULTIES !== "undefined" ? DEMO_FACULTIES : []
+        ).filter(function (f) {
+          return f.active !== false;
+        });
+
+        faculties.forEach(function (f) {
+          var opt = document.createElement("option");
+          opt.value = f.name;
+          opt.textContent = f.name;
+          facultySel.appendChild(opt);
+        });
+
+        function refreshDepartments() {
+          deptSel.innerHTML = '<option value="">All departments</option>';
+          if (!facultyFilter) return;
+          var fac = faculties.find(function (f) {
+            return f.name === facultyFilter;
+          });
+          if (!fac) return;
+          fac.departments.forEach(function (d) {
+            var opt = document.createElement("option");
+            opt.value = d.name;
+            opt.textContent = d.name;
+            deptSel.appendChild(opt);
+          });
+        }
+
+        /* ------------------------------------------------------------------
+           FILTER + SORT
+           ------------------------------------------------------------------ */
+        function getFiltered() {
+          var list = allStudents.filter(function (s) {
+            return getStatus(s) === tab;
+          });
+
+          if (query) {
+            var q = query.toLowerCase();
+            list = list.filter(function (s) {
+              var name = [s.firstName, s.otherName, s.lastName]
+                .filter(Boolean)
+                .join(" ")
+                .toLowerCase();
+              return (
+                name.indexOf(q) !== -1 ||
+                (s.matric || "").toLowerCase().indexOf(q) !== -1 ||
+                (s.email || "").toLowerCase().indexOf(q) !== -1 ||
+                (s.phone || "").toLowerCase().indexOf(q) !== -1
+              );
+            });
+          }
+          if (facultyFilter) {
+            list = list.filter(function (s) {
+              return s.faculty === facultyFilter;
+            });
+          }
+          if (deptFilter) {
+            list = list.filter(function (s) {
+              return s.department === deptFilter;
+            });
+          }
+
+          list.sort(function (a, b) {
+            var an = (a.firstName + " " + a.lastName).toLowerCase();
+            var bn = (b.firstName + " " + b.lastName).toLowerCase();
+            return sortAsc ? an.localeCompare(bn) : bn.localeCompare(an);
+          });
+
+          return list;
+        }
+
+        /* ------------------------------------------------------------------
+           STATS
+           ------------------------------------------------------------------ */
+        function renderStats() {
+          var pending = 0,
+            verified = 0,
+            rejected = 0;
+          allStudents.forEach(function (s) {
+            var status = getStatus(s);
+            if (status === "verified") verified++;
+            else if (status === "rejected") rejected++;
+            else pending++;
+          });
+          document.getElementById("stat-pending").textContent = pending;
+          document.getElementById("stat-verified").textContent = verified;
+          document.getElementById("stat-rejected").textContent = rejected;
+          document.getElementById("stat-total").textContent =
+            allStudents.length;
+        }
+
+        /* ------------------------------------------------------------------
+           RENDER
+           ------------------------------------------------------------------ */
+        function render() {
+          renderStats();
+
+          var list = getFiltered();
+
+          countEl.textContent =
+            list.length +
+            " student" +
+            (list.length === 1 ? "" : "s") +
+            (tab === "pending"
+              ? " pending"
+              : tab === "verified"
+                ? " verified"
+                : " rejected") +
+            (query || facultyFilter || deptFilter ? " · filtered" : "");
+
+          clearBtn.style.display =
+            query || facultyFilter || deptFilter ? "inline-flex" : "none";
+
+          rowsEl.innerHTML = "";
+
+          if (!list.length) {
+            rowsEl.innerHTML =
+              '<tr><td colspan="7" style="text-align: center; padding: 48px 20px; color: var(--text-tertiary);">' +
+              '<i class="fa-solid fa-user-shield" style="font-size: 28px; display: block; margin-bottom: 12px; opacity: 0.5;"></i>' +
+              '<div style="font-size: var(--fs-sm);">' +
+              (tab === "pending"
+                ? "No students are awaiting verification."
+                : tab === "verified"
+                  ? "No verified students yet."
+                  : "No students have been rejected.") +
+              "</div></td></tr>";
+            return;
+          }
+
+          list.forEach(function (s) {
+            var fullName = [s.firstName, s.otherName, s.lastName]
+              .filter(Boolean)
+              .join(" ");
+            var initials = Util.initials(fullName);
+            var joinedLabel = s.joined
+              ? Util.relativeTime(s.joined + "T00:00:00")
+              : "—";
+
+            var actionHtml = "";
+            if (tab === "pending") {
+              actionHtml =
+                '<div class="verif-actions">' +
+                '<button class="btn btn-primary btn-sm" data-verify type="button">' +
+                '<i class="fa-solid fa-check"></i> Verify' +
+                "</button>" +
+                '<button class="btn btn-ghost btn-sm" data-reject type="button" style="color: var(--danger);" aria-label="Reject student">' +
+                '<i class="fa-solid fa-xmark"></i>' +
+                "</button>" +
+                "</div>";
+            } else if (tab === "verified") {
+              actionHtml =
+                '<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Verified</span>';
+            } else if (tab === "rejected") {
+              actionHtml =
+                '<button class="btn btn-secondary btn-sm" data-restore type="button"><i class="fa-solid fa-rotate-left"></i> Restore</button>';
+            }
+
+            /* Check for pending contact change */
+            var pendingBadge = "";
+            var overrides = Store.get("student_overrides", {}) || {};
+            var studentEdit = (overrides.edits && overrides.edits[s.id]) || {};
+            if (studentEdit.pendingContactChange) {
+              pendingBadge =
+                '<span class="badge badge-warning contact-change-badge" title="' +
+                Util.escape(
+                  "Pending " +
+                    studentEdit.pendingContactChange.field +
+                    " change to: " +
+                    studentEdit.pendingContactChange.newValue,
+                ) +
+                '"><i class="fa-solid fa-hourglass-half"></i> Contact change pending</span>';
+            }
+
+            var tr = document.createElement("tr");
+            tr.innerHTML =
+              '<td data-label="Student">' +
+              '<div class="vt-student">' +
+              '<span class="avatar avatar-36 avatar-fallback">' +
+              Util.escape(initials) +
+              "</span>" +
+              '<div class="vt-student-info">' +
+              '<div class="vt-student-name">' +
+              Util.escape(fullName) +
+              "</div>" +
+              '<div class="vt-student-handle">@' +
+              Util.escape(s.username) +
+              "</div>" +
+              "</div></div>" +
+              pendingBadge +
+              "</td>" +
+              '<td data-label="Matric"><span class="vt-matric">' +
+              Util.escape(s.matric || "—") +
+              "</span></td>" +
+              '<td data-label="Academic"><div class="vt-academic">' +
+              '<div class="vt-faculty">' +
+              Util.escape(s.faculty || "—") +
+              "</div>" +
+              '<div class="vt-dept">' +
+              Util.escape(s.department || "—") +
+              " · " +
+              Util.escape(s.level || "—") +
+              "L</div>" +
+              "</div></td>" +
+              '<td data-label="Email">' +
+              '<a class="vt-email" href="mailto:' +
+              Util.escape(s.email || "") +
+              '" title="' +
+              Util.escape(s.email || "") +
+              '">' +
+              '<i class="fa-solid fa-envelope"></i><span>' +
+              Util.escape(s.email || "—") +
+              "</span></a></td>" +
+              '<td data-label="Phone">' +
+              '<a class="vt-phone" href="tel:' +
+              Util.escape((s.phone || "").replace(/\s+/g, "")) +
+              '">' +
+              '<i class="fa-solid fa-phone"></i><span>' +
+              Util.escape(s.phone || "—") +
+              "</span></a></td>" +
+              '<td data-label="Joined"><span class="vt-joined">' +
+              Util.escape(joinedLabel) +
+              "</span></td>" +
+              '<td data-label="Actions" class="vt-actions-cell">' +
+              actionHtml +
+              "</td>";
+
+            /* Verify */
+            var verifyBtn = tr.querySelector("[data-verify]");
+            if (verifyBtn) {
+              verifyBtn.addEventListener("click", async function () {
+                var ok = await Confirmation.confirm({
+                  title: "Verify this student?",
+                  message:
+                    fullName +
+                    " will gain full access to Campus Space and appear in the Registered Students list.",
+                  confirmLabel: "Verify student",
+                });
+                if (!ok) return;
+                persistOverride(s.id, {
+                  verificationStatus: "verified",
+                  verifiedAt: Date.now(),
+                  verifiedBy: session.username,
+                });
+                Toast.success(fullName + " has been verified.", "Verified");
+                render();
+              });
+            }
+
+            /* Reject */
+            var rejectBtn = tr.querySelector("[data-reject]");
+            if (rejectBtn) {
+              rejectBtn.addEventListener("click", async function () {
+                var ok = await Confirmation.confirm({
+                  title: "Reject this student?",
+                  message:
+                    fullName +
+                    " will be blocked from logging in. They will see a message telling them to contact Admin.",
+                  confirmLabel: "Reject student",
+                  variant: "danger",
+                });
+                if (!ok) return;
+                persistOverride(s.id, {
+                  verificationStatus: "rejected",
+                  rejectedAt: Date.now(),
+                  rejectedBy: session.username,
+                });
+                Toast.warning(fullName + " has been rejected.", "Rejected");
+                render();
+              });
+            }
+
+            /* Restore */
+            var restoreBtn = tr.querySelector("[data-restore]");
+            if (restoreBtn) {
+              restoreBtn.addEventListener("click", async function () {
+                var ok = await Confirmation.confirm({
+                  title: "Restore this student?",
+                  message:
+                    fullName +
+                    " will return to the Pending tab so you can review their details again.",
+                  confirmLabel: "Restore to pending",
+                });
+                if (!ok) return;
+                persistOverride(s.id, { verificationStatus: "pending" });
+                Toast.success(
+                  fullName + " has been restored to pending.",
+                  "Restored",
+                );
+                render();
+              });
+            }
+
+            rowsEl.appendChild(tr);
+          });
+        }
+
+        /* ------------------------------------------------------------------
+           EVENTS
+           ------------------------------------------------------------------ */
+        tabsEl.addEventListener("click", function (e) {
+          var btn = e.target.closest("[data-tab]");
+          if (!btn) return;
+          tabsEl.querySelectorAll(".chip").forEach(function (c) {
+            c.classList.remove("is-active");
+          });
+          btn.classList.add("is-active");
+          tab = btn.getAttribute("data-tab");
+          render();
+        });
+
+        var debounce;
+        searchEl.addEventListener("input", function () {
+          clearTimeout(debounce);
+          query = searchEl.value.trim();
+          debounce = setTimeout(render, 120);
+        });
+
+        facultySel.addEventListener("change", function () {
+          facultyFilter = facultySel.value;
+          refreshDepartments();
+          deptSel.value = "";
+          deptFilter = "";
+          render();
+        });
+
+        deptSel.addEventListener("change", function () {
+          deptFilter = deptSel.value;
+          render();
+        });
+
+        sortBtn.addEventListener("click", function () {
+          sortAsc = !sortAsc;
+          sortBtn.querySelector("span").textContent = sortAsc
+            ? "Name A–Z"
+            : "Name Z–A";
+          sortBtn.querySelector("i").className = sortAsc
+            ? "fa-solid fa-arrow-down-a-z"
+            : "fa-solid fa-arrow-up-z-a";
+          render();
+        });
+
+        clearBtn.addEventListener("click", function () {
+          query = "";
+          facultyFilter = "";
+          deptFilter = "";
+          searchEl.value = "";
+          facultySel.value = "";
+          deptSel.value = "";
+          refreshDepartments();
+          render();
+          if (typeof initCustomSelects === "function") initCustomSelects();
+        });
+
+        render();
+      });
+    </script>
+  </body>
+</html>

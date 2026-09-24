@@ -12752,98 +12752,6 @@ input[type="file"].input {
    ========================================================================== */
 
 /* ============================================================
-   1. STUDENT VERIFICATION — mobile layout
-   ============================================================ */
-
-/* Stat cards grid → 2 columns on tablet, 1 on mobile */
-@media (max-width: 860px) {
-  #main > .grid.grid-4 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 480px) {
-  #main > .grid.grid-4 {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Verification record rows — stack on mobile */
-@media (max-width: 768px) {
-  .vr-row {
-    display: grid;
-    grid-template-columns: 42px 1fr;
-    grid-template-areas:
-      "icon info"
-      "actions actions";
-    row-gap: 14px;
-    padding: 16px;
-  }
-  .vr-row .resource-icon {
-    grid-area: icon;
-  }
-  .vr-row .resource-info {
-    grid-area: info;
-  }
-
-  .vr-row-actions {
-    grid-area: actions;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    width: 100%;
-  }
-  .vr-row-actions .btn {
-    width: 100%;
-    justify-content: center;
-    padding: 11px 14px;
-    font-size: 13px;
-  }
-}
-
-/* Details modal — matched student rows */
-.vr-student-row {
-  display: grid;
-  grid-template-columns: 32px 1fr auto;
-  gap: 10px;
-  align-items: center;
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
-  transition: background 120ms ease;
-}
-.vr-student-row:hover {
-  background: var(--bg-subtle);
-}
-
-@media (max-width: 480px) {
-  .vr-student-row {
-    grid-template-columns: 32px 1fr;
-    grid-template-areas:
-      "avatar info"
-      "badge badge";
-    row-gap: 6px;
-  }
-  .vr-student-row .avatar {
-    grid-area: avatar;
-  }
-  .vr-student-row > div {
-    grid-area: info;
-  }
-  .vr-student-row .badge {
-    grid-area: badge;
-    justify-self: start;
-  }
-}
-
-/* Upload form — full-width button on mobile */
-@media (max-width: 640px) {
-  #upload-verification-form .btn {
-    width: 100%;
-    justify-content: center;
-  }
-}
-
-/* ============================================================
    2. ADMIN CONTROLS — mobile layout
    ============================================================ */
 
@@ -13013,229 +12921,2384 @@ input[type="file"].input {
 }
 
 /* ==========================================================================
-   STUDENT VERIFICATION — matching fields chips
-   Responsive from the start: 3 cols → 2 cols → 1 col.
-   Chips use flex layout so text can't clip or overlap.
+   STUDENT VERIFICATION
+   Desktop: auto-layout table with generous min-width — never cramped.
+   Mobile (≤1080px): stacked card transform.
    ========================================================================== */
 
-.vr-fields-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin-bottom: 4px;
+/* ---------- Table wrapper ---------- */
+.verif-table-wrap {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
 }
 
-.vr-field-chip {
+.verif-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ---------- Table ---------- */
+.verif-table {
+  width: 100%;
+  min-width: 1100px; /* ← never compress below this */
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--fs-sm);
+}
+
+.verif-table thead th {
+  background: var(--bg-subtle);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  text-align: left;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+.verif-table thead th:last-child {
+  text-align: right;
+}
+
+.verif-table td {
+  padding: 18px 20px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.verif-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.verif-table tbody tr:hover td {
+  background: var(--bg-subtle);
+}
+
+/* ---------- Student column — name and handle on one line ---------- */
+.vt-student {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  background: var(--bg-surface);
-  border: 1px solid rgba(0, 59, 92, 0.12);
-  border-radius: var(--radius-md);
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  color: var(--text-primary);
-  line-height: 1.3;
+  gap: 12px;
   min-width: 0;
 }
 
-.vr-field-chip i {
-  color: var(--brand-secondary);
-  font-size: 13px;
+.avatar-36 {
+  width: 40px;
+  height: 40px;
+  font-size: 14px;
   flex-shrink: 0;
+}
+
+.vt-student-info {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.vt-student-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+/* The separator dot */
+.vt-student-name::after {
+  content: "·";
+  margin-left: 8px;
+  color: var(--text-tertiary);
+  font-weight: 400;
+}
+
+.vt-student-handle {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+/* ---------- Matric chip ---------- */
+.vt-matric {
+  display: inline-block;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--brand-secondary);
+  background: var(--brand-secondary-soft);
+  padding: 4px 9px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+/* ---------- Academic ---------- */
+.vt-academic {
+  min-width: 0;
+}
+
+.vt-faculty {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.vt-dept {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 3px;
+  white-space: nowrap;
+}
+
+/* ---------- Email ---------- */
+.vt-email {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  padding: 5px 8px;
+  margin: -5px -8px;
+  border-radius: var(--radius-sm);
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+  white-space: nowrap;
+}
+
+.vt-email:hover {
+  background: var(--brand-primary-soft);
+  color: var(--brand-primary);
+}
+
+.vt-email i {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.vt-email:hover i {
+  color: var(--brand-primary);
+}
+
+/* ---------- Phone ---------- */
+.vt-phone {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  padding: 5px 8px;
+  margin: -5px -8px;
+  border-radius: var(--radius-sm);
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+  white-space: nowrap;
+}
+
+.vt-phone:hover {
+  background: var(--brand-primary-soft);
+  color: var(--brand-primary);
+}
+
+.vt-phone i {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.vt-phone:hover i {
+  color: var(--brand-primary);
+}
+
+/* ---------- Joined ---------- */
+.vt-joined {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+/* ---------- Actions ---------- */
+.verif-table .vt-actions-cell {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.verif-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.verif-actions .btn {
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   RESPONSIVE — below 1080px, transform into cards
+   ========================================================================== */
+
+@media (max-width: 1080px) {
+  .verif-table {
+    min-width: 0;
+    display: block;
+  }
+
+  .verif-table thead {
+    display: none;
+  }
+
+  .verif-table tbody {
+    display: block;
+    padding: 12px;
+    background: transparent;
+  }
+
+  .verif-table tbody tr {
+    display: block;
+    padding: 18px 16px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    margin-bottom: 12px;
+  }
+
+  .verif-table tbody tr:last-child {
+    margin-bottom: 0;
+  }
+  .verif-table tbody tr:hover td {
+    background: transparent;
+  }
+
+  .verif-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 8px 0;
+    border: 0;
+    text-align: right;
+  }
+
+  .verif-table td::before {
+    content: attr(data-label);
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-tertiary);
+    text-align: left;
+    flex-shrink: 0;
+  }
+
+  /* Student row as card header — name and handle on one line */
+  .verif-table td[data-label="Student"] {
+    display: block;
+    padding: 0 0 14px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid var(--border-subtle);
+    text-align: left;
+  }
+  .verif-table td[data-label="Student"]::before {
+    display: none;
+  }
+
+  .verif-table td[data-label="Student"] .vt-student-info {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+
+  .verif-table td[data-label="Student"] .vt-student-name {
+    font-size: 14.5px;
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .verif-table td[data-label="Student"] .vt-student-name::after {
+    content: "·";
+    margin-left: 6px;
+    color: var(--text-tertiary);
+  }
+
+  .verif-table td[data-label="Student"] .vt-student-handle {
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  /* Academic as full-width block */
+  .verif-table td[data-label="Academic"] {
+    display: block;
+    text-align: left;
+  }
+  .verif-table td[data-label="Academic"]::before {
+    display: block;
+    margin-bottom: 6px;
+    text-align: left;
+  }
+  .verif-table td[data-label="Academic"] .vt-academic {
+    width: 100%;
+    text-align: left;
+  }
+  .verif-table td[data-label="Academic"] .vt-faculty,
+  .verif-table td[data-label="Academic"] .vt-dept {
+    white-space: normal;
+  }
+
+  /* Email + Phone — stacked layout */
+  .verif-table td[data-label="Email"],
+  .verif-table td[data-label="Phone"] {
+    display: block;
+    padding: 10px 0;
+    text-align: left;
+  }
+  .verif-table td[data-label="Email"]::before,
+  .verif-table td[data-label="Phone"]::before {
+    display: block;
+    margin-bottom: 6px;
+    text-align: left;
+  }
+  .verif-table td[data-label="Email"] .vt-email,
+  .verif-table td[data-label="Phone"] .vt-phone {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0;
+    margin: 0;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text-primary);
+    justify-content: flex-start;
+    white-space: normal;
+  }
+  .verif-table td[data-label="Email"] .vt-email i,
+  .verif-table td[data-label="Phone"] .vt-phone i {
+    width: 16px;
+    text-align: center;
+    font-size: 12px;
+  }
+  .verif-table td[data-label="Email"] .vt-email span,
+  .verif-table td[data-label="Phone"] .vt-phone span {
+    word-break: break-word;
+    min-width: 0;
+  }
+
+  /* Joined — compact row */
+  .verif-table td[data-label="Joined"] {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+  }
+
+  /* Actions — full width at bottom */
+  .verif-table td[data-label="Actions"] {
+    display: block;
+    padding: 14px 0 0;
+    margin-top: 14px;
+    border-top: 1px solid var(--border-subtle);
+    text-align: left;
+  }
+  .verif-table td[data-label="Actions"]::before {
+    display: none;
+  }
+  .verif-table td[data-label="Actions"] .verif-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .verif-table td[data-label="Actions"] .verif-actions .btn-primary {
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* Matric — label + chip on the right */
+  .verif-table td[data-label="Matric"] {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+  }
+}
+
+/* Below 480 — tighter card padding */
+@media (max-width: 480px) {
+  .verif-table tbody {
+    padding: 8px;
+  }
+  .verif-table tbody tr {
+    padding: 16px 14px;
+  }
+}
+
+/* ==========================================================================
+   CONTACT CHANGE SYSTEM
+   ========================================================================== */
+
+/* Contact row on Settings */
+.contact-row-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.contact-row-head i {
+  font-size: 13px;
+  color: var(--text-tertiary);
   width: 16px;
   text-align: center;
 }
 
-/* The label itself wraps cleanly; no clipping */
-.vr-field-chip span,
-.vr-field-chip:not(:has(span)) {
+.contact-row-label {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.contact-row-value {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  padding-left: 26px;
+  word-break: break-word;
+}
+
+/* ==========================================================================
+   PENDING CONTACT CHANGE — full-width block layout
+   ========================================================================== */
+
+.contact-pending-block {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: linear-gradient(
+    180deg,
+    rgba(199, 116, 20, 0.04) 0%,
+    transparent 100%
+  );
+}
+
+.contact-pending-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.contact-pending-head i {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  width: 16px;
+  text-align: center;
+}
+
+.contact-pending-label {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.contact-pending-badge {
+  margin-left: auto;
+  font-size: 10px;
+  padding: 3px 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Values row — current → new on one line */
+.contact-pending-values {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  background: var(--bg-subtle);
+  border-radius: var(--radius-md);
+}
+
+.contact-pending-value {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   min-width: 0;
-  overflow-wrap: anywhere;
 }
 
-/* 3 → 2 columns on tablet */
-@media (max-width: 960px) {
-  .vr-fields-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+.contact-pending-tag {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.contact-pending-tag.is-new {
+  color: var(--brand-primary);
+}
+
+.contact-pending-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  word-break: break-word;
+  line-height: 1.35;
+}
+
+.contact-pending-value.is-new .contact-pending-text {
+  color: var(--brand-primary);
+}
+
+.contact-pending-arrow {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  align-self: center;
+  opacity: 0.6;
+}
+
+/* Actions */
+.contact-pending-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.contact-pending-actions .btn {
+  flex: 1;
+  justify-content: center;
+  min-width: 120px;
+}
+
+.contact-pending-actions .btn-ghost {
+  flex: 0 1 auto;
+  min-width: 0;
+  color: var(--danger);
+}
+
+/* ==========================================================================
+   RESPONSIVE
+   ========================================================================== */
+
+@media (max-width: 640px) {
+  .contact-row-value {
+    padding-left: 0;
   }
-}
 
-/* 2 → 1 column on phone */
-@media (max-width: 480px) {
-  .vr-fields-grid {
+  .contact-pending-block {
+    padding: 16px;
+  }
+
+  .contact-pending-values {
     grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 12px;
   }
-  .vr-field-chip {
-    padding: 10px 12px;
-    font-size: 12.5px;
+
+  .contact-pending-arrow {
+    transform: rotate(90deg);
+    justify-self: center;
+    margin: -2px 0;
+  }
+
+  .contact-pending-actions .btn {
+    flex: 1 1 100%;
+  }
+
+  .contact-pending-actions .btn-ghost {
+    flex: 1 1 100%;
+  }
+}
+
+/* Contact change badge (admin tables) */
+.contact-change-badge {
+  margin-left: 8px;
+  font-size: 10px;
+  padding: 3px 7px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+/* Student Details — Contact Information panel */
+.contact-change-pending {
+  padding-bottom: 4px;
+}
+
+.contact-change-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: var(--fs-sm);
+}
+
+.contact-change-row:last-of-type {
+  border-bottom: 0;
+}
+
+.contact-change-label {
+  color: var(--text-tertiary);
+  font-weight: 600;
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+.contact-change-value {
+  color: var(--text-primary);
+  text-align: right;
+  word-break: break-word;
+  min-width: 0;
+}
+
+.contact-change-history {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.contact-change-history-title {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+  margin-bottom: 10px;
+}
+
+.contact-change-history-row {
+  display: grid;
+  grid-template-columns: 70px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  font-size: var(--fs-xs);
+  padding: 6px 0;
+  color: var(--text-secondary);
+}
+
+.contact-change-history-row .muted {
+  color: var(--text-tertiary);
+}
+
+/* Mobile adjustments */
+@media (max-width: 640px) {
+  .contact-row-value {
+    padding-left: 0;
+  }
+  .contact-change-badge {
+    display: block;
+    margin-left: 0;
+    margin-top: 6px;
+    width: fit-content;
+  }
+  .contact-change-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .contact-change-value {
+    text-align: left;
   }
 }
 
 /* ==========================================================================
-   STUDENT ANNOUNCEMENTS — mobile UI refinement
-   Scoped to #ann-list so it only affects the student page.
+   SETTINGS — action rows (text on top, button below)
+   Toggle rows keep their inline layout; action rows stack.
    ========================================================================== */
 
-/* Ensure cards have comfortable vertical rhythm on mobile */
-@media (max-width: 768px) {
-  #ann-list {
+.setting-row.setting-row-stacked {
+  display: block;
+  padding: 20px 0;
+}
+
+.setting-row.setting-row-stacked .setting-row-info {
+  margin-bottom: 14px;
+}
+
+.setting-row.setting-row-stacked .setting-row-info h4 {
+  font-size: var(--fs-md);
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: var(--text-primary);
+}
+
+.setting-row.setting-row-stacked .setting-row-info p {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+  max-width: 640px;
+}
+
+.setting-row.setting-row-stacked .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ==========================================================================
+   ACCESS DISABLED NOTICES
+   Shown when a Super Admin toggle pauses a feature.
+   ========================================================================== */
+
+.access-disabled-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px 20px;
+  background: var(--warning-soft);
+  border-left: 4px solid var(--warning);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+}
+
+.access-disabled-notice > i {
+  font-size: 18px;
+  color: var(--warning);
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.access-disabled-notice strong {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: var(--text-primary);
+}
+
+.access-disabled-notice p {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* Inline variant — sits where a composer or form used to be */
+.access-disabled-notice--inline {
+  margin-bottom: var(--sp-5);
+  border-radius: var(--radius-lg);
+}
+
+/* Compact variant — fits into a toolbar or page-head */
+.access-disabled-notice--compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  font-size: var(--fs-sm);
+  border-radius: var(--radius-md);
+}
+
+.access-disabled-notice--compact > i {
+  font-size: 13px;
+  margin-top: 0;
+}
+
+.access-disabled-notice--compact span {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+@media (max-width: 640px) {
+  .access-disabled-notice {
+    padding: 16px;
     gap: 12px;
   }
-
-  #ann-list .announcement {
-    padding: 16px 16px 18px;
-    border-radius: var(--radius-lg);
-  }
-
-  /* Header: avatar + author info + optional badge */
-  #ann-list .announcement-head {
-    display: grid;
-    grid-template-columns: 32px 1fr auto;
-    grid-template-areas: "avatar info badge";
-    align-items: flex-start;
-    gap: 10px;
-    margin-bottom: 12px;
-  }
-
-  #ann-list .announcement-head > .avatar {
-    grid-area: avatar;
-  }
-
-  #ann-list .announcement-head .announcement-head-info {
-    grid-area: info;
-    min-width: 0;
-  }
-
-  #ann-list .announcement-head .badge {
-    grid-area: badge;
-    flex-shrink: 0;
-    margin: 0;
-    white-space: nowrap;
-  }
-
-  /* Stack the header if the badge is long or the space is very tight */
-  #ann-list .announcement h3 {
-    font-size: var(--fs-md);
-    line-height: 1.35;
-    margin: 0 0 10px;
-    font-weight: 700;
-  }
-
-  /* Body paragraphs — comfortable line-height, tighter margins */
-  #ann-list .announcement p {
-    font-size: 14px;
-    line-height: 1.6;
-    color: var(--text-secondary);
-    margin: 0 0 10px;
-  }
-  #ann-list .announcement p:last-of-type {
-    margin-bottom: 0;
-  }
-
-  /* Footer — separated from body, tags align left */
-  #ann-list .announcement-foot {
-    margin-top: 14px;
-    padding-top: 12px;
+  .access-disabled-notice--compact {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-    font-size: 12px;
-  }
-  #ann-list .announcement-foot > span {
-    margin-left: 0 !important;
+    width: 100%;
   }
 }
 
-/* Very narrow phones — pull the important badge to its own row */
+/* Dark theme */
+[data-theme="dark"] .access-disabled-notice {
+  background: rgba(199, 116, 20, 0.16);
+}
+
+/* ==========================================================================
+   MAINTENANCE PAGE
+   ========================================================================== */
+
+.maintenance-page {
+  background: var(--bg-page);
+  min-height: 100vh;
+}
+
+.maintenance-page .status-page {
+  background: transparent;
+}
+
+.brand-icon-lg {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  box-shadow:
+    0 12px 32px rgba(16, 24, 40, 0.08),
+    0 0 0 8px rgba(179, 58, 58, 0.04);
+}
+
+.maintenance-page h1 {
+  font-size: clamp(1.6rem, 3.4vw, 2.2rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 14px;
+  max-width: 560px;
+}
+
+.maintenance-page > .status-page > p {
+  font-size: var(--fs-md);
+  color: var(--text-secondary);
+  max-width: 480px;
+  line-height: 1.65;
+  margin-bottom: 32px;
+}
+
+/* Info card */
+.maintenance-card {
+  width: 100%;
+  max-width: 520px;
+  padding: 4px 24px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  margin-bottom: 32px;
+  text-align: left;
+}
+
+.maintenance-row {
+  display: flex;
+  gap: 14px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  align-items: flex-start;
+}
+
+.maintenance-row:last-child {
+  border-bottom: 0;
+}
+
+.maintenance-row > i {
+  color: var(--brand-secondary);
+  font-size: 16px;
+  margin-top: 3px;
+  flex-shrink: 0;
+  width: 20px;
+  text-align: center;
+}
+
+.maintenance-row strong {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 3px;
+}
+
+.maintenance-row span {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* Actions */
+.maintenance-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 28px;
+}
+
+.maintenance-actions .btn {
+  min-width: 180px;
+}
+
+/* Footnote */
+.maintenance-footnote {
+  font-size: var(--fs-sm);
+  color: var(--text-tertiary);
+  max-width: 480px;
+}
+
+.maintenance-footnote a {
+  color: var(--brand-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.maintenance-footnote a:hover {
+  text-decoration: underline;
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .maintenance-page h1 {
+    font-size: var(--fs-xl);
+  }
+  .maintenance-card {
+    padding: 4px 18px;
+  }
+  .maintenance-actions {
+    flex-direction: column;
+    width: 100%;
+    max-width: 380px;
+  }
+  .maintenance-actions .btn {
+    width: 100%;
+    min-width: 0;
+  }
+  .brand-icon-lg {
+    width: 80px;
+    height: 80px;
+  }
+  .brand-icon-lg img {
+    width: 56px;
+    height: 56px;
+  }
+}
+
+/* ==========================================================================
+   ADMIN CONTROLS — Maintenance customization panel
+   Reveals under the Maintenance mode toggle when it's ON.
+   ========================================================================== */
+
+.maintenance-customize {
+  margin: 4px 0 20px;
+  padding: 0;
+  animation: mcSlideIn 260ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+@keyframes mcSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.maintenance-customize-inner {
+  background: var(--bg-subtle);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+  border-left: 4px solid var(--warning);
+}
+
+.maintenance-customize-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.maintenance-customize-head > i {
+  color: var(--warning);
+  font-size: 16px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.maintenance-customize-head strong {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.maintenance-customize-head p {
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.maintenance-customize-inner .field {
+  margin-bottom: 18px;
+}
+
+.maintenance-customize-inner .field:last-of-type {
+  margin-bottom: 20px;
+}
+
+/* Preview card */
+.mm-preview {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.mm-preview-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  padding: 10px 16px;
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.mm-preview-label i {
+  font-size: 11px;
+}
+
+.mm-preview-body {
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.mm-preview-headline {
+  font-family: var(--font-heading);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+  color: var(--text-primary);
+  margin: 4px 0 0;
+  max-width: 380px;
+}
+
+.mm-preview-duration {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+}
+
+.mm-preview-duration i {
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+
+.mm-preview-duration strong {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .maintenance-customize-inner {
+    padding: 16px;
+  }
+  .mm-preview-body {
+    padding: 16px 12px;
+  }
+  .mm-preview-headline {
+    font-size: 14px;
+  }
+}
+
+/* ============================================================
+   Auto-generated password notice (Add Admin modal)
+   ============================================================ */
+.password-auto-notice {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  margin-top: 8px;
+  background: var(--info-soft);
+  border: 1px solid rgba(44, 111, 168, 0.2);
+  border-radius: var(--radius-md);
+  align-items: flex-start;
+}
+.password-auto-notice > i {
+  color: var(--info);
+  font-size: 18px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+.password-auto-notice strong {
+  display: block;
+  font-size: var(--fs-sm);
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.password-auto-notice p {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ============================================================
+   Password shown-once block (invite modal)
+   ============================================================ */
+.password-shown-once {
+  padding: 16px;
+  background: var(--warning-soft);
+  border: 1px solid rgba(199, 116, 20, 0.25);
+  border-radius: var(--radius-md);
+  margin-bottom: 8px;
+}
+.password-shown-once-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.password-shown-once-head i {
+  color: var(--warning);
+  font-size: 16px;
+}
+.password-shown-once-head strong {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--warning);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.password-shown-once-hint {
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0 0 14px;
+}
+.password-shown-once-fields {
+  display: grid;
+  gap: 12px;
+}
+.password-shown-once-fields .input {
+  background: var(--bg-surface);
+}
+.password-shown-once-fields .input:focus {
+  border-color: var(--warning);
+  box-shadow: 0 0 0 3px rgba(199, 116, 20, 0.18);
+}
+
+/* ==========================================================================
+   COMPLAINTS — UI fixes (added 2026-09)
+   Covers:
+     1. Complaint detail metadata row
+     2. Visibility picker in the new-complaint modal
+     3. Admin complaint list — badge/status/action spacing
+     4. Admin complaint list — mobile responsiveness
+     5. Admin response thread identity + styling
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. COMPLAINT DETAIL — metadata row
+   -------------------------------------------------------------------------- */
+.cm-meta-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 0;
+}
+.cm-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  background: var(--bg-subtle);
+  padding: 5px 10px;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+.cm-meta-item i {
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+.cm-meta-item span {
+  color: var(--text-secondary);
+}
+
+/* Description block */
+.cm-description {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-subtle);
+}
+.cm-description-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+  margin-bottom: 8px;
+}
+.cm-description-text {
+  line-height: 1.7;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Public notice card */
+.cm-public-notice {
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+  margin-top: 16px;
+  background: var(--brand-secondary-soft);
+  border-left: 3px solid var(--brand-secondary);
+  border-radius: var(--radius-md);
+  align-items: flex-start;
+}
+.cm-public-notice > i {
+  color: var(--brand-secondary);
+  font-size: 16px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+.cm-public-notice strong {
+  display: block;
+  font-size: var(--fs-sm);
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.cm-public-notice p {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Admin response thread — identity row */
+.cm-response-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.cm-response-name {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.cm-response-time {
+  margin-left: auto;
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+.cm-response-text {
+  font-size: var(--fs-sm);
+  color: var(--text-primary);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+.cm-thread-empty {
+  text-align: center;
+  padding: 24px 16px;
+  color: var(--text-tertiary);
+}
+.cm-thread-empty i {
+  font-size: 28px;
+  margin-bottom: 10px;
+  display: block;
+}
+.cm-thread-empty p {
+  font-size: var(--fs-sm);
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   2. VISIBILITY PICKER (new-complaint modal)
+   -------------------------------------------------------------------------- */
+.visibility-picker {
+  display: grid;
+  gap: 10px;
+}
+.visibility-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease;
+}
+.visibility-option:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-subtle);
+}
+.visibility-option input[type="radio"] {
+  margin-top: 3px;
+  accent-color: var(--brand-primary);
+  flex-shrink: 0;
+}
+.visibility-option-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.visibility-option-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.visibility-option-head i {
+  color: var(--brand-secondary);
+  font-size: 14px;
+}
+.visibility-option-desc {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* Selected state */
+.visibility-option:has(input:checked) {
+  border-color: var(--brand-primary);
+  background: var(--brand-primary-soft);
+}
+.visibility-option:has(input:checked) .visibility-option-head i {
+  color: var(--brand-primary);
+}
+
+/* Focus ring */
+.visibility-option:focus-within {
+  box-shadow: var(--shadow-focus);
+}
+
+/* Error state — triggered by JS adding .is-invalid */
+.visibility-picker.is-invalid {
+  padding: 12px;
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-md);
+  background: var(--danger-soft);
+}
+.visibility-picker.is-invalid + .field-error,
+#nc-visibility-error.is-visible {
+  display: flex;
+}
+#nc-visibility-error {
+  display: none;
+}
+
+/* --------------------------------------------------------------------------
+   3. ADMIN COMPLAINTS — badge/status/action spacing
+   -------------------------------------------------------------------------- */
+.cm-admin-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 120ms ease;
+}
+.cm-admin-row:hover {
+  background: var(--bg-subtle);
+}
+.cm-admin-row:last-child {
+  border-bottom: 0;
+}
+
+.cm-admin-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.cm-admin-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Student complaint list row — same layout family */
+.cm-student-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  text-decoration: none;
+  color: inherit;
+  transition: background 120ms ease;
+}
+.cm-student-row:hover {
+  background: var(--bg-subtle);
+}
+.cm-student-row:last-child {
+  border-bottom: 0;
+}
+.cm-student-row-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+.cm-student-row-chevron {
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+.cm-author {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+
+/* --------------------------------------------------------------------------
+   4. ADMIN COMPLAINTS — mobile stacking
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  .cm-admin-row,
+  .cm-student-row {
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+      "icon info"
+      "badges badges"
+      "actions actions";
+    gap: 12px;
+    padding: 14px 16px;
+  }
+  .cm-admin-row .complaint-icon,
+  .cm-student-row .complaint-icon {
+    grid-area: icon;
+  }
+  .cm-admin-row .complaint-info,
+  .cm-student-row .complaint-info {
+    grid-area: info;
+  }
+  .cm-admin-badges,
+  .cm-student-row-badges {
+    grid-area: badges;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+  .cm-admin-actions {
+    grid-area: actions;
+    justify-content: flex-end;
+  }
+  .cm-student-row-chevron {
+    display: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   5. ADMIN COMPLAINT MODAL — filer strip + identity preview + responses
+   -------------------------------------------------------------------------- */
+.cm-filer-strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-subtle);
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+}
+.cm-filer-strip > i {
+  color: var(--brand-secondary);
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.cm-filer-strip > div {
+  min-width: 0;
+}
+.cm-filer-name {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.cm-filer-handle {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+.cm-modal-status-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg-subtle);
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+}
+
+.cm-modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+@media (max-width: 640px) {
+  .cm-modal-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+.cm-identity-preview {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--brand-secondary-soft);
+  border-left: 3px solid var(--brand-secondary);
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+}
+.cm-identity-preview > i {
+  color: var(--brand-secondary);
+  font-size: 16px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+.cm-identity-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+  margin-bottom: 4px;
+}
+.cm-identity-value {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Response block inside admin modal */
+.cm-response {
+  padding: 12px 0;
+  border-bottom: 1px dashed var(--border-subtle);
+}
+.cm-response:last-child {
+  border-bottom: 0;
+}
+.cm-response .cm-response-head {
+  margin-bottom: 8px;
+}
+
+/* --------------------------------------------------------------------------
+   Compact disabled notice (used when complaints intake is paused)
+   -------------------------------------------------------------------------- */
+.access-disabled-notice--compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  background: var(--warning-soft);
+  border: 1px solid rgba(199, 116, 20, 0.25);
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+}
+.access-disabled-notice--compact i {
+  color: var(--warning);
+}
+
+/* ==========================================================================
+   COMPLAINTS — UI fixes (added 2026-09)
+   Consolidated block covering:
+     1. Complaint detail metadata row
+     2. Visibility picker (new-complaint modal)
+     3. Complaint details page — header, description, thread
+     4. Admin complaint row — badge / status / action spacing
+     5. Admin complaint modal — filer strip, identity preview, responses
+     6. Student complaint row — badges and layout
+     7. Mobile responsiveness for all the above
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. COMPLAINT DETAIL — metadata row + description + public notice
+   -------------------------------------------------------------------------- */
+
+.cm-meta-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 16px;
+}
+
+.cm-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  background: var(--bg-subtle);
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+
+.cm-meta-item > i {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.cm-description {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.cm-description-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+  margin-bottom: 8px;
+}
+
+.cm-description-text {
+  line-height: 1.7;
+  color: var(--text-secondary);
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Public notice card */
+.cm-public-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  margin-top: 16px;
+  background: var(--brand-secondary-soft);
+  border-left: 3px solid var(--brand-secondary);
+  border-radius: var(--radius-md);
+}
+
+.cm-public-notice > i {
+  color: var(--brand-secondary);
+  font-size: 16px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.cm-public-notice strong {
+  display: block;
+  font-size: var(--fs-sm);
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.cm-public-notice p {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   2. VISIBILITY PICKER (new-complaint modal)
+   -------------------------------------------------------------------------- */
+
+.visibility-picker {
+  display: grid;
+  gap: 10px;
+}
+
+.visibility-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.visibility-option:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-subtle);
+}
+
+.visibility-option input[type="radio"] {
+  margin-top: 3px;
+  accent-color: var(--brand-primary);
+  flex-shrink: 0;
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+}
+
+.visibility-option-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.visibility-option-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.visibility-option-head i {
+  color: var(--brand-secondary);
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.visibility-option-desc {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* Selected state */
+.visibility-option:has(input:checked) {
+  border-color: var(--brand-primary);
+  background: var(--brand-primary-soft);
+  box-shadow: 0 0 0 3px var(--brand-primary-ring);
+}
+
+.visibility-option:has(input:checked) .visibility-option-head i {
+  color: var(--brand-primary);
+}
+
+.visibility-option:focus-within {
+  box-shadow: 0 0 0 3px var(--brand-primary-ring);
+}
+
+/* Invalid state */
+.visibility-picker.is-invalid {
+  padding: 12px;
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-md);
+  background: var(--danger-soft);
+}
+
+#nc-visibility-error {
+  display: none;
+}
+#nc-visibility-error.is-visible,
+.visibility-picker.is-invalid + #nc-visibility-error {
+  display: flex;
+}
+
+/* --------------------------------------------------------------------------
+   3. COMPLAINT DETAILS — hero card, status pill, thread
+   -------------------------------------------------------------------------- */
+
+.complaint-hero {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.complaint-hero-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.complaint-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 5px 11px;
+  border-radius: var(--radius-pill);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.complaint-title {
+  font-family: var(--font-heading);
+  font-size: var(--fs-xl);
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  line-height: 1.3;
+  margin: 0 0 10px;
+  color: var(--text-primary);
+}
+
+.complaint-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  margin-bottom: 20px;
+}
+
+.complaint-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Complaint conversation thread */
+.complaint-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cm-response-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.cm-response-name {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.cm-response-time {
+  margin-left: auto;
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+
+.cm-response-text {
+  font-size: var(--fs-sm);
+  color: var(--text-primary);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.cm-thread-empty {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--text-tertiary);
+}
+
+.cm-thread-empty i {
+  font-size: 32px;
+  margin-bottom: 12px;
+  display: block;
+  opacity: 0.6;
+}
+
+.cm-thread-empty p {
+  font-size: var(--fs-sm);
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   4. ADMIN COMPLAINT ROW — grid with clean spacing
+   -------------------------------------------------------------------------- */
+
+.cm-admin-row {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto auto;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 120ms ease;
+}
+
+.cm-admin-row:last-child {
+  border-bottom: 0;
+}
+
+.cm-admin-row:hover {
+  background: var(--bg-subtle);
+}
+
+.cm-admin-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.cm-admin-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
+   5. STUDENT COMPLAINT ROW — same layout family
+   -------------------------------------------------------------------------- */
+
+.cm-student-row {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto auto;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  text-decoration: none;
+  color: inherit;
+  transition: background 120ms ease;
+}
+
+.cm-student-row:last-child {
+  border-bottom: 0;
+}
+
+.cm-student-row:hover {
+  background: var(--bg-subtle);
+}
+
+.cm-student-row-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.cm-student-row-chevron {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.cm-author {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+
+.cm-id {
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+/* --------------------------------------------------------------------------
+   6. ADMIN COMPLAINT MODAL — filer strip + identity preview + responses
+   -------------------------------------------------------------------------- */
+
+.cm-modal-status-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-subtle);
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+}
+
+.cm-filer-strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-subtle);
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+}
+
+.cm-filer-strip > i {
+  color: var(--brand-secondary);
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.cm-filer-strip > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.cm-filer-name {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.cm-filer-handle {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+.cm-modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.cm-identity-preview {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--brand-secondary-soft);
+  border-left: 3px solid var(--brand-secondary);
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+}
+
+.cm-identity-preview > i {
+  color: var(--brand-secondary);
+  font-size: 16px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.cm-identity-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+  margin-bottom: 4px;
+}
+
+.cm-identity-value {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cm-response {
+  padding: 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  margin-bottom: 12px;
+}
+
+.cm-response:last-child {
+  margin-bottom: 0;
+}
+
+/* --------------------------------------------------------------------------
+   7. RESPONSIVE — mobile stacking
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 768px) {
+  .cm-admin-row,
+  .cm-student-row {
+    grid-template-columns: 42px minmax(0, 1fr);
+    grid-template-areas:
+      "icon info"
+      "badges badges"
+      "actions actions";
+    gap: 12px;
+    padding: 14px 16px;
+  }
+
+  .cm-admin-row .complaint-icon,
+  .cm-student-row .complaint-icon {
+    grid-area: icon;
+    align-self: start;
+  }
+
+  .cm-admin-row .complaint-info,
+  .cm-student-row .complaint-info {
+    grid-area: info;
+  }
+
+  .cm-admin-badges,
+  .cm-student-row-badges {
+    grid-area: badges;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .cm-admin-actions {
+    grid-area: actions;
+    justify-content: flex-end;
+    width: 100%;
+  }
+
+  .cm-student-row-chevron {
+    display: none;
+  }
+
+  .cm-modal-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .cm-modal-status-strip {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 640px) {
+  .complaint-hero {
+    padding: 18px;
+  }
+
+  .complaint-title {
+    font-size: var(--fs-lg);
+  }
+
+  .complaint-status {
+    margin-left: 0;
+  }
+
+  .cm-admin-row,
+  .cm-student-row {
+    padding: 14px;
+  }
+
+  .cm-admin-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .cm-public-notice {
+    padding: 12px;
+  }
+
+  .cm-meta-item {
+    font-size: 11.5px;
+    padding: 4px 9px;
+  }
+}
+
 @media (max-width: 420px) {
-  #ann-list .announcement-head {
+  .complaint-hero {
+    padding: 14px;
+  }
+
+  .cm-admin-row,
+  .cm-student-row {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .cm-admin-badges,
+  .cm-student-row-badges {
+    gap: 6px;
+  }
+}
+
+/* Comment anchor highlight — flashes when navigating from a notification */
+.comment.is-highlighted {
+  background: var(--brand-primary-soft);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  margin: 0 -12px;
+  transition: background 400ms ease;
+}
+
+/* ==========================================================================
+   RESTORED STYLING — Study Groups request inbox + View Toggle button
+   These classes were referenced by the HTML/JS but their CSS rules are
+   missing from the current stylesheet. Restored here.
+   ========================================================================== */
+
+/* ------------------------------------------------------------------
+   STUDY GROUPS — pending request inbox on the group card
+   ------------------------------------------------------------------ */
+.grp-requests {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.grp-requests-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 10px;
+}
+
+.grp-request-row {
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--border-subtle);
+}
+.grp-request-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+/* Name + handle stack */
+.grp-request-row .info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.grp-request-row .info .name {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.grp-request-row .info .handle {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  line-height: 1.3;
+}
+
+/* Accept / reject button cluster */
+.grp-request-row .actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Mobile: stack the actions under the identity row */
+@media (max-width: 480px) {
+  .grp-request-row {
     grid-template-columns: 32px 1fr;
     grid-template-areas:
       "avatar info"
-      "badge  badge";
-    row-gap: 6px;
+      "actions actions";
+    row-gap: 10px;
   }
-
-  #ann-list .announcement-head .badge {
-    justify-self: start;
-    margin-top: 4px !important;
+  .grp-request-row > .avatar {
+    grid-area: avatar;
   }
-
-  #ann-list .announcement {
-    padding: 14px 14px 16px;
+  .grp-request-row .info {
+    grid-area: info;
   }
-
-  #ann-list .announcement h3 {
-    font-size: 15px;
-    margin: 4px 0 8px;
+  .grp-request-row .actions {
+    grid-area: actions;
+    width: 100%;
+    justify-content: flex-end;
   }
-
-  #ann-list .announcement p {
-    font-size: 13.5px;
-  }
-}
-
-/* Ensure the search bar and filter chips fit without overflow */
-@media (max-width: 480px) {
-  #main > .toolbar {
-    padding: 0;
-  }
-
-  #main > .filter-bar {
-    padding-bottom: 4px;
-    margin-bottom: 12px;
-  }
-
-  #main > .cluster-between {
-    margin-bottom: 10px !important;
+  .grp-request-row .actions .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+    padding: 8px 12px;
+    font-size: 12px;
   }
 }
 
-/* Give extra bottom padding so the mobile nav doesn't overlap the last card */
-@media (max-width: 860px) {
-  #main {
-    padding-bottom: 110px !important;
-  }
+/* "Group Admin" badge on the card top row */
+.tag-group-admin {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
+  background: var(--brand-primary-soft);
+  color: var(--brand-primary);
+  white-space: nowrap;
 }
 
-/* ==========================================================================
-   VIEW TOGGLE — for student admins switching between Admin and Student views
-   ========================================================================== */
-
+/* ------------------------------------------------------------------
+   VIEW TOGGLE — "Switch to Student/Admin view" button
+   Shown on the sidebar for student admins.
+   ------------------------------------------------------------------ */
 .view-toggle-wrap {
-  padding: 8px 12px 12px;
+  padding: 0 12px 12px;
 }
 
 .view-toggle {
   display: grid;
-  grid-template-columns: 36px 1fr auto;
+  grid-template-columns: 36px 1fr 16px;
   align-items: center;
   gap: 10px;
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid var(--border-subtle);
+  background: var(--brand-secondary-soft);
+  border: 1px solid rgba(0, 59, 92, 0.15);
   border-radius: var(--radius-md);
-  background: linear-gradient(
-    135deg,
-    var(--brand-primary-soft) 0%,
-    var(--brand-secondary-soft) 100%
-  );
   cursor: pointer;
   text-align: left;
-  font-family: inherit;
   transition:
+    background 120ms ease,
     border-color 120ms ease,
-    transform 120ms ease,
-    box-shadow 120ms ease;
+    transform 120ms ease;
+  font-family: inherit;
 }
 
 .view-toggle:hover {
-  border-color: var(--brand-primary);
+  background: #d9e6ef;
+  border-color: rgba(0, 59, 92, 0.28);
   transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
 }
 
 .view-toggle:focus-visible {
@@ -13247,14 +15310,13 @@ input[type="file"].input {
   width: 36px;
   height: 36px;
   border-radius: var(--radius-md);
-  background: var(--bg-surface);
+  background: var(--brand-secondary);
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 15px;
-  color: var(--brand-primary);
   flex-shrink: 0;
-  box-shadow: var(--shadow-xs);
 }
 
 .view-toggle-body {
@@ -13265,555 +15327,108 @@ input[type="file"].input {
 }
 
 .view-toggle-label {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-size: 10.5px;
+  font-weight: 600;
   text-transform: uppercase;
+  letter-spacing: 0.06em;
   color: var(--text-tertiary);
-}
-
-.view-toggle-target {
-  font-size: var(--fs-sm);
-  font-weight: 700;
-  color: var(--text-primary);
   line-height: 1.2;
 }
 
+.view-toggle-target {
+  font-family: var(--font-heading);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--brand-secondary);
+  line-height: 1.25;
+}
+
 .view-toggle-arrow {
-  color: var(--text-tertiary);
-  font-size: 12px;
-  opacity: 0.7;
-}
-
-/* Mobile adjustments */
-@media (max-width: 640px) {
-  .view-toggle-wrap {
-    padding: 8px;
-  }
-  .view-toggle {
-    padding: 12px;
-  }
-  .view-toggle-icon {
-    width: 40px;
-    height: 40px;
-    font-size: 16px;
-  }
-}
-
-/* ==========================================================================
-   COMPLAINTS — visibility picker, badges, and admin identity panels
-   ========================================================================== */
-
-/* ---------- Visibility picker (student submission form) ---------- */
-.visibility-picker {
-  display: grid;
-  gap: 10px;
-  border-radius: var(--radius-md);
-  transition: box-shadow 120ms ease;
-}
-.visibility-picker.is-invalid {
-  box-shadow:
-    0 0 0 2px var(--danger),
-    var(--shadow-focus);
-  padding: 6px;
-  margin: -6px;
-}
-
-.visibility-option {
-  display: grid;
-  grid-template-columns: 20px 1fr;
-  gap: 12px;
-  align-items: flex-start;
-  padding: 14px 16px;
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
-  background: var(--bg-surface);
-  cursor: pointer;
-  transition:
-    border-color 120ms ease,
-    background 120ms ease;
-}
-
-.visibility-option:hover {
-  border-color: var(--border-strong);
-  background: var(--bg-subtle);
-}
-
-/* When the radio inside is checked, highlight the whole option */
-.visibility-option:has(input:checked) {
-  border-color: var(--brand-primary);
-  background: var(--brand-primary-soft);
-}
-
-.visibility-option input[type="radio"] {
-  margin-top: 2px;
-  accent-color: var(--brand-primary);
-  cursor: pointer;
-}
-
-.visibility-option-body {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.visibility-option-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: var(--fs-sm);
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.visibility-option-head i {
-  color: var(--brand-primary);
-  font-size: 14px;
-}
-
-.visibility-option-desc {
-  font-size: var(--fs-xs);
-  color: var(--text-secondary);
-  line-height: 1.55;
-}
-
-/* ---------- Author line on complaint cards ---------- */
-.cm-author {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: var(--fs-xs);
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-/* ---------- Student complaint row layout ---------- */
-.cm-student-row {
-  display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) auto auto;
-  gap: 14px;
-  align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border-subtle);
-  text-decoration: none;
-  color: inherit;
-  transition: background 120ms ease;
-}
-.cm-student-row:last-child {
-  border-bottom: 0;
-}
-.cm-student-row:hover {
-  background: var(--bg-subtle);
-}
-
-.cm-student-row-badges {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  flex-shrink: 0;
-}
-
-.cm-student-row-chevron {
-  color: var(--text-tertiary);
-  font-size: 11px;
-  flex-shrink: 0;
-}
-
-/* ---------- Admin complaint row — extra badges column ---------- */
-.cm-admin-badges {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  flex-shrink: 0;
-}
-
-/* ---------- Filer strip (admin complaint modal) ---------- */
-.cm-filer-strip {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  background: var(--bg-subtle);
-  border-radius: var(--radius-md);
-  margin-bottom: 16px;
-}
-
-.cm-filer-strip > i {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--brand-secondary-soft);
   color: var(--brand-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   font-size: 13px;
-  flex-shrink: 0;
-}
-
-.cm-filer-strip > div {
-  min-width: 0;
-  flex: 1;
-}
-
-.cm-filer-name {
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  color: var(--text-primary);
-  line-height: 1.3;
-}
-
-.cm-filer-handle {
-  font-size: var(--fs-xs);
-  color: var(--text-tertiary);
-}
-
-/* ---------- Identity preview (admin response panel) ---------- */
-.cm-identity-preview {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  border-radius: var(--radius-md);
-  background: var(--brand-primary-soft);
-  border-left: 3px solid var(--brand-primary);
-  margin-bottom: 20px;
-}
-
-.cm-identity-preview > i {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-md);
-  background: var(--bg-surface);
-  color: var(--brand-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 15px;
-  flex-shrink: 0;
-}
-
-.cm-identity-preview > div {
-  min-width: 0;
-  flex: 1;
-}
-
-.cm-identity-label {
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--text-tertiary);
-  margin-bottom: 3px;
-}
-
-.cm-identity-value {
-  font-size: var(--fs-sm);
-  font-weight: 700;
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-/* ---------- Public notice callout ---------- */
-.cm-public-notice {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px 14px;
-  background: var(--brand-secondary-soft);
-  border-left: 3px solid var(--brand-secondary);
-  border-radius: var(--radius-md);
-}
-
-.cm-public-notice > i {
-  font-size: 16px;
-  color: var(--brand-secondary);
-  margin-top: 2px;
-  flex-shrink: 0;
-}
-
-.cm-public-notice > div {
-  min-width: 0;
-}
-
-.cm-public-notice strong {
-  display: block;
-  font-size: var(--fs-sm);
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 3px;
-}
-
-.cm-public-notice p {
-  font-size: var(--fs-xs);
-  color: var(--text-secondary);
-  line-height: 1.5;
-  margin: 0;
-}
-
-/* ---------- Meta row on complaint detail ---------- */
-.cm-meta-row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-bottom: 4px;
-}
-
-.cm-author-row {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--fs-sm);
-  color: var(--text-secondary);
-}
-.cm-author-row i {
-  color: var(--text-tertiary);
-  font-size: 13px;
-}
-
-/* ---------- Response thread tweaks ---------- */
-.cm-response-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 8px;
-}
-.cm-response-head strong {
-  font-size: var(--fs-sm);
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.cm-response-time {
-  font-size: var(--fs-xs);
-  color: var(--text-tertiary);
-  margin-left: auto;
-}
-
-.cm-response-text {
-  font-size: var(--fs-sm);
-  color: var(--text-secondary);
-  line-height: 1.6;
-  white-space: pre-wrap;
-}
-
-.cm-thread-empty {
-  text-align: center;
-  padding: 32px 16px;
-  color: var(--text-tertiary);
-  font-size: var(--fs-sm);
-}
-.cm-thread-empty i {
-  font-size: 24px;
-  display: block;
-  margin-bottom: 10px;
   opacity: 0.6;
 }
 
-/* ---------- Mobile — stack rows and adjust panels ---------- */
-@media (max-width: 768px) {
-  .cm-student-row {
-    grid-template-columns: 42px 1fr;
-    grid-template-areas:
-      "icon info"
-      "badges badges"
-      "actions actions";
-    row-gap: 12px;
-    padding: 16px;
-  }
-  .cm-student-row .complaint-icon {
-    grid-area: icon;
-  }
-  .cm-student-row .complaint-info {
-    grid-area: info;
-  }
-  .cm-student-row-badges {
-    grid-area: badges;
-    justify-content: flex-start;
-    margin-left: 54px;
-  }
-  .cm-student-row-chevron {
-    grid-area: actions;
-    justify-self: end;
-  }
-
-  .cm-admin-row {
-    grid-template-columns: 42px 1fr;
-    grid-template-areas:
-      "icon info"
-      "badges badges"
-      "actions actions";
-    row-gap: 12px;
-    padding: 16px;
-  }
-  .cm-admin-row .complaint-icon {
-    grid-area: icon;
-  }
-  .cm-admin-row .complaint-info {
-    grid-area: info;
-  }
-  .cm-admin-badges {
-    grid-area: badges;
-    justify-content: flex-start;
-    margin-left: 54px;
-  }
-  .cm-admin-actions {
-    grid-area: actions;
-    width: 100%;
-  }
-  .cm-admin-actions .btn {
-    width: 100%;
-    justify-content: center;
-    padding: 11px 14px;
-    font-size: 13px;
-  }
-
-  /* Modal two-column grid → single column */
-  .cm-modal-grid {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-
-  /* Meta row stacks more cleanly */
-  .cm-meta-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .cm-filer-strip {
-    flex-wrap: wrap;
-  }
-  .cm-filer-strip .badge {
-    margin-left: 0 !important;
-    flex-basis: 100%;
-    margin-top: 8px;
-  }
+/* Dark theme adjustments */
+[data-theme="dark"] .view-toggle {
+  background: rgba(0, 59, 92, 0.25);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+[data-theme="dark"] .view-toggle:hover {
+  background: rgba(0, 59, 92, 0.4);
 }
 
-@media (max-width: 480px) {
-  .visibility-option {
-    padding: 12px 14px;
-    gap: 10px;
-  }
-  .visibility-option-head {
-    font-size: 13px;
-  }
-  .visibility-option-desc {
-    font-size: 11.5px;
-  }
-
-  .cm-identity-preview {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-  .cm-identity-preview > i {
-    width: 32px;
-    height: 32px;
-  }
+/* Mobile drawer version — tighter padding */
+.mobile-menu .view-toggle {
+  grid-template-columns: 32px 1fr 16px;
+  padding: 8px 10px;
 }
-
-/* ---------- Dark mode polish ---------- */
-[data-theme="dark"] .visibility-option:has(input:checked) {
-  background: rgba(179, 58, 58, 0.14);
-}
-
-[data-theme="dark"] .cm-public-notice {
-  background: rgba(0, 59, 92, 0.28);
-}
-[data-theme="dark"] .cm-public-notice > i {
-  color: #7fb3d5;
-}
-
-[data-theme="dark"] .cm-identity-preview {
-  background: rgba(179, 58, 58, 0.14);
+.mobile-menu .view-toggle-icon {
+  width: 32px;
+  height: 32px;
+  font-size: 13px;
 }
 
 /* ==========================================================================
-   STUDY GROUPS — chat view, composer, request inbox, file/voice cards
+   GROUP CHAT — study group chat interface
+   Full-height flex chain:
+     body → .app-shell → .app-main → .app-content → .chat-page
+   Each level is a flex column with min-height: 0 so the chat-list can
+   scroll and the composer stays pinned to the bottom.
    ========================================================================== */
 
-/* ---------- Group Admin badge ---------- */
-.tag-group-admin {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  padding: 3px 7px;
-  border-radius: var(--radius-xs);
-  background: #e8e2f5;
-  color: #5b3fa8;
-}
-[data-theme="dark"] .tag-group-admin {
-  background: #2a2340;
-  color: #b8a4e8;
-}
+/* --------------------------------------------------------------------------
+   The flex chain from body down to the chat page
+   -------------------------------------------------------------------------- */
 
-/* ---------- Join-request inbox on the group card ---------- */
-.grp-requests {
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid var(--border-subtle);
-}
-.grp-requests-title {
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-tertiary);
-  margin-bottom: 8px;
-}
-.grp-request-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 0;
-}
-.grp-request-row .avatar {
-  flex-shrink: 0;
-}
-.grp-request-row .info {
-  flex: 1;
-  min-width: 0;
-}
-.grp-request-row .name {
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  color: var(--text-primary);
-}
-.grp-request-row .handle {
-  font-size: var(--fs-xs);
-  color: var(--text-tertiary);
-}
-.grp-request-row .actions {
-  display: flex;
-  gap: 6px;
-}
-.grp-request-row .actions .btn {
-  padding: 6px 10px;
-  font-size: var(--fs-xs);
-}
-
-/* ---------- Chat page shell ---------- */
-.chat-page {
-  display: flex;
-  flex-direction: column;
-  height: calc(100vh - var(--header-h));
-  max-height: calc(100vh - var(--header-h));
+/* Freeze the body so no page-level scroll happens on the chat page */
+body.chat-page-active {
   overflow: hidden;
 }
+
+/* App-shell already fills 100vh via its grid rules — ensure it can't
+   exceed the viewport */
+body.chat-page-active .app-shell {
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* .app-main becomes a flex column filling the shell */
+body.chat-page-active .app-main {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* .app-content becomes the flexible middle region */
+body.chat-page-active .app-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0; /* the page already has inline padding: 0, but be explicit */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* The chat page fills its parent */
+body.chat-page-active .chat-page,
+body.chat-page-active #chat-root {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: 100%;
+  max-width: 100%;
+  background: var(--bg-surface);
+}
+
+/* --------------------------------------------------------------------------
+   Chat header — fixed at the top of the chat page
+   -------------------------------------------------------------------------- */
 .chat-header {
   display: flex;
   align-items: center;
@@ -13822,37 +15437,79 @@ input[type="file"].input {
   border-bottom: 1px solid var(--border-subtle);
   background: var(--bg-surface);
   flex-shrink: 0;
+  min-width: 0;
 }
+
 .chat-header .back {
+  flex-shrink: 0;
   color: var(--text-secondary);
+  background: transparent;
 }
+.chat-header .back:hover {
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+}
+
 .chat-header .meta {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow: hidden;
 }
+
 .chat-header .title {
   font-family: var(--font-heading);
   font-size: var(--fs-md);
   font-weight: 700;
   color: var(--text-primary);
+  line-height: 1.3;
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  word-break: break-word;
 }
+
 .chat-header .sub {
   font-size: var(--fs-xs);
   color: var(--text-tertiary);
-  margin-top: 2px;
-}
-.chat-header .actions {
-  display: flex;
-  gap: 6px;
+  line-height: 1.4;
 }
 
-/* ---------- Message list ---------- */
+.chat-header .actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* "Group Admin" badge */
+.tag-group-admin {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
+  background: var(--brand-primary-soft);
+  color: var(--brand-primary);
+  white-space: nowrap;
+}
+.tag-group-admin i {
+  font-size: 9px;
+}
+
+/* --------------------------------------------------------------------------
+   Message list — the scrollable region
+   -------------------------------------------------------------------------- */
 .chat-list {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0; /* ← critical for flexbox scrolling */
   overflow-y: auto;
   padding: 20px;
   display: flex;
@@ -13860,206 +15517,358 @@ input[type="file"].input {
   gap: 14px;
   background: var(--bg-page);
 }
-.chat-empty {
-  text-align: center;
-  color: var(--text-tertiary);
-  font-size: var(--fs-sm);
-  margin: auto;
-  padding: 40px 20px;
-}
 
-/* Message bubble layout */
 .chat-msg {
   display: flex;
+  align-items: flex-end;
   gap: 10px;
-  align-items: flex-start;
-  max-width: 80%;
+  max-width: 78%;
+  align-self: flex-start;
+  min-width: 0;
 }
-.chat-msg.mine {
-  margin-left: auto;
-  flex-direction: row-reverse;
+
+.chat-msg .avatar {
+  flex-shrink: 0;
+  align-self: flex-end;
 }
+
 .chat-msg .bubble {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
+  border-bottom-left-radius: var(--radius-sm);
   padding: 10px 14px;
+  max-width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+
+.chat-msg .bubble .author {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--brand-secondary);
+  letter-spacing: 0.01em;
+  margin-bottom: 2px;
+}
+
+.chat-msg .bubble .msg-text {
   font-size: var(--fs-sm);
   color: var(--text-primary);
   line-height: 1.55;
-  word-break: break-word;
-  min-width: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
+
+.chat-msg .bubble .time {
+  font-size: 10.5px;
+  color: var(--text-tertiary);
+  align-self: flex-end;
+  margin-top: 2px;
+}
+
+.chat-msg .bubble .edited-tag {
+  font-size: 10px;
+  opacity: 0.75;
+  margin-left: 4px;
+}
+
+/* Own messages — aligned right, brand tint */
+.chat-msg.mine {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
 .chat-msg.mine .bubble {
   background: var(--brand-primary);
   border-color: var(--brand-primary);
+  border-bottom-left-radius: var(--radius-lg);
+  border-bottom-right-radius: var(--radius-sm);
   color: #fff;
 }
-.chat-msg.mine .bubble .author,
+
+.chat-msg.mine .bubble .msg-text {
+  color: #fff;
+}
 .chat-msg.mine .bubble .time {
   color: rgba(255, 255, 255, 0.75);
 }
-.chat-msg .author {
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  color: var(--brand-secondary);
-  margin-bottom: 3px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.chat-msg .time {
-  font-size: 10.5px;
-  color: var(--text-tertiary);
-  margin-top: 4px;
+.chat-msg.mine .bubble .author {
+  color: rgba(255, 255, 255, 0.9);
 }
 
-/* File / image / voice inside a bubble */
-.chat-msg .bubble img.chat-img {
-  max-width: 260px;
-  max-height: 260px;
-  border-radius: var(--radius-md);
+/* Inline images */
+.chat-msg .bubble .chat-img-btn {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: zoom-in;
   display: block;
   margin-top: 4px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  max-width: 260px;
 }
+.chat-msg .bubble .chat-img {
+  max-width: 260px;
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: var(--radius-md);
+}
+
+/* File card */
 .chat-file-card {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 10px;
+  padding: 10px 12px;
   background: var(--bg-subtle);
   border-radius: var(--radius-md);
-  margin-top: 4px;
   text-decoration: none;
-  color: inherit;
+  color: var(--text-primary);
+  margin-top: 4px;
+  min-width: 0;
 }
 .chat-msg.mine .chat-file-card {
   background: rgba(255, 255, 255, 0.15);
+  color: #fff;
 }
 .chat-file-card .icon {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius-sm);
   background: var(--bg-surface);
-  color: var(--brand-secondary);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  font-size: 16px;
   flex-shrink: 0;
+  color: var(--brand-primary);
 }
 .chat-msg.mine .chat-file-card .icon {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
 }
 .chat-file-card .info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
   min-width: 0;
   flex: 1;
 }
 .chat-file-card .fname {
-  font-size: var(--fs-xs);
+  font-size: var(--fs-sm);
   font-weight: 600;
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .chat-file-card .fsize {
-  font-size: 10.5px;
-  opacity: 0.7;
+  font-size: var(--fs-xs);
+  opacity: 0.75;
 }
-
-/* Voice note player */
-.chat-voice {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 4px;
-}
-.chat-voice audio {
-  height: 34px;
-  max-width: 240px;
-}
-
-/* ---------- Composer ---------- */
-.chat-composer {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  padding: 12px 20px;
-  border-top: 1px solid var(--border-subtle);
-  background: var(--bg-surface);
+.chat-file-card .dl {
   flex-shrink: 0;
-}
-.chat-composer .textarea {
-  flex: 1;
-  min-height: 42px;
-  max-height: 120px;
-  resize: none;
-  padding: 10px 14px;
-}
-.chat-composer .tools {
-  display: flex;
-  gap: 4px;
-}
-.chat-composer .tools .btn-icon {
-  width: 42px;
-  height: 42px;
+  opacity: 0.75;
+  font-size: 13px;
 }
 
-/* ---------- Lock screen for non-members ---------- */
-.chat-lock {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  flex: 1;
-  padding: 60px 24px;
-  color: var(--text-secondary);
-}
-.chat-lock .lock-icon {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  background: var(--bg-subtle);
-  color: var(--text-tertiary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 26px;
-  margin-bottom: 20px;
-}
-.chat-lock h3 {
-  font-size: var(--fs-lg);
-  font-weight: 700;
-  margin-bottom: 8px;
-  color: var(--text-primary);
-}
-.chat-lock p {
-  font-size: var(--fs-sm);
-  max-width: 380px;
-  margin-bottom: 20px;
-}
-
-/* ---------- Recording indicator ---------- */
-.rec-indicator {
+/* Voice player */
+.voice-player {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 14px;
-  background: var(--danger-soft);
-  color: var(--danger);
-  border-radius: var(--radius-md);
+  margin-top: 4px;
+  min-width: 220px;
+}
+.voice-play {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-subtle);
+  color: var(--brand-primary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+  transition: background 120ms ease;
+}
+.voice-play:hover {
+  background: var(--brand-primary-soft);
+}
+.chat-msg.mine .voice-play {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+.chat-msg.mine .voice-play:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+.voice-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--bg-subtle);
+  border-radius: var(--radius-pill);
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+  min-width: 60px;
+}
+.chat-msg.mine .voice-bar {
+  background: rgba(255, 255, 255, 0.25);
+}
+.voice-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0%;
+  background: var(--brand-primary);
+  border-radius: var(--radius-pill);
+  pointer-events: none;
+}
+.chat-msg.mine .voice-fill {
+  background: #fff;
+}
+.voice-time {
+  font-size: 11px;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+  min-width: 34px;
+  text-align: right;
+}
+.chat-msg.mine .voice-time {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* --------------------------------------------------------------------------
+   Composer — pinned to the bottom of the chat page
+   -------------------------------------------------------------------------- */
+.chat-composer {
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  padding: 12px 16px;
+  flex-shrink: 0;
+}
+
+.chat-input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  min-width: 0;
+}
+
+.chat-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  max-height: 120px;
+  padding: 11px 14px;
+  font-family: var(--font-body);
   font-size: var(--fs-sm);
-  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background: var(--bg-subtle);
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+  resize: none;
+  outline: none;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+.chat-input::placeholder {
+  color: var(--text-tertiary);
+}
+.chat-input:hover {
+  background: var(--bg-surface);
+  border-color: var(--border-default);
+}
+.chat-input:focus {
+  background: var(--bg-surface);
+  border-color: var(--brand-primary);
+  box-shadow: var(--shadow-focus);
+}
+
+.chat-input-row .tools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.chat-input-row .tools .btn-icon {
+  width: 40px;
+  height: 40px;
+  color: var(--text-secondary);
+}
+.chat-input-row .tools .btn-icon:hover {
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+}
+
+.chat-send-btn {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--brand-primary);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(179, 58, 58, 0.25);
+  transition:
+    background 120ms ease,
+    transform 120ms ease,
+    box-shadow 120ms ease;
+}
+.chat-send-btn:hover {
+  background: var(--brand-primary-hover);
+  box-shadow: 0 4px 12px rgba(179, 58, 58, 0.35);
+}
+.chat-send-btn:active {
+  transform: scale(0.96);
+}
+.chat-send-btn:disabled {
+  background: var(--border-default);
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+.chat-send-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+/* Recording indicator */
+.rec-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  flex: 1;
+  padding: 11px 14px;
 }
 .rec-dot {
   width: 10px;
   height: 10px;
   border-radius: 50%;
   background: var(--danger);
-  animation: recPulse 1.2s ease-in-out infinite;
+  animation: rec-pulse 1s ease-in-out infinite;
 }
-@keyframes recPulse {
+@keyframes rec-pulse {
   0%,
   100% {
     opacity: 1;
@@ -14068,202 +15877,429 @@ input[type="file"].input {
     opacity: 0.3;
   }
 }
-
-/* ---------- Admin Study Groups page ---------- */
-.admin-groups-table .member-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+.chat-composer .rec-indicator + .btn,
+.chat-composer #rec-cancel,
+.chat-composer #rec-stop {
+  flex-shrink: 0;
 }
-.admin-groups-table .member-pills .pill {
+
+/* --------------------------------------------------------------------------
+   Empty / lock states
+   -------------------------------------------------------------------------- */
+.chat-list .chat-empty {
+  margin: auto;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: var(--fs-sm);
+  padding: 40px 20px;
+}
+.chat-list .chat-empty i {
+  font-size: 32px;
+  display: block;
+  margin-bottom: 10px;
+  opacity: 0.5;
+}
+
+.chat-lock {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 24px;
+  max-width: 420px;
+  margin: 0 auto;
+  gap: 12px;
+}
+.chat-lock .lock-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--bg-subtle);
+  color: var(--text-tertiary);
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 8px;
-  border-radius: var(--radius-pill);
-  background: var(--bg-subtle);
-  font-size: 11px;
-  color: var(--text-secondary);
+  justify-content: center;
+  font-size: 28px;
+  margin-bottom: 8px;
 }
-.admin-groups-table .badge-deleted {
-  background: var(--danger-soft);
-  color: var(--danger);
+.chat-lock h3 {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  margin: 0;
+}
+.chat-lock p {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin: 0 0 12px;
 }
 
-/* ---------- Responsive ---------- */
-@media (max-width: 640px) {
-  .chat-page {
-    height: calc(100vh - 56px); /* mobile header height */
+/* --------------------------------------------------------------------------
+   MOBILE — full-bleed, no page scroll, hide the bottom nav
+   -------------------------------------------------------------------------- */
+@media (max-width: 860px) {
+  /* Hide the mobile bottom nav on the chat page */
+  body.chat-page-active .mobile-bottom-nav {
+    display: none !important;
   }
+
+  /* Drop the chat card's borders and radius on mobile — full bleed */
+  body.chat-page-active .chat-page,
+  body.chat-page-active #chat-root {
+    border-radius: 0;
+    border: 0;
+  }
+
   .chat-header {
-    padding: 10px 14px;
+    padding: 12px 14px;
+    gap: 10px;
   }
+  .chat-header .title {
+    font-size: var(--fs-sm);
+  }
+  .chat-header .sub {
+    font-size: 11px;
+  }
+
   .chat-list {
-    padding: 14px;
-  }
-  .chat-composer {
-    padding: 10px 14px;
+    padding: 14px 12px;
+    gap: 10px;
   }
   .chat-msg {
-    max-width: 92%;
+    max-width: 88%;
   }
-  .chat-composer .tools .btn-icon {
+  .chat-msg .bubble {
+    padding: 9px 12px;
+  }
+
+  .chat-composer {
+    padding: 10px 12px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  }
+  .chat-input-row {
+    gap: 8px;
+  }
+  .chat-input {
+    padding: 10px 12px;
+    font-size: 16px; /* prevent iOS zoom */
+  }
+  .chat-send-btn {
+    width: 42px;
+    height: 42px;
+  }
+  .chat-input-row .tools .btn-icon {
     width: 38px;
     height: 38px;
   }
 }
 
+@media (max-width: 420px) {
+  .chat-msg {
+    max-width: 92%;
+  }
+  .chat-header .meta {
+    gap: 2px;
+  }
+  .chat-header .title {
+    font-size: var(--fs-xs);
+  }
+  .tag-group-admin {
+    font-size: 9.5px;
+    padding: 2px 6px;
+  }
+}
+
 /* ==========================================================================
-   MESSAGE CONTEXT MENU, EDIT MODE, EDITED TAG
+   GROUP CHAT — hide the app header on the chat page
+   Desktop: sidebar stays, header hidden.
+   Mobile: sidebar and header both hidden — only the chat is visible.
    ========================================================================== */
 
-/* Edited tag next to timestamp */
-.chat-msg .edited-tag {
-  font-size: 10.5px;
-  color: var(--text-tertiary);
-  margin-left: 6px;
-  font-style: italic;
-}
-.chat-msg.mine .edited-tag {
-  color: rgba(255, 255, 255, 0.7);
+/* --------------------------------------------------------------------------
+   Desktop — hide the app header, keep the sidebar
+   -------------------------------------------------------------------------- */
+@media (min-width: 861px) {
+  body.chat-page-active .app-header {
+    display: none !important;
+  }
+
+  /* The app-main no longer needs the header, so let the chat take its space */
+  body.chat-page-active .app-main {
+    /* The header was ~64px; with it gone, the shell fills entirely */
+    height: 100vh;
+  }
 }
 
-/* Inline edit textarea inside a bubble */
-.chat-edit-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 220px;
-}
-.chat-edit-wrap textarea {
-  width: 100%;
-  min-height: 60px;
-  padding: 8px 10px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-default);
-  background: var(--bg-surface);
-  color: var(--text-primary);
-  font-family: var(--font-body);
-  font-size: var(--fs-sm);
-  resize: vertical;
-  line-height: 1.5;
-}
-.chat-edit-wrap textarea:focus {
-  outline: none;
-  border-color: var(--brand-primary);
-  box-shadow: var(--shadow-focus);
-}
-.chat-edit-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-}
-.chat-edit-actions .btn {
-  padding: 6px 12px;
-  font-size: var(--fs-xs);
+/* --------------------------------------------------------------------------
+   Mobile — hide the app header as well (sidebar is already hidden at this
+   breakpoint by the global stylesheet rules)
+   -------------------------------------------------------------------------- */
+@media (max-width: 860px) {
+  body.chat-page-active .app-header {
+    display: none !important;
+  }
+
+  /* The chat page now fills the entire viewport */
+  body.chat-page-active .app-main {
+    height: 100vh;
+  }
+
+  /* Belt-and-braces: hide the sidebar too in case the breakpoint ever
+     changes upstream */
+  body.chat-page-active .sidebar {
+    display: none !important;
+  }
+
+  /* And hide any mobile menu trigger */
+  body.chat-page-active .mobile-menu-backdrop,
+  body.chat-page-active .mobile-menu {
+    display: none !important;
+  }
 }
 
-/* Context menu — anchored to the click/touch point */
-.msg-context-menu {
-  position: fixed;
-  z-index: 90;
-  min-width: 160px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
-  padding: 4px;
+/* --------------------------------------------------------------------------
+   Bring back a small "back to Study Groups" affordance inside the chat
+   header, since the app header (with its hamburger) is now gone on mobile.
+   -------------------------------------------------------------------------- */
+
+/* On mobile, the chat header's back arrow is now the only way back.
+   Give it a slightly larger touch target. */
+@media (max-width: 860px) {
+  .chat-header .back {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* ==========================================================================
+   GROUP CHAT — lightbox and layout lock
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Chat lightbox (fullscreen image viewer)
+   Must be display:none when not open, and a proper fullscreen overlay
+   when .is-open.
+   -------------------------------------------------------------------------- */
+.chat-lightbox {
   display: none;
-  flex-direction: column;
-  opacity: 0;
-  transform: scale(0.96) translateY(-2px);
-  transition:
-    opacity 120ms ease,
-    transform 120ms ease;
-  pointer-events: auto;
-}
-.msg-context-menu.is-open {
-  display: flex;
-  opacity: 1;
-  transform: scale(1) translateY(0);
-}
-.msg-context-menu button {
-  display: flex;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
+  z-index: 9999;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  font-size: var(--fs-sm);
-  color: var(--text-primary);
-  background: transparent;
+  justify-content: center;
+  padding: 24px;
+}
+
+.chat-lightbox.is-open {
+  display: flex;
+}
+
+.chat-lightbox img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.chat-lightbox-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
   border: none;
-  border-radius: var(--radius-sm);
-  text-align: left;
   cursor: pointer;
-  width: 100%;
-}
-.msg-context-menu button:hover {
-  background: var(--bg-subtle);
-}
-.msg-context-menu button i {
-  width: 16px;
-  text-align: center;
-  color: var(--text-tertiary);
-  font-size: 13px;
-}
-.msg-context-menu button.is-danger {
-  color: var(--danger);
-}
-.msg-context-menu button.is-danger i {
-  color: var(--danger);
-}
-.msg-context-menu button.is-danger:hover {
-  background: var(--danger-soft);
-}
-.msg-context-menu hr {
-  height: 1px;
-  background: var(--border-subtle);
-  border: 0;
-  margin: 4px 0;
-}
-
-/* Pending requests banner on Study Groups page */
-.sg-pending-banner {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 18px;
-  border-radius: var(--radius-lg);
-  background: var(--brand-primary-soft);
-  border: 1px solid rgba(179, 58, 58, 0.2);
-  color: var(--brand-primary);
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  margin-bottom: 20px;
-}
-.sg-pending-banner i {
-  font-size: 18px;
-}
-
-/* Deleted message rendering — only shown to Admins (Batch 3) */
-.chat-msg.is-deleted .bubble {
-  opacity: 0.55;
-  border-style: dashed;
-}
-.chat-msg.is-deleted .deleted-tag {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 10.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--danger);
-  background: var(--danger-soft);
-  padding: 2px 6px;
-  border-radius: var(--radius-xs);
-  margin-bottom: 4px;
+  justify-content: center;
+  font-size: 20px;
+  transition: background 120ms ease;
 }
-.chat-msg.is-deleted .bubble .msg-text {
-  text-decoration: line-through;
-  text-decoration-thickness: 1px;
+.chat-lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+.chat-lightbox-close:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   Tight layout lock — the shell fills the viewport exactly, no drift
+   -------------------------------------------------------------------------- */
+body.chat-page-active,
+body.chat-page-active * {
+  box-sizing: border-box;
+}
+
+body.chat-page-active {
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+body.chat-page-active .app-shell {
+  height: 100vh;
+  max-height: 100vh;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  /* Freeze the shell to the top-left of the viewport */
+  position: relative;
+  top: 0;
+  left: 0;
+}
+
+body.chat-page-active .app-main {
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+body.chat-page-active .app-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Chat page fills exactly the available space */
+body.chat-page-active .chat-page,
+body.chat-page-active #chat-root {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Skip link — hidden on the chat page
+   -------------------------------------------------------------------------- */
+body.chat-page-active .skip-link {
+  display: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   Modal backdrops and mobile menu backdrop — hidden unless .is-open
+   Prevents them from leaking into the layout on the chat page
+   -------------------------------------------------------------------------- */
+body.chat-page-active .mobile-menu-backdrop:not(.is-open) {
+  display: none !important;
+}
+body.chat-page-active .mobile-menu:not(.is-open) {
+  display: none !important;
+}
+
+/* ==========================================================================
+   PENDING VERIFICATION BANNER
+   Shown on the student dashboard until Admin verifies the account.
+   ========================================================================== */
+
+.pending-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 18px 22px;
+  border-left: 4px solid var(--warning);
+  background: var(--warning-soft);
+  border-radius: var(--radius-lg);
+  margin-bottom: 28px;
+}
+
+.pending-banner-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--warning);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.pending-banner-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.pending-banner-body h3 {
+  font-family: var(--font-heading);
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 6px;
+  line-height: 1.3;
+}
+
+.pending-banner-body p {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0 0 14px;
+}
+
+.pending-banner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .pending-banner {
+    padding: 16px;
+    gap: 12px;
+  }
+  .pending-banner-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+  .pending-banner-body h3 {
+    font-size: var(--fs-sm);
+  }
+  .pending-banner-body p {
+    font-size: 13px;
+  }
+  .pending-banner-actions .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}
+
+/* ==========================================================================
+   DASHBOARD — right column gap
+   The three cards (New resources / Notifications / Immediate Response)
+   were glued together. Give them proper spacing.
+   ========================================================================== */
+
+.dash-col-side {
+  display: grid;
+  gap: var(--sp-5);
+}
+
+.dash-col-side {
+  display: grid;
+  gap: var(--sp-5);
+  align-items: start;
 }

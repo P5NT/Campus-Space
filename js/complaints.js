@@ -3,31 +3,73 @@
    Complaints: submission, visibility (private/public), status flow,
    responses, history.
 
-   Visibility rules:
-     - "private"  → only the filer and admins see it
-     - "public"   → everyone sees it, but only as @username (not full name)
-     - Locked at submission — cannot be changed later (per spec)
+   Notifications emitted:
+     - add()          -> Admins + Super Admins get "New complaint submitted"
+     - updateStatus() -> the filer gets "Complaint status changed"
+     - respond()      -> the filer gets "New response to your complaint"
 
-   All responses inherit their parent's visibility.
-
-   Data shape (per complaint):
-     {
-       id, visibility, submittedBy, submittedByName,
-       category, subject, description, attachment,
-       status, priority, date, updated,
-       history:   [{ at, actor, action }],
-       responses: [{ from, name, tag, at, text }]
-     }
+   Link convention:
+     - Admin recipients   -> resolveAdminLink("complaints.html")
+     - Student recipients -> "complaint-details.html?id=..."
    ========================================================================== */
 "use strict";
 
-const Complaints = (() => {
-  const KEY = "complaints";
+var Complaints = (function () {
+  var KEY = "complaints";
 
   /* ------------------------------------------------------------------
-     SEED — demo complaints. All private by default.
+     Notifications helper
+     Safe to call even if notifications.js is not loaded on the page.
      ------------------------------------------------------------------ */
-  const SEED = [
+  function emitNotification(payload) {
+    try {
+      if (
+        typeof Notifications !== "undefined" &&
+        typeof Notifications.emit === "function"
+      ) {
+        return Notifications.emit(payload);
+      }
+    } catch (e) {
+      /* swallow */
+    }
+    return null;
+  }
+
+  /* ------------------------------------------------------------------
+     Admin link resolver
+     Returns the correct relative path to a page under /pages/admin/
+     from whatever folder the current page lives in.
+     ------------------------------------------------------------------ */
+  function resolveAdminLink(filename) {
+    var path =
+      typeof window !== "undefined" && window.location
+        ? window.location.pathname
+        : "";
+
+    if (path.indexOf("/pages/admin/") !== -1) {
+      return filename;
+    }
+
+    if (
+      path.indexOf("/pages/student/") !== -1 ||
+      path.indexOf("/pages/super-admin/") !== -1 ||
+      path.indexOf("/pages/system/") !== -1 ||
+      path.indexOf("/pages/auth/") !== -1
+    ) {
+      return "../admin/" + filename;
+    }
+
+    if (path.indexOf("/pages/") === -1) {
+      return "pages/admin/" + filename;
+    }
+
+    return filename;
+  }
+
+  /* ------------------------------------------------------------------
+     SEED DATA
+     ------------------------------------------------------------------ */
+  var SEED = [
     {
       id: "C001",
       visibility: "private",
@@ -136,7 +178,7 @@ const Complaints = (() => {
      READ / WRITE
      ------------------------------------------------------------------ */
   function all() {
-    let list = Store.get(KEY, null);
+    var list = Store.get(KEY, null);
     if (!list) {
       list = SEED.slice();
       Store.set(KEY, list);
@@ -149,25 +191,26 @@ const Complaints = (() => {
   }
 
   /* ------------------------------------------------------------------
-     VISIBILITY — returns the complaints the given session can see
-     ------------------------------------------------------------------
-       Public complaints     → visible to everyone
-       Private complaints    → visible only to the filer + admins
+     VISIBILITY
      ------------------------------------------------------------------ */
   function visibleTo(session) {
-    if (!session) return [];
-    const isAdmin = session.role === "admin" || session.role === "super_admin";
-    return all().filter((c) => {
-      if (isAdmin) return true; /* admins see everything */
-      if (c.visibility === "public") return true; /* public → everyone */
-      return c.submittedBy === session.username; /* private → filer only */
+    if (!session) {
+      return [];
+    }
+    var isAdmin = session.role === "admin" || session.role === "super_admin";
+    return all().filter(function (c) {
+      if (isAdmin) {
+        return true;
+      }
+      if (c.visibility === "public") {
+        return true;
+      }
+      return c.submittedBy === session.username;
     });
   }
 
   /* ------------------------------------------------------------------
      CREATE
-     ------------------------------------------------------------------
-       visibility is REQUIRED — the form enforces this.
      ------------------------------------------------------------------ */
   function add(data) {
     if (
@@ -177,13 +220,13 @@ const Complaints = (() => {
       throw new Error("Complaint visibility is required");
     }
 
-    const list = all();
-    const c = {
-      id:
-        "C" +
-        String(list.length + 1).padStart(3, "0") +
-        "-" +
-        Date.now().toString().slice(-4),
+    var list = all();
+    var seq = list.length + 1;
+    var padded = seq < 10 ? "00" + seq : seq < 100 ? "0" + seq : "" + seq;
+    var tail = String(Date.now()).slice(-4);
+
+    var c = {
+      id: "C" + padded + "-" + tail,
       visibility: data.visibility,
       submittedBy: data.submittedBy || "unknown",
       submittedByName: data.submittedByName || "Unknown student",
@@ -196,12 +239,31 @@ const Complaints = (() => {
       date: Date.now(),
       updated: Date.now(),
       history: [
-        { at: Date.now(), actor: "You", action: "Complaint submitted" },
+        {
+          at: Date.now(),
+          actor: "You",
+          action: "Complaint submitted",
+        },
       ],
       responses: [],
     };
     list.unshift(c);
     save(list);
+
+    var bodyText =
+      "A new " + c.category + " complaint was submitted: " + c.subject;
+
+    emitNotification({
+      type: "complaint_submitted",
+      icon: "fa-file-shield",
+      tone: "warning",
+      title: "New complaint submitted",
+      body: bodyText,
+      link: resolveAdminLink("complaints.html"),
+      audience: { usernames: [], roles: ["admins", "super_admins"] },
+      actorUsername: c.submittedBy,
+    });
+
     return c;
   }
 
@@ -209,30 +271,61 @@ const Complaints = (() => {
      UPDATE STATUS
      ------------------------------------------------------------------ */
   function updateStatus(id, status, actor) {
-    const list = all();
-    const c = list.find((x) => x.id === id);
-    if (!c) return;
+    var list = all();
+    var c = null;
+    var i;
+    for (i = 0; i < list.length; i++) {
+      if (list[i].id === id) {
+        c = list[i];
+        break;
+      }
+    }
+    if (!c) {
+      return;
+    }
+
     c.status = status;
     c.updated = Date.now();
     c.history.push({
       at: Date.now(),
-      actor,
+      actor: actor,
       action: "Status changed to " + status,
     });
     save(list);
+
+    var bodyText = 'Your complaint "' + c.subject + '" is now ' + status + ".";
+
+    emitNotification({
+      type: "complaint_status",
+      icon: "fa-file-shield",
+      tone: status === "Resolved" ? "success" : "warning",
+      title: "Complaint status changed",
+      body: bodyText,
+      link: "complaint-details.html?id=" + c.id,
+      audience: { usernames: [c.submittedBy], roles: [] },
+      actorUsername: null,
+    });
   }
 
   /* ------------------------------------------------------------------
-     RESPOND — accepts either a plain string (legacy) or an object
-     { name, tag }
+     RESPOND
      ------------------------------------------------------------------ */
   function respond(id, text, author) {
-    const list = all();
-    const c = list.find((x) => x.id === id);
-    if (!c) return;
+    var list = all();
+    var c = null;
+    var i;
+    for (i = 0; i < list.length; i++) {
+      if (list[i].id === id) {
+        c = list[i];
+        break;
+      }
+    }
+    if (!c) {
+      return;
+    }
 
-    let name = "";
-    let tag = "";
+    var name = "";
+    var tag = "";
     if (typeof author === "string") {
       name = author;
     } else if (author && typeof author === "object") {
@@ -240,28 +333,48 @@ const Complaints = (() => {
       tag = author.tag || "";
     }
 
-    c.responses.push({ from: "admin", name, tag, at: Date.now(), text });
+    c.responses.push({
+      from: "admin",
+      name: name,
+      tag: tag,
+      at: Date.now(),
+      text: text,
+    });
     c.updated = Date.now();
     save(list);
+
+    var preview = text.length > 90 ? text.slice(0, 87) + "..." : text;
+    var bodyText = (name || "Admin") + ": " + preview;
+
+    emitNotification({
+      type: "complaint_response",
+      icon: "fa-comment-dots",
+      tone: "brand",
+      title: "New response to your complaint",
+      body: bodyText,
+      link: "complaint-details.html?id=" + c.id,
+      audience: { usernames: [c.submittedBy], roles: [] },
+      actorUsername: null,
+    });
   }
 
   /* ------------------------------------------------------------------
      PUBLIC API
      ------------------------------------------------------------------ */
   return {
-    all,
-    visibleTo,
-    add,
-    updateStatus,
-    respond,
-    save,
+    all: all,
+    visibleTo: visibleTo,
+    add: add,
+    updateStatus: updateStatus,
+    respond: respond,
+    save: save,
   };
 })();
 
 /* -------------------------------------------------------------------------
-   Helpers — kept for backward compatibility with existing pages
+   Backward-compatible helpers
    ------------------------------------------------------------------------- */
-const COMPLAINT_STATUS_CLASS = {
+var COMPLAINT_STATUS_CLASS = {
   Submitted: "status-submitted",
   "Under Review": "status-review",
   "In Progress": "status-progress",
@@ -269,6 +382,7 @@ const COMPLAINT_STATUS_CLASS = {
 };
 
 function complaintStatusPill(status) {
-  const cls = COMPLAINT_STATUS_CLASS[status] || "status-submitted";
-  return `<span class="status-pill ${cls}">${typeof Util !== "undefined" ? Util.escape(status) : status}</span>`;
+  var cls = COMPLAINT_STATUS_CLASS[status] || "status-submitted";
+  var text = typeof Util !== "undefined" ? Util.escape(status) : String(status);
+  return '<span class="status-pill ' + cls + '">' + text + "</span>";
 }

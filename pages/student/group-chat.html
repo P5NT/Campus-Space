@@ -2,7 +2,10 @@
 <html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
     <title>Group Chat — Campus Space</title>
     <link
       rel="icon"
@@ -43,9 +46,8 @@
     />
     <link rel="stylesheet" href="../../css/style.css" />
   </head>
-  <body class="has-session">
+  <body class="has-session chat-page-active">
     <a href="#main" class="skip-link">Skip to main content</a>
-
     <div class="app-shell">
       <aside
         class="sidebar"
@@ -59,7 +61,6 @@
         </main>
       </div>
     </div>
-
     <div id="mobile-nav-mount"></div>
     <div class="mobile-menu-backdrop"></div>
     <aside
@@ -67,15 +68,28 @@
       id="mobile-menu-mount"
       aria-label="Mobile menu"
     ></aside>
-
-    <!-- Single reusable context menu, positioned by JS -->
     <div
       class="msg-context-menu"
       id="msg-menu"
       role="menu"
       aria-hidden="true"
     ></div>
-
+    <div
+      class="chat-lightbox"
+      id="chat-lightbox"
+      role="dialog"
+      aria-modal="true"
+      aria-hidden="true"
+    >
+      <button
+        class="chat-lightbox-close"
+        id="chat-lightbox-close"
+        aria-label="Close image"
+      >
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <img id="chat-lightbox-img" alt="" />
+    </div>
     <script src="../../data/students.js"></script>
     <script src="../../data/courses.js"></script>
     <script src="../../js/main.js"></script>
@@ -85,12 +99,6 @@
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
     <script>
-      /* ==========================================================================
-         Group Chat — full-page chat with message context menu.
-         Context menu opens on right-click (desktop) or long-press (mobile).
-         Students see only their own non-deleted messages.
-         Admin retention is handled in Batch 3.
-         ========================================================================== */
       document.addEventListener("DOMContentLoaded", function () {
         var session = Auth.current();
         if (!session) {
@@ -99,10 +107,14 @@
         }
         initAppShell("student");
 
+        /* ---- Verification gate ---- */
+        if (!Auth.requireVerifiedStudent()) return;
+
         var me = session.username;
         var root = document.getElementById("chat-root");
         var menuEl = document.getElementById("msg-menu");
-
+        var lightbox = document.getElementById("chat-lightbox");
+        var lightboxImg = document.getElementById("chat-lightbox-img");
         var groupId = new URLSearchParams(location.search).get("id");
         if (!groupId) {
           renderNotFound();
@@ -121,33 +133,16 @@
           renderLocked();
           return;
         }
-
         renderChat();
-
-        /* ================================================================
-           RENDERERS
-           ================================================================ */
 
         function renderNotFound() {
           root.innerHTML =
-            '<div class="chat-lock">' +
-            '<div class="lock-icon"><i class="fa-solid fa-circle-question"></i></div>' +
-            "<h3>Group not found</h3>" +
-            "<p>This group may have been deleted or the link is incorrect.</p>" +
-            '<a class="btn btn-primary" href="study-groups.html"><i class="fa-solid fa-arrow-left"></i> Back to Study Groups</a>' +
-            "</div>";
+            '<div class="chat-lock"><div class="lock-icon"><i class="fa-solid fa-circle-question"></i></div><h3>Group not found</h3><p>This group may have been deleted or the link is incorrect.</p><a class="btn btn-primary" href="study-groups.html"><i class="fa-solid fa-arrow-left"></i> Back to Study Groups</a></div>';
         }
-
         function renderDeleted() {
           root.innerHTML =
-            '<div class="chat-lock">' +
-            '<div class="lock-icon"><i class="fa-solid fa-trash"></i></div>' +
-            "<h3>This group no longer exists</h3>" +
-            "<p>The group has been deleted by its creator. It is no longer available.</p>" +
-            '<a class="btn btn-primary" href="study-groups.html"><i class="fa-solid fa-arrow-left"></i> Back to Study Groups</a>' +
-            "</div>";
+            '<div class="chat-lock"><div class="lock-icon"><i class="fa-solid fa-trash"></i></div><h3>This group no longer exists</h3><p>The group has been deleted by its creator. It is no longer available.</p><a class="btn btn-primary" href="study-groups.html"><i class="fa-solid fa-arrow-left"></i> Back to Study Groups</a></div>';
         }
-
         function renderLocked() {
           var state = Groups.membershipState(group, me);
           var button =
@@ -155,10 +150,7 @@
               ? '<button class="btn btn-secondary" id="lock-cancel" type="button"><i class="fa-regular fa-clock"></i> Cancel request</button>'
               : '<button class="btn btn-primary" id="lock-request" type="button"><i class="fa-solid fa-arrow-right-to-bracket"></i> Request to join</button>';
           root.innerHTML =
-            '<div class="chat-lock">' +
-            '<div class="lock-icon"><i class="fa-solid fa-lock"></i></div>' +
-            "<h3>You are not a member of this group</h3>" +
-            "<p>Only members can view this group's messages and resources. Request to join and wait for the creator to approve.</p>" +
+            '<div class="chat-lock"><div class="lock-icon"><i class="fa-solid fa-lock"></i></div><h3>You are not a member of this group</h3><p>Only members can view this group\'s messages and resources. Request to join and wait for the creator to approve.</p>' +
             button +
             "</div>";
           var reqBtn = document.getElementById("lock-request");
@@ -182,68 +174,56 @@
 
         function renderChat() {
           var isCreator = Groups.isCreator(group, me);
-          var creatorName = Groups.displayName(group.createdBy);
-
           var header =
-            '<div class="chat-header">' +
-            '<a class="btn-icon back" href="study-groups.html" aria-label="Back"><i class="fa-solid fa-arrow-left"></i></a>' +
-            '<div class="meta">' +
-            '<div class="title">' +
+            '<div class="chat-header"><a class="btn-icon back" href="study-groups.html" aria-label="Back"><i class="fa-solid fa-arrow-left"></i></a><div class="meta"><div class="title">' +
             Util.escape(group.name) +
             (isCreator
               ? ' <span class="tag-group-admin"><i class="fa-solid fa-crown"></i> Group Admin</span>'
               : "") +
-            "</div>" +
-            '<div class="sub">' +
+            '</div><div class="sub">' +
             Util.escape(group.course) +
             " · " +
             (group.members || []).length +
             " member" +
             ((group.members || []).length === 1 ? "" : "s") +
-            " · Created by " +
-            Util.escape(creatorName) +
-            "</div></div>" +
-            '<div class="actions">' +
+            '</div></div><div class="actions">' +
             (isCreator
               ? '<button class="btn-icon" data-chat-delete title="Delete group" aria-label="Delete group" style="color:var(--danger);"><i class="fa-solid fa-trash"></i></button>'
               : '<button class="btn-icon" data-chat-leave title="Leave group" aria-label="Leave group"><i class="fa-solid fa-right-from-bracket"></i></button>') +
             "</div></div>";
-
           var list =
             '<div class="chat-list" id="chat-list">' +
             renderMessages() +
             "</div>";
-
           var composer =
-            '<div class="chat-composer">' +
-            '<textarea class="textarea" id="chat-input" placeholder="Write a message…" rows="1"></textarea>' +
+            '<div class="chat-composer" id="chat-composer">' +
+            '<div class="chat-input-row">' +
+            '<textarea class="chat-input" id="chat-input" placeholder="Message…" rows="1"></textarea>' +
             '<div class="tools">' +
             '<button class="btn-icon" id="chat-attach" type="button" title="Attach a file" aria-label="Attach a file"><i class="fa-solid fa-paperclip"></i></button>' +
             '<button class="btn-icon" id="chat-voice" type="button" title="Record a voice note" aria-label="Record a voice note"><i class="fa-solid fa-microphone"></i></button>' +
-            '<button class="btn btn-primary" id="chat-send" type="button" style="padding: 0 18px;"><i class="fa-solid fa-paper-plane"></i></button>' +
+            "</div>" +
+            '<button class="chat-send-btn" id="chat-send" type="button" aria-label="Send message"><i class="fa-solid fa-paper-plane"></i></button>' +
             "</div></div>";
-
-          var fileInput =
-            '<input type="file" id="chat-file-input" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" style="display:none;" />';
-
-          root.innerHTML = header + list + composer + fileInput;
-
+          root.innerHTML = header + list + composer;
           var listEl = document.getElementById("chat-list");
           if (listEl) listEl.scrollTop = listEl.scrollHeight;
-
           bindChatEvents();
         }
 
-        /* ================================================================
-           MESSAGE RENDERING
-           ================================================================ */
-
         function renderMessages() {
           var msgs = Groups.visibleMessages(group.id);
-          if (!msgs.length) {
-            return '<div class="chat-empty"><i class="fa-regular fa-comments" style="font-size:32px; display:block; margin-bottom:10px;"></i>No messages yet. Say hello.</div>';
-          }
+          if (!msgs.length)
+            return '<div class="chat-empty"><span>No messages yet. Say hello.</span></div>';
           return msgs.map(renderMessage).join("");
+        }
+
+        /* Format seconds to M:SS */
+        function fmtDuration(secs) {
+          secs = Math.max(0, Math.floor(secs || 0));
+          var m = Math.floor(secs / 60);
+          var s = secs % 60;
+          return m + ":" + String(s).padStart(2, "0");
         }
 
         function renderMessage(m) {
@@ -258,47 +238,41 @@
             })
             .join("");
           var isCreatorOfGroup = m.author === group.createdBy;
-
           var body = "";
           if (m.type === "text") {
             body =
               '<span class="msg-text">' + Util.escape(m.text || "") + "</span>";
           } else if (m.type === "image") {
             body =
-              (m.text ? "<div>" + Util.escape(m.text) + "</div>" : "") +
-              '<img class="chat-img" src="' +
+              (m.text
+                ? '<div class="msg-text">' + Util.escape(m.text) + "</div>"
+                : "") +
+              '<button type="button" class="chat-img-btn" data-chat-img="' +
+              m.id +
+              '" aria-label="Open image"><img class="chat-img" src="' +
               m.dataUrl +
               '" alt="' +
               Util.escape(m.fileName || "image") +
-              '" />';
+              '" loading="lazy" /></button>';
           } else if (m.type === "file") {
             body =
               '<a class="chat-file-card" href="' +
               m.dataUrl +
               '" download="' +
               Util.escape(m.fileName) +
-              '">' +
-              '<span class="icon"><i class="fa-solid ' +
+              '"><span class="icon"><i class="fa-solid ' +
               fileIcon(m.fileName) +
-              '"></i></span>' +
-              '<span class="info"><span class="fname">' +
+              '"></i></span><span class="info"><span class="fname">' +
               Util.escape(m.fileName) +
-              "</span>" +
-              '<span class="fsize">' +
+              '</span><span class="fsize">' +
               humanSize(m.fileSize) +
-              "</span></span>" +
-              '<i class="fa-solid fa-download"></i></a>';
+              '</span></span><span class="dl"><i class="fa-solid fa-download"></i></span></a>';
           } else if (m.type === "voice") {
-            body =
-              '<div class="chat-voice"><i class="fa-solid fa-microphone"></i><audio controls src="' +
-              m.dataUrl +
-              '"></audio></div>';
+            body = renderVoicePlayer(m);
           }
-
           var editedTag = m.edited
             ? '<span class="edited-tag">(edited)</span>'
             : "";
-
           return (
             '<div class="chat-msg' +
             (mine ? " mine" : "") +
@@ -330,6 +304,29 @@
           );
         }
 
+        /* Custom voice note player markup — audio element hidden, driven by JS */
+        function renderVoicePlayer(m) {
+          var dur = m.duration ? fmtDuration(m.duration) : "";
+          return (
+            '<div class="voice-player" data-voice-id="' +
+            m.id +
+            '">' +
+            '<button type="button" class="voice-play" aria-label="Play voice message">' +
+            '<i class="fa-solid fa-play"></i>' +
+            "</button>" +
+            '<div class="voice-bar" role="slider" tabindex="0" aria-label="Seek" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">' +
+            '<div class="voice-fill"></div>' +
+            "</div>" +
+            '<span class="voice-time">' +
+            dur +
+            "</span>" +
+            '<audio preload="metadata" src="' +
+            m.dataUrl +
+            '"></audio>' +
+            "</div>"
+          );
+        }
+
         function fileIcon(name) {
           var n = (name || "").toLowerCase();
           if (/\.(png|jpe?g|gif|webp|bmp|svg)$/.test(n)) return "fa-file-image";
@@ -339,14 +336,12 @@
           if (/\.pptx?$/.test(n)) return "fa-file-powerpoint";
           return "fa-file";
         }
-
         function humanSize(bytes) {
           if (!bytes) return "";
           if (bytes < 1024) return bytes + " B";
           if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
           return (bytes / (1024 * 1024)).toFixed(2) + " MB";
         }
-
         function timeAgo(ts) {
           if (typeof Util !== "undefined" && Util.relativeTime)
             return Util.relativeTime(ts);
@@ -354,21 +349,204 @@
         }
 
         /* ================================================================
-           CONTEXT MENU — right-click + long-press
+           VOICE PLAYER — custom controls driving the hidden <audio>
            ================================================================ */
+        var currentAudio = null; /* Only one voice player plays at a time */
+
+        function bindVoicePlayers(scope) {
+          (scope || document)
+            .querySelectorAll(".voice-player")
+            .forEach(function (player) {
+              if (player.dataset.bound === "1") return;
+              player.dataset.bound = "1";
+
+              var audio = player.querySelector("audio");
+              var playBtn = player.querySelector(".voice-play");
+              var playIcon = playBtn.querySelector("i");
+              var bar = player.querySelector(".voice-bar");
+              var fill = player.querySelector(".voice-fill");
+              var timeEl = player.querySelector(".voice-time");
+              var totalDur = parseFloat(audio.duration) || 0;
+
+              /* If metadata isn't loaded yet, wait for it */
+              function ensureDuration() {
+                if (!isNaN(audio.duration) && isFinite(audio.duration)) {
+                  totalDur = audio.duration;
+                  timeEl.textContent = fmtDuration(totalDur);
+                }
+              }
+              audio.addEventListener("loadedmetadata", ensureDuration);
+              audio.addEventListener("durationchange", ensureDuration);
+
+              function setProgress(ratio) {
+                ratio = Math.max(0, Math.min(1, ratio));
+                fill.style.width = ratio * 100 + "%";
+                bar.setAttribute(
+                  "aria-valuenow",
+                  String(Math.round(ratio * 100)),
+                );
+              }
+
+              function updateTime() {
+                if (!audio.duration || !isFinite(audio.duration)) return;
+                var cur = audio.currentTime;
+                var total = audio.duration;
+                setProgress(cur / total);
+                timeEl.textContent = fmtDuration(cur);
+              }
+
+              function togglePlay() {
+                if (audio.paused) {
+                  /* Pause any other playing voice note */
+                  if (currentAudio && currentAudio !== audio) {
+                    try {
+                      currentAudio.pause();
+                    } catch (e) {}
+                    currentAudio.currentTime = 0;
+                    var otherPlayer = currentAudio.closest(".voice-player");
+                    if (otherPlayer) {
+                      var otherIcon =
+                        otherPlayer.querySelector(".voice-play i");
+                      if (otherIcon) otherIcon.className = "fa-solid fa-play";
+                      var otherFill = otherPlayer.querySelector(".voice-fill");
+                      if (otherFill) otherFill.style.width = "0%";
+                    }
+                  }
+                  currentAudio = audio;
+                  audio
+                    .play()
+                    .then(function () {
+                      playIcon.className = "fa-solid fa-pause";
+                    })
+                    .catch(function (err) {
+                      Toast.error(
+                        "Could not play this voice note.",
+                        "Playback error",
+                      );
+                      console.error(err);
+                    });
+                } else {
+                  audio.pause();
+                  playIcon.className = "fa-solid fa-play";
+                }
+              }
+
+              playBtn.addEventListener("click", function (e) {
+                e.stopPropagation();
+                togglePlay();
+              });
+
+              audio.addEventListener("play", function () {
+                playIcon.className = "fa-solid fa-pause";
+              });
+              audio.addEventListener("pause", function () {
+                playIcon.className = "fa-solid fa-play";
+              });
+              audio.addEventListener("timeupdate", updateTime);
+              audio.addEventListener("ended", function () {
+                playIcon.className = "fa-solid fa-play";
+                setProgress(0);
+                if (totalDur) timeEl.textContent = fmtDuration(totalDur);
+              });
+
+              /* Seek by clicking the bar */
+              function seekFromEvent(clientX) {
+                var rect = bar.getBoundingClientRect();
+                var ratio = (clientX - rect.left) / rect.width;
+                ratio = Math.max(0, Math.min(1, ratio));
+                if (audio.duration && isFinite(audio.duration)) {
+                  audio.currentTime = ratio * audio.duration;
+                  updateTime();
+                }
+              }
+              bar.addEventListener("click", function (e) {
+                seekFromEvent(e.clientX);
+              });
+              bar.addEventListener(
+                "touchstart",
+                function (e) {
+                  if (e.touches && e.touches[0])
+                    seekFromEvent(e.touches[0].clientX);
+                },
+                { passive: true },
+              );
+
+              /* Keyboard accessibility */
+              bar.addEventListener("keydown", function (e) {
+                if (!audio.duration || !isFinite(audio.duration)) return;
+                var step = 5; /* seconds */
+                if (e.key === "ArrowRight") {
+                  e.preventDefault();
+                  audio.currentTime = Math.min(
+                    audio.duration,
+                    audio.currentTime + step,
+                  );
+                  updateTime();
+                } else if (e.key === "ArrowLeft") {
+                  e.preventDefault();
+                  audio.currentTime = Math.max(0, audio.currentTime - step);
+                  updateTime();
+                } else if (e.key === " " || e.key === "Enter") {
+                  e.preventDefault();
+                  togglePlay();
+                }
+              });
+
+              /* Initial duration display */
+              ensureDuration();
+            });
+        }
+
+        function openLightbox(src, alt) {
+          lightboxImg.src = src;
+          lightboxImg.alt = alt || "";
+          lightbox.classList.add("is-open");
+          lightbox.setAttribute("aria-hidden", "false");
+          document.body.style.overflow = "hidden";
+        }
+        function closeLightbox() {
+          lightbox.classList.remove("is-open");
+          lightbox.setAttribute("aria-hidden", "true");
+          lightboxImg.src = "";
+          document.body.style.overflow = "";
+        }
+        document
+          .getElementById("chat-lightbox-close")
+          .addEventListener("click", closeLightbox);
+        lightbox.addEventListener("click", function (e) {
+          if (e.target === lightbox) closeLightbox();
+        });
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape" && lightbox.classList.contains("is-open"))
+            closeLightbox();
+        });
+
+        function bindImageButtons(scope) {
+          (scope || document)
+            .querySelectorAll("[data-chat-img]")
+            .forEach(function (btn) {
+              if (btn.dataset.bound === "1") return;
+              btn.dataset.bound = "1";
+              btn.addEventListener("click", function () {
+                var id = btn.getAttribute("data-chat-img");
+                var m = Groups.messages(group.id).find(function (x) {
+                  return x.id === id;
+                });
+                if (!m || !m.dataUrl) return;
+                openLightbox(m.dataUrl, m.fileName || "image");
+              });
+            });
+        }
 
         function closeMenu() {
           menuEl.classList.remove("is-open");
           menuEl.setAttribute("aria-hidden", "true");
           menuEl.innerHTML = "";
         }
-
         function openMenu(msgEl, x, y) {
           var msgId = msgEl.getAttribute("data-msg-id");
           var type = msgEl.getAttribute("data-msg-type");
           var own = msgEl.getAttribute("data-msg-own") === "1";
-
-          /* Build available actions */
           var actions = [];
           if (type === "text") {
             if (own)
@@ -414,22 +592,16 @@
                 danger: true,
               });
           }
-
           if (!actions.length) return;
-
-          /* Render menu items */
           var html = "";
           actions.forEach(function (a, i) {
-            if (a.danger && i > 0) {
-              html += "<hr />";
-            }
+            if (a.danger && i > 0) html += "<hr />";
             html +=
               '<button role="menuitem" data-action="' +
               a.id +
               '"' +
               (a.danger ? ' class="is-danger"' : "") +
-              ">" +
-              '<i class="fa-solid ' +
+              '><i class="fa-solid ' +
               a.icon +
               '"></i><span>' +
               a.label +
@@ -438,26 +610,21 @@
           menuEl.innerHTML = html;
           menuEl.classList.add("is-open");
           menuEl.setAttribute("aria-hidden", "false");
-
-          /* Position — with viewport flipping */
           var menuRect = menuEl.getBoundingClientRect();
-          var vw = window.innerWidth;
-          var vh = window.innerHeight;
-          var left = x;
-          var top = y;
+          var vw = window.innerWidth,
+            vh = window.innerHeight;
+          var left = x,
+            top = y;
           if (left + menuRect.width > vw - 8) left = vw - menuRect.width - 8;
           if (top + menuRect.height > vh - 8) top = vh - menuRect.height - 8;
           if (left < 8) left = 8;
           if (top < 8) top = 8;
           menuEl.style.left = left + "px";
           menuEl.style.top = top + "px";
-
-          /* Bind actions */
           menuEl.querySelectorAll("[data-action]").forEach(function (btn) {
             btn.addEventListener("click", function (e) {
               e.stopPropagation();
-              var action = btn.getAttribute("data-action");
-              handleAction(action, msgId, type, own);
+              handleAction(btn.getAttribute("data-action"), msgId, type, own);
               closeMenu();
             });
           });
@@ -528,10 +695,6 @@
           }
         }
 
-        /* ================================================================
-           INLINE EDIT
-           ================================================================ */
-
         function startInlineEdit(msgId) {
           var msgEl = document.querySelector('[data-msg-id="' + msgId + '"]');
           if (!msgEl) return;
@@ -541,30 +704,20 @@
             return x.id === msgId;
           });
           if (!msg) return;
-
           var originalHtml = bubble.innerHTML;
-
           bubble.innerHTML =
-            '<div class="chat-edit-wrap">' +
-            '<textarea id="edit-textarea">' +
+            '<div class="chat-edit-wrap"><textarea id="edit-textarea">' +
             Util.escape(msg.text || "") +
-            "</textarea>" +
-            '<div class="chat-edit-actions">' +
-            '<button class="btn btn-secondary" id="edit-cancel" type="button">Cancel</button>' +
-            '<button class="btn btn-primary" id="edit-save" type="button">Save</button>' +
-            "</div></div>";
-
+            '</textarea><div class="chat-edit-actions"><button class="btn btn-secondary" id="edit-cancel" type="button">Cancel</button><button class="btn btn-primary" id="edit-save" type="button">Save</button></div></div>';
           var ta = document.getElementById("edit-textarea");
           ta.focus();
           ta.setSelectionRange(ta.value.length, ta.value.length);
-
           document
             .getElementById("edit-cancel")
             .addEventListener("click", function () {
               bubble.innerHTML = originalHtml;
               bindMessageContext(msgEl);
             });
-
           document
             .getElementById("edit-save")
             .addEventListener("click", function () {
@@ -577,7 +730,6 @@
               refreshMessages();
               Toast.success("Message updated.", "Saved");
             });
-
           ta.addEventListener("keydown", function (e) {
             if (e.key === "Escape") {
               bubble.innerHTML = originalHtml;
@@ -588,22 +740,16 @@
           });
         }
 
-        /* ================================================================
-           BIND CONTEXT MENU ON EACH MESSAGE
-           ================================================================ */
-
         function bindMessageContext(msgEl) {
-          /* Right-click (desktop) */
+          if (msgEl.dataset.menuBound === "1") return;
+          msgEl.dataset.menuBound = "1";
           msgEl.addEventListener("contextmenu", function (e) {
             e.preventDefault();
             openMenu(msgEl, e.clientX, e.clientY);
           });
-
-          /* Long-press (mobile) — 500ms hold, cancel on move or early release */
-          var holdTimer = null;
-          var startX = 0,
+          var holdTimer = null,
+            startX = 0,
             startY = 0;
-
           msgEl.addEventListener(
             "touchstart",
             function (e) {
@@ -618,13 +764,12 @@
             },
             { passive: true },
           );
-
           msgEl.addEventListener(
             "touchmove",
             function (e) {
               if (!holdTimer) return;
-              var dx = Math.abs(e.touches[0].clientX - startX);
-              var dy = Math.abs(e.touches[0].clientY - startY);
+              var dx = Math.abs(e.touches[0].clientX - startX),
+                dy = Math.abs(e.touches[0].clientY - startY);
               if (dx > 10 || dy > 10) {
                 clearTimeout(holdTimer);
                 holdTimer = null;
@@ -632,7 +777,6 @@
             },
             { passive: true },
           );
-
           msgEl.addEventListener("touchend", function () {
             if (holdTimer) {
               clearTimeout(holdTimer);
@@ -641,7 +785,6 @@
           });
         }
 
-        /* Global listeners to dismiss the menu */
         document.addEventListener("click", function (e) {
           if (!menuEl.contains(e.target)) closeMenu();
         });
@@ -650,92 +793,130 @@
         });
         window.addEventListener("scroll", closeMenu, true);
 
-        /* ================================================================
-           CHAT EVENTS
-           ================================================================ */
-
         function bindChatEvents() {
           var input = document.getElementById("chat-input");
           var sendBtn = document.getElementById("chat-send");
           var attachBtn = document.getElementById("chat-attach");
           var voiceBtn = document.getElementById("chat-voice");
-          var fileInput = document.getElementById("chat-file-input");
+          if (!input || !sendBtn) return;
 
           function sendText() {
             var text = (input.value || "").trim();
             if (!text) return;
             Groups.addMessage(group.id, {
-              id: "msg-" + Date.now(),
+              id:
+                "msg-" +
+                Date.now() +
+                "-" +
+                Math.random().toString(36).slice(2, 8),
               author: me,
               type: "text",
               text: text,
               at: Date.now(),
             });
             input.value = "";
+            input.style.height = "auto";
             refreshMessages();
           }
 
-          sendBtn.addEventListener("click", sendText);
-          input.addEventListener("keydown", function (e) {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              sendText();
-            }
-          });
-          input.addEventListener("input", function () {
-            input.style.height = "auto";
-            input.style.height = Math.min(input.scrollHeight, 120) + "px";
-          });
+          if (sendBtn.dataset.bound !== "1") {
+            sendBtn.dataset.bound = "1";
+            sendBtn.addEventListener("click", sendText);
+          }
 
-          attachBtn.addEventListener("click", function () {
-            fileInput.click();
-          });
-          fileInput.addEventListener("change", function () {
-            var file = fileInput.files[0];
-            if (!file) return;
-            var MAX = 2 * 1024 * 1024;
-            if (file.size > MAX) {
-              Toast.error("File is too large. Maximum 2 MB.", "File too large");
-              fileInput.value = "";
-              return;
-            }
-            var reader = new FileReader();
-            reader.onload = function () {
-              var isImage = file.type.indexOf("image/") === 0;
-              Groups.addMessage(group.id, {
-                id: "msg-" + Date.now(),
-                author: me,
-                type: isImage ? "image" : "file",
-                text: "",
-                fileName: file.name,
-                fileType: file.type,
-                fileSize: file.size,
-                dataUrl: reader.result,
-                at: Date.now(),
+          if (input.dataset.bound !== "1") {
+            input.dataset.bound = "1";
+            input.addEventListener("keydown", function (e) {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendText();
+              }
+            });
+            input.addEventListener("input", function () {
+              input.style.height = "auto";
+              input.style.height = Math.min(input.scrollHeight, 120) + "px";
+            });
+          }
+
+          if (attachBtn && attachBtn.dataset.bound !== "1") {
+            attachBtn.dataset.bound = "1";
+            attachBtn.addEventListener("click", function () {
+              var fileInput = document.createElement("input");
+              fileInput.type = "file";
+              fileInput.accept =
+                "image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt";
+              fileInput.style.display = "none";
+
+              fileInput.addEventListener("change", function () {
+                var file = fileInput.files && fileInput.files[0];
+                if (!file) {
+                  if (fileInput.parentNode)
+                    fileInput.parentNode.removeChild(fileInput);
+                  return;
+                }
+                var MAX = 2 * 1024 * 1024;
+                if (file.size > MAX) {
+                  Toast.error(
+                    "File is too large. Maximum 2 MB.",
+                    "File too large",
+                  );
+                  if (fileInput.parentNode)
+                    fileInput.parentNode.removeChild(fileInput);
+                  return;
+                }
+                var reader = new FileReader();
+                reader.onload = function () {
+                  var isImage = file.type.indexOf("image/") === 0;
+                  Groups.addMessage(group.id, {
+                    id:
+                      "msg-" +
+                      Date.now() +
+                      "-" +
+                      Math.random().toString(36).slice(2, 8),
+                    author: me,
+                    type: isImage ? "image" : "file",
+                    text: "",
+                    fileName: file.name,
+                    fileType: file.type,
+                    fileSize: file.size,
+                    dataUrl: reader.result,
+                    at: Date.now(),
+                  });
+                  refreshMessages();
+                  Toast.success(isImage ? "Image sent." : "File sent.", "Sent");
+                  if (fileInput.parentNode)
+                    fileInput.parentNode.removeChild(fileInput);
+                };
+                reader.onerror = function () {
+                  Toast.error("Could not read the file.", "Upload failed");
+                  if (fileInput.parentNode)
+                    fileInput.parentNode.removeChild(fileInput);
+                };
+                reader.readAsDataURL(file);
               });
-              fileInput.value = "";
-              refreshMessages();
-              Toast.success(isImage ? "Image sent." : "File sent.", "Sent");
-            };
-            reader.onerror = function () {
-              Toast.error("Could not read the file.", "Upload failed");
-            };
-            reader.readAsDataURL(file);
-          });
 
-          voiceBtn.addEventListener("click", function () {
-            if (!navigator.mediaDevices || !window.MediaRecorder) {
-              Toast.error(
-                "Voice recording is not supported in this browser.",
-                "Not supported",
-              );
-              return;
-            }
-            startVoiceRecording();
-          });
+              document.body.appendChild(fileInput);
+              fileInput.click();
+            });
+          }
+
+          if (voiceBtn && voiceBtn.dataset.bound !== "1") {
+            voiceBtn.dataset.bound = "1";
+            voiceBtn.addEventListener("click", function () {
+              if (!navigator.mediaDevices || !window.MediaRecorder) {
+                Toast.error(
+                  "Voice recording is not supported in this browser.",
+                  "Not supported",
+                );
+                return;
+              }
+              startVoiceRecording();
+            });
+          }
 
           var deleteBtn = document.querySelector("[data-chat-delete]");
-          if (deleteBtn) {
+          if (deleteBtn && deleteBtn.dataset.bound !== "1") {
+            deleteBtn.dataset.bound = "1";
             deleteBtn.addEventListener("click", async function () {
               var ok = await Confirmation.confirm({
                 title: "Delete this group?",
@@ -756,7 +937,8 @@
           }
 
           var leaveBtn = document.querySelector("[data-chat-leave]");
-          if (leaveBtn) {
+          if (leaveBtn && leaveBtn.dataset.bound !== "1") {
+            leaveBtn.dataset.bound = "1";
             leaveBtn.addEventListener("click", async function () {
               var ok = await Confirmation.confirm({
                 title: "Leave this group?",
@@ -774,37 +956,33 @@
             });
           }
 
-          /* Bind context menu to each message */
           document.querySelectorAll(".chat-msg").forEach(bindMessageContext);
+          bindImageButtons();
+          if (typeof bindVoicePlayers === "function") bindVoicePlayers();
         }
 
         function refreshMessages() {
           var listEl = document.getElementById("chat-list");
           if (!listEl) return;
+          var wasNearBottom =
+            listEl.scrollHeight - listEl.scrollTop - listEl.clientHeight < 120;
           listEl.innerHTML = renderMessages();
-          listEl.scrollTop = listEl.scrollHeight;
+          if (wasNearBottom) listEl.scrollTop = listEl.scrollHeight;
           document.querySelectorAll(".chat-msg").forEach(bindMessageContext);
+          bindImageButtons(listEl);
+          bindVoicePlayers(listEl);
         }
 
-        /* ================================================================
-           VOICE RECORDING
-           ================================================================ */
         function startVoiceRecording() {
-          var MAX_SECONDS = 60;
-          var chunks = [];
-          var recorder;
-          var seconds = 0;
-          var timerId;
-
+          var MAX_SECONDS = 60,
+            chunks = [],
+            recorder,
+            seconds = 0,
+            timerId;
           var composer = document.querySelector(".chat-composer");
           var savedComposerHtml = composer.innerHTML;
           composer.innerHTML =
-            '<div class="rec-indicator" style="flex:1;"><span class="rec-dot"></span>' +
-            '<span id="rec-timer">0:00</span>' +
-            '<span style="opacity:0.7;">Recording… max 60s</span></div>' +
-            '<button class="btn btn-secondary" id="rec-cancel" type="button">Cancel</button>' +
-            '<button class="btn btn-primary" id="rec-stop" type="button"><i class="fa-solid fa-check"></i> Send</button>';
-
+            '<div class="rec-indicator"><span class="rec-dot"></span><span id="rec-timer">0:00</span><span style="opacity:0.7;">Recording… max 60s</span></div><button class="btn btn-secondary" id="rec-cancel" type="button">Cancel</button><button class="btn btn-primary" id="rec-stop" type="button"><i class="fa-solid fa-check"></i> Send</button>';
           var timerEl = document.getElementById("rec-timer");
           function tick() {
             seconds++;
@@ -813,19 +991,20 @@
             if (timerEl) timerEl.textContent = mm + ":" + ss;
             if (seconds >= MAX_SECONDS) finish();
           }
-
           function restoreComposer() {
             clearInterval(timerId);
             composer.innerHTML = savedComposerHtml;
             bindChatEvents();
           }
+          var cancelled = false;
 
           function cancel() {
+            cancelled = true;
+            clearInterval(timerId);
             try {
               recorder.stop();
             } catch (e) {}
-            restoreComposer();
-            Toast.info("Recording cancelled.", "Cancelled");
+            /* restoreComposer() is called from onstop after the recorder flushes */
           }
 
           function finish() {
@@ -834,7 +1013,6 @@
               recorder.stop();
             } catch (e) {}
           }
-
           navigator.mediaDevices
             .getUserMedia({ audio: true })
             .then(function (stream) {
@@ -846,15 +1024,22 @@
                 stream.getTracks().forEach(function (t) {
                   t.stop();
                 });
-                if (!chunks.length) {
+
+                /* If the user cancelled, drop everything and just restore */
+                if (cancelled || !chunks.length) {
                   restoreComposer();
                   return;
                 }
+
                 var blob = new Blob(chunks, { type: "audio/webm" });
                 var reader = new FileReader();
                 reader.onload = function () {
                   Groups.addMessage(group.id, {
-                    id: "msg-" + Date.now(),
+                    id:
+                      "msg-" +
+                      Date.now() +
+                      "-" +
+                      Math.random().toString(36).slice(2, 8),
                     author: me,
                     type: "voice",
                     dataUrl: reader.result,

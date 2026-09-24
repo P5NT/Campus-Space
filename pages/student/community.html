@@ -66,7 +66,6 @@
 
           <div class="community-layout">
             <div>
-              <!-- Composer -->
               <form class="composer" id="composer" aria-label="Create a post">
                 <span
                   class="avatar avatar-40 avatar-fallback"
@@ -80,8 +79,6 @@
                     placeholder="Share something with the campus community…"
                     aria-label="Post text"
                   ></textarea>
-
-                  <!-- Image preview (hidden until an image is attached) -->
                   <div
                     id="composer-image-preview"
                     style="display: none; margin-top: 10px; position: relative"
@@ -113,7 +110,6 @@
                       <i class="fa-solid fa-xmark"></i>
                     </button>
                   </div>
-
                   <div class="composer-foot">
                     <div class="composer-tools">
                       <button
@@ -139,7 +135,6 @@
                 </div>
               </form>
 
-              <!-- Filter bar -->
               <div class="filter-bar" role="tablist" aria-label="Feed filter">
                 <button class="chip is-active" data-filter="all" role="tab">
                   All
@@ -155,7 +150,6 @@
                 </button>
               </div>
 
-              <!-- Feed -->
               <div id="community-feed"></div>
             </div>
 
@@ -251,9 +245,6 @@
     <script src="../../js/leaders.js"></script>
     <script src="../../js/community.js"></script>
     <script>
-      /* ==========================================================================
-   Community page — composer + feed interactions.
-   ========================================================================== */
       document.addEventListener("DOMContentLoaded", function () {
         var session = Auth.current();
         if (!session) {
@@ -262,7 +253,28 @@
         }
         initAppShell("student");
 
-        /* ---- Composer avatar (uses uploaded picture if present) ---- */
+        /* ---- Verification gate ---- */
+        if (!Auth.requireVerifiedStudent()) return;
+
+        /* ---- System access gate: community posting ---- */
+        var canPost =
+          typeof SystemSettings === "undefined" ||
+          SystemSettings.isEnabled("community_enabled");
+        if (!canPost) {
+          var composerEl = document.getElementById("composer");
+          if (composerEl) {
+            composerEl.outerHTML =
+              '<div class="access-disabled-notice access-disabled-notice--inline">' +
+              '<i class="fa-solid fa-lock"></i>' +
+              "<div>" +
+              "<strong>Posting is temporarily disabled</strong>" +
+              "<p>Admin has paused community posts. You can still read the feed below.</p>" +
+              "</div>" +
+              "</div>";
+          }
+        }
+
+        /* ---- Composer avatar ---- */
         var avatarEl = document.getElementById("composer-avatar");
         var avatarUrl = typeof Avatar !== "undefined" ? Avatar.get() : "";
         var initials = Util.initials(session.name || session.username);
@@ -379,28 +391,29 @@
 
         /* ---- Submit ---- */
         var composer = document.getElementById("composer");
-        composer.addEventListener("submit", function (e) {
-          e.preventDefault();
-          var text = composer.querySelector("textarea").value.trim();
-          if (!text && !attachedImageData) {
-            Toast.warning(
-              "Write something or attach an image before posting.",
-              "Empty post",
-            );
-            return;
-          }
-          Community.add(text, session, { image: attachedImageData });
+        if (composer) {
+          composer.addEventListener("submit", function (e) {
+            e.preventDefault();
+            var text = composer.querySelector("textarea").value.trim();
+            if (!text && !attachedImageData) {
+              Toast.warning(
+                "Write something or attach an image before posting.",
+                "Empty post",
+              );
+              return;
+            }
+            Community.add(text, session, { image: attachedImageData });
 
-          /* Reset composer */
-          composer.reset();
-          attachedImageData = "";
-          previewThumb.src = "";
-          previewWrap.style.display = "none";
-          if (imageInput) imageInput.value = "";
+            composer.reset();
+            attachedImageData = "";
+            previewThumb.src = "";
+            previewWrap.style.display = "none";
+            if (imageInput) imageInput.value = "";
 
-          renderFeed();
-          Toast.success("Post published.", "Posted");
-        });
+            renderFeed();
+            Toast.success("Post published.", "Posted");
+          });
+        }
 
         renderFeed();
       });

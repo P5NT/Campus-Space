@@ -7,6 +7,11 @@
    Persistence: localStorage under `cs_study_groups`.
    Seeds are merged with stored state on every load — the stored
    state overrides the seed for any group with the same id.
+
+   Notifications emitted (each fires only when the underlying state
+   ACTUALLY changes — idempotent against repeated calls):
+     - On requestJoin()    → the group creator gets "New join request"
+     - On acceptRequest()  → the accepted student gets "Request accepted"
    ========================================================================== */
 "use strict";
 
@@ -14,10 +19,25 @@ const Groups = (() => {
   const KEY = "study_groups";
 
   /* ------------------------------------------------------------------
-     Seed groups — shown to everyone.
-     Each seed has a fictional creator drawn from DEMO_STUDENTS,
-     and a small pre-populated members list so the request/approval
-     flow has something to render.
+     Notifications helper — safe to call even if Notifications.js is not
+     loaded on the current page. Silently skips instead of throwing.
+     ------------------------------------------------------------------ */
+  function emitNotification(payload) {
+    try {
+      if (
+        typeof Notifications !== "undefined" &&
+        typeof Notifications.emit === "function"
+      ) {
+        return Notifications.emit(payload);
+      }
+    } catch (e) {
+      /* swallow — notifications must never break group actions */
+    }
+    return null;
+  }
+
+  /* ------------------------------------------------------------------
+     Seed groups
      ------------------------------------------------------------------ */
   const SEED_GROUPS = [
     {
@@ -160,8 +180,6 @@ const Groups = (() => {
       Store.set(KEY, stored);
       return stored;
     }
-    /* Merge seeds that aren't already stored (e.g. when a new seed is
-       added in code after a user has already visited the page) */
     SEED_GROUPS.forEach((seed) => {
       if (!stored.some((g) => g.id === seed.id)) {
         stored.push(JSON.parse(JSON.stringify(seed)));
@@ -238,20 +256,55 @@ const Groups = (() => {
     return group.createdBy === username;
   }
 
-  /* Returns "member" | "requested" | "none" — the three button states. */
   function membershipState(group, username) {
     if (isMember(group, username)) return "member";
     if (hasRequested(group, username)) return "requested";
     return "none";
   }
 
+  /* ------------------------------------------------------------------
+     Request to join — notify the group creator.
+
+     Idempotent: if the username is already in joinRequests, this is a
+     no-op and does NOT emit a new notification. Only a genuinely new
+     request produces a notification.
+     ------------------------------------------------------------------ */
   function requestJoin(groupId, username) {
     const list = load();
     const g = list.find((x) => x.id === groupId);
     if (!g) return null;
+
     if (!Array.isArray(g.joinRequests)) g.joinRequests = [];
-    if (g.joinRequests.indexOf(username) === -1) g.joinRequests.push(username);
+
+    /* Was this actually a new request? If not, no-op and no emit. */
+    const alreadyRequested = g.joinRequests.indexOf(username) !== -1;
+    if (alreadyRequested) {
+      return g;
+    }
+
+    g.joinRequests.push(username);
     save(list);
+
+    /* Notify the group creator (unless they're requesting their own group) */
+    const creatorUsername = g.createdBy;
+    if (creatorUsername && creatorUsername !== username) {
+      const requesterName = displayName(username) || username;
+      emitNotification({
+        type: "group_join_request",
+        icon: "fa-user-plus",
+        tone: "brand",
+        title: "New join request",
+        body:
+          requesterName +
+          ' wants to join "' +
+          g.name +
+          '". Open the group card to accept or reject.',
+        link: "study-groups.html",
+        audience: { usernames: [creatorUsername], roles: [] },
+        actorUsername: username,
+      });
+    }
+
     return g;
   }
 
@@ -264,13 +317,47 @@ const Groups = (() => {
     return g;
   }
 
+  /* ------------------------------------------------------------------
+     Accept request — notify the requester that they've been added.
+
+     Idempotent: if the username is NOT in joinRequests (already accepted
+     or never requested), this is a no-op and does NOT emit a notification.
+     Clicking Accept 20,000 times produces exactly one notification.
+     ------------------------------------------------------------------ */
   function acceptRequest(groupId, username) {
     const list = load();
     const g = list.find((x) => x.id === groupId);
     if (!g) return null;
-    g.joinRequests = (g.joinRequests || []).filter((u) => u !== username);
+
+    if (!Array.isArray(g.joinRequests)) g.joinRequests = [];
+    if (!Array.isArray(g.members)) g.members = [];
+
+    /* Was this actually a pending request? If not, no-op and no emit. */
+    const wasPending = g.joinRequests.indexOf(username) !== -1;
+    if (!wasPending) {
+      return g;
+    }
+
+    /* Do the mutation */
+    g.joinRequests = g.joinRequests.filter((u) => u !== username);
     if (g.members.indexOf(username) === -1) g.members.push(username);
     save(list);
+
+    /* Notify the accepted student — link them straight into the chat */
+    emitNotification({
+      type: "group_join_accepted",
+      icon: "fa-circle-check",
+      tone: "success",
+      title: "Request accepted",
+      body:
+        "You've been added to \"" +
+        g.name +
+        '". Open the group chat to say hi.',
+      link: "group-chat.html?id=" + encodeURIComponent(g.id),
+      audience: { usernames: [username], roles: [] },
+      actorUsername: g.createdBy,
+    });
+
     return g;
   }
 
@@ -294,13 +381,13 @@ const Groups = (() => {
   }
 
   /* ------------------------------------------------------------------
-     Delete (creator only — soft delete, retained for Admin)
+     Delete
      ------------------------------------------------------------------ */
   function softDelete(groupId, username) {
     const list = load();
     const g = list.find((x) => x.id === groupId);
     if (!g) return null;
-    if (g.createdBy !== username) return null; /* only creator may delete */
+    if (g.createdBy !== username) return null;
     g.deleted = true;
     g.deletedAt = Date.now();
     g.deletedBy = username;
@@ -326,18 +413,15 @@ const Groups = (() => {
     return g && Array.isArray(g.messages) ? g.messages : [];
   }
 
-  /* ------------------------------------------------------------------
-     Message editing and deletion (soft delete for Admin retention)
-     ------------------------------------------------------------------ */
   function editMessage(groupId, messageId, newText) {
     const list = load();
     const g = list.find((x) => x.id === groupId);
     if (!g || !Array.isArray(g.messages)) return null;
     const m = g.messages.find((x) => x.id === messageId);
     if (!m) return null;
-    if (m.type !== "text") return null; // only text messages can be edited
+    if (m.type !== "text") return null;
     if (!m.edited) {
-      m.originalText = m.text; // preserve the original for Admin
+      m.originalText = m.text;
     }
     m.text = newText;
     m.edited = true;
@@ -352,9 +436,7 @@ const Groups = (() => {
     if (!g || !Array.isArray(g.messages)) return null;
     const m = g.messages.find((x) => x.id === messageId);
     if (!m) return null;
-    /* Only the author can delete their own message */
     if (m.author !== username) return null;
-    /* Soft delete — retain for Admin */
     m.deleted = true;
     m.deletedAt = Date.now();
     m.deletedBy = username;
@@ -362,7 +444,6 @@ const Groups = (() => {
     return m;
   }
 
-  /* Visible messages for students — filtered to exclude deleted ones */
   function visibleMessages(groupId) {
     const g = get(groupId);
     if (!g || !Array.isArray(g.messages)) return [];
@@ -370,7 +451,7 @@ const Groups = (() => {
   }
 
   /* ------------------------------------------------------------------
-     Helpers for rendering
+     Helpers
      ------------------------------------------------------------------ */
   function getStudent(username) {
     if (typeof DEMO_STUDENTS === "undefined") return null;
@@ -401,8 +482,8 @@ const Groups = (() => {
     softDelete: softDelete,
     addMessage: addMessage,
     messages: messages,
-    editMessage: editMessage /* NEW */,
-    deleteMessage: deleteMessage /* NEW */,
+    editMessage: editMessage,
+    deleteMessage: deleteMessage,
     visibleMessages: visibleMessages,
     getStudent: getStudent,
     displayName: displayName,

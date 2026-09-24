@@ -118,6 +118,9 @@
         }
         initAppShell("student");
 
+        /* ---- Verification gate ---- */
+        if (!Auth.requireVerifiedStudent()) return;
+
         const grid = document.getElementById("opp-grid");
         const search = document.getElementById("opp-search");
         let cat = "all";

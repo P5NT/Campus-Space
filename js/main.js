@@ -30,6 +30,62 @@ const Store = {
 };
 
 /* -------------------------------------------------------------------------
+   System settings — global access controls set by Super Admin.
+
+   Defaults:
+     - Feature toggles (allow_registration, community_enabled,
+       complaints_enabled) default to ENABLED when a key is missing.
+     - Maintenance mode defaults to DISABLED when a key is missing,
+       because a fresh browser must not be locked out of the app.
+   ------------------------------------------------------------------------- */
+const SystemSettings = {
+  KEY: "system_settings",
+
+  _all() {
+    return Store.get(this.KEY, {}) || {};
+  },
+
+  /* Returns true if the setting is enabled.
+
+     For most toggles, "enabled" means "not explicitly set to false".
+     For maintenance_mode, "enabled" means "explicitly set to true" —
+     a missing or unset key must never lock students out. */
+  isEnabled(key) {
+    var settings = this._all();
+
+    /* maintenance_mode is an "off by default" toggle */
+    if (key === "maintenance_mode") {
+      return settings[key] === true;
+    }
+
+    /* All other toggles are "on by default" */
+    return settings[key] !== false;
+  },
+
+  /* Update a single toggle. Called from admin-controls.html. */
+  set(key, value) {
+    var settings = this._all();
+    settings[key] = value;
+    Store.set(this.KEY, settings);
+  },
+
+  /* Convenience: emit a standard notice element */
+  noticeHtml(message) {
+    return (
+      '<div class="access-disabled-notice">' +
+      '<i class="fa-solid fa-lock"></i>' +
+      "<div>" +
+      "<strong>Feature temporarily unavailable</strong>" +
+      "<p>" +
+      Util.escape(message) +
+      "</p>" +
+      "</div>" +
+      "</div>"
+    );
+  },
+};
+
+/* -------------------------------------------------------------------------
    Toast system
    ------------------------------------------------------------------------- */
 const Toast = (() => {
@@ -91,11 +147,6 @@ const Toast = (() => {
 
 /* -------------------------------------------------------------------------
    Modal system
-   Usage:
-     Modal.open('modal-id');
-     Modal.close('modal-id');
-   Any element with [data-modal-close] inside a modal closes it.
-   Any element with [data-modal-open="id"] opens the matching modal.
    ------------------------------------------------------------------------- */
 const Modal = (() => {
   function open(id) {
@@ -129,7 +180,6 @@ const Modal = (() => {
         if (parent) close(parent.id);
         return;
       }
-      // backdrop click
       if (e.target.classList.contains("modal-backdrop")) close(e.target.id);
     });
     document.addEventListener("keydown", (e) => {
@@ -148,8 +198,6 @@ const Modal = (() => {
 
 /* -------------------------------------------------------------------------
    Confirmation dialog — reusable
-   Confirmation.confirm({ title, message, confirmLabel, variant })
-     returns a Promise<boolean>
    ------------------------------------------------------------------------- */
 const Confirmation = (() => {
   let resolver = null;
@@ -257,8 +305,6 @@ function initDropdowns() {
 
 /* -------------------------------------------------------------------------
    Theme handling
-   Applies the light/dark theme, syncs the icon AND the toggle's on/off
-   state, and persists the choice in localStorage.
    ------------------------------------------------------------------------- */
 const Theme = (() => {
   function apply(theme) {
@@ -270,12 +316,10 @@ const Theme = (() => {
     var isDark = theme === "dark";
 
     document.querySelectorAll("[data-theme-toggle]").forEach(function (btn) {
-      /* Update the icon */
       var icon = btn.querySelector("i");
       if (icon) {
         icon.className = isDark ? "fa-solid fa-sun" : "fa-solid fa-moon";
       }
-      /* Update the toggle's visual state */
       btn.setAttribute("aria-checked", isDark ? "true" : "false");
     });
   }
@@ -302,13 +346,7 @@ const Theme = (() => {
 })();
 
 /* -------------------------------------------------------------------------
-   Mobile menu
-   ------------------------------------------------------------------------- */
-/* -------------------------------------------------------------------------
    Mobile menu — open/close drawer.
-   Uses event delegation on document, so it works even when the header
-   (and its hamburger button) is rendered dynamically AFTER this runs.
-   Safe to call multiple times.
    ------------------------------------------------------------------------- */
 function initMobileMenu() {
   if (document._mobileMenuBound) return;
@@ -351,10 +389,9 @@ function initMobileMenu() {
 
 /* -------------------------------------------------------------------------
    Session inactivity — 30 minutes
-   Simulated client-side session timeout.
    ------------------------------------------------------------------------- */
 const Session = (() => {
-  const TIMEOUT = 30 * 60 * 1000; // 30 minutes
+  const TIMEOUT = 30 * 60 * 1000;
   let timer;
   const ACTIVITY = ["mousemove", "keydown", "click", "scroll", "touchstart"];
 
@@ -391,11 +428,9 @@ const Session = (() => {
    Utility helpers
    ------------------------------------------------------------------------- */
 const Util = {
-  // Format a date into a readable format
   formatDate(d, opts = { day: "numeric", month: "short", year: "numeric" }) {
     return new Date(d).toLocaleDateString("en-GB", opts);
   },
-  // Relative time e.g. "2h ago"
   relativeTime(date) {
     const diff = (Date.now() - new Date(date).getTime()) / 1000;
     if (diff < 60) return "just now";
@@ -404,7 +439,6 @@ const Util = {
     if (diff < 604800) return Math.floor(diff / 86400) + "d ago";
     return Util.formatDate(date);
   },
-  // Initials for avatar fallback
   initials(name) {
     return (name || "")
       .split(" ")
@@ -413,7 +447,6 @@ const Util = {
       .map((p) => p[0].toUpperCase())
       .join("");
   },
-  // Escape HTML entities
   escape(str) {
     return String(str).replace(
       /[&<>"']/g,
@@ -427,7 +460,6 @@ const Util = {
         })[c],
     );
   },
-  // Query helper
   qs: (sel, root = document) => root.querySelector(sel),
   qsa: (sel, root = document) => Array.from(root.querySelectorAll(sel)),
 };
@@ -490,7 +522,7 @@ function highlightActiveNav() {
 }
 
 /* -------------------------------------------------------------------------
-   Simulated network page transitions for demo "loading" feedback
+   Simulated network page transitions
    ------------------------------------------------------------------------- */
 function flashPageTransition() {
   document.documentElement.style.opacity = "0";
@@ -501,8 +533,7 @@ function flashPageTransition() {
 }
 
 /* -------------------------------------------------------------------------
-   Global click interception for demo "coming soon" external links
-   marked with [data-external]
+   External link interception
    ------------------------------------------------------------------------- */
 function initExternalLinks() {
   document.addEventListener("click", (e) => {
@@ -520,9 +551,7 @@ function initExternalLinks() {
 }
 
 /* -------------------------------------------------------------------------
-   Avatar store — persisted in localStorage so the user's uploaded avatar
-   is available to every page (header, sidebar, community, dashboard).
-   Defined here (rather than in profile.js) so all pages can access it.
+   Avatar store
    ------------------------------------------------------------------------- */
 const Avatar = {
   KEY: "user_avatar",
@@ -536,7 +565,6 @@ const Avatar = {
     Store.remove(this.KEY);
   },
 
-  // Apply the avatar to a given element (img or span fallback).
   applyTo(el, initials, size) {
     if (!el) return null;
     const url = this.get();
@@ -581,8 +609,7 @@ const Cover = {
 };
 
 /* -------------------------------------------------------------------------
-   Global avatar sync — applies the saved avatar to every tagged slot
-   in the app (header, sidebar, dashboard, etc.).
+   Global avatar sync
    ------------------------------------------------------------------------- */
 function syncAvatarEverywhere() {
   const session = Auth.current();
@@ -595,7 +622,6 @@ function syncAvatarEverywhere() {
     Avatar.applyTo(el, initials, size);
   });
 
-  // Also patch the standard header-profile and sidebar-user avatars
   document
     .querySelectorAll(".header-profile .avatar, .sidebar-user .avatar")
     .forEach((el) => {
@@ -610,11 +636,8 @@ function syncAvatarEverywhere() {
 
 /* ==========================================================================
    GLOBAL SEARCH — live suggestions in the header.
-   Searches every dataset the student has access to, plus a static index
-   of every page in the app.
    ========================================================================== */
 
-/* Static page index — pages, nav items, and tools the student can access */
 const SEARCH_PAGE_INDEX = [
   {
     title: "Dashboard",
@@ -815,64 +838,53 @@ function initHeaderSearch() {
     const q = query.toLowerCase().trim();
     if (!q) return results;
 
-    /* ---- Students (with leader tags if applicable) ---- */
     if (typeof DEMO_STUDENTS !== "undefined") {
       const leaderMap =
         typeof getLeaderList === "function"
           ? Object.fromEntries(getLeaderList().map((l) => [l.student.id, l]))
           : {};
 
-      /* ---- Students (all registered students) ---- */
-      if (typeof DEMO_STUDENTS !== "undefined") {
-        const leaderMap =
-          typeof getLeaderList === "function"
-            ? Object.fromEntries(getLeaderList().map((l) => [l.student.id, l]))
-            : {};
+      DEMO_STUDENTS.forEach((s) => {
+        if (s.status && s.status !== "active") return;
 
-        DEMO_STUDENTS.forEach((s) => {
-          if (s.status && s.status !== "active") return;
+        const isLeader = !!leaderMap[s.id];
 
-          const isLeader = !!leaderMap[s.id];
+        if (!isLeader && s.searchable === false) return;
 
-          if (!isLeader && s.searchable === false) return;
+        const full = [s.firstName, s.otherName, s.lastName]
+          .filter(Boolean)
+          .join(" ");
+        if (!has(q, full, s.username, s.matric, s.department, s.faculty))
+          return;
 
-          const full = [s.firstName, s.otherName, s.lastName]
-            .filter(Boolean)
-            .join(" ");
-          if (!has(q, full, s.username, s.matric, s.department, s.faculty))
-            return;
+        const currentSession =
+          typeof Auth !== "undefined" ? Auth.current() : null;
+        const isSelf = currentSession && currentSession.username === s.username;
 
-          const currentSession =
-            typeof Auth !== "undefined" ? Auth.current() : null;
-          const isSelf =
-            currentSession && currentSession.username === s.username;
+        const tag = isLeader
+          ? leaderMap[s.id].assoc.acronym + " - " + leaderMap[s.id].pos.name
+          : s.association || "";
 
-          const tag = isLeader
-            ? leaderMap[s.id].assoc.acronym + " - " + leaderMap[s.id].pos.name
-            : s.association || "";
-
-          results.push({
-            type: isSelf ? "You" : isLeader ? "Leader" : "Student",
-            icon: isSelf
-              ? "fa-user-circle"
-              : isLeader
-                ? "fa-user-tie"
-                : "fa-user",
-            title: full,
-            subtitle:
-              "@" + s.username + " - " + s.department + " - " + s.level + "L",
-            tag: tag,
-            href: isSelf
-              ? "profile.html"
-              : isLeader
-                ? "leader-profile.html?id=" + s.id
-                : "student-profile.html?id=" + s.id,
-          });
+        results.push({
+          type: isSelf ? "You" : isLeader ? "Leader" : "Student",
+          icon: isSelf
+            ? "fa-user-circle"
+            : isLeader
+              ? "fa-user-tie"
+              : "fa-user",
+          title: full,
+          subtitle:
+            "@" + s.username + " - " + s.department + " - " + s.level + "L",
+          tag: tag,
+          href: isSelf
+            ? "profile.html"
+            : isLeader
+              ? "leader-profile.html?id=" + s.id
+              : "student-profile.html?id=" + s.id,
         });
-      }
+      });
     }
 
-    /* ---- Courses ---- */
     if (typeof DEMO_COURSES !== "undefined") {
       DEMO_COURSES.forEach((c) => {
         if (!has(q, c.code, c.title, c.lecturer, c.department)) return;
@@ -886,7 +898,6 @@ function initHeaderSearch() {
       });
     }
 
-    /* ---- Academic Resources (timetables, materials, past questions) ---- */
     if (typeof DEMO_RESOURCES !== "undefined") {
       DEMO_RESOURCES.forEach((r) => {
         if (!has(q, r.name, r.course, r.category, r.department)) return;
@@ -900,7 +911,6 @@ function initHeaderSearch() {
       });
     }
 
-    /* ---- Opportunities ---- */
     if (typeof DEMO_OPPORTUNITIES !== "undefined") {
       DEMO_OPPORTUNITIES.forEach((o) => {
         if (!has(q, o.title, o.organization, o.category, o.summary)) return;
@@ -914,7 +924,6 @@ function initHeaderSearch() {
       });
     }
 
-    /* ---- Events ---- */
     if (typeof DEMO_EVENTS !== "undefined") {
       DEMO_EVENTS.forEach((e) => {
         if (!has(q, e.title, e.organizer, e.category, e.location)) return;
@@ -928,7 +937,6 @@ function initHeaderSearch() {
       });
     }
 
-    /* ---- News ---- */
     if (typeof DEMO_NEWS !== "undefined") {
       DEMO_NEWS.forEach((n) => {
         if (!has(q, n.title, n.excerpt, n.category, n.author)) return;
@@ -942,7 +950,6 @@ function initHeaderSearch() {
       });
     }
 
-    /* ---- Announcements ---- */
     if (typeof DEMO_ANNOUNCEMENTS !== "undefined") {
       DEMO_ANNOUNCEMENTS.forEach((a) => {
         if (!has(q, a.title, a.body, a.author, a.affected)) return;
@@ -957,7 +964,6 @@ function initHeaderSearch() {
       });
     }
 
-    /* ---- Community Posts ---- */
     if (
       typeof Community !== "undefined" &&
       typeof Community.all === "function"
@@ -974,7 +980,6 @@ function initHeaderSearch() {
       });
     }
 
-    /* ---- Pages / Navigation ---- */
     SEARCH_PAGE_INDEX.forEach((p) => {
       if (!has(q, p.title, p.sub)) return;
       results.push({
@@ -1102,7 +1107,6 @@ function initHeaderSearch() {
     }
   });
 
-  /* Submit button — navigates to the full search page with the current query */
   const submitBtn = document.getElementById("header-search-submit");
   if (submitBtn) {
     submitBtn.addEventListener("click", function (e) {
@@ -1124,8 +1128,6 @@ function initHeaderSearch() {
     e.stopPropagation();
   });
 }
-
-/* Also: capture the Enter key via the form wrapper if present */
 
 /* -------------------------------------------------------------------------
    Mobile search button
@@ -1166,8 +1168,6 @@ function initSearchButtons() {
 
 /* ==========================================================================
    CUSTOM DROPDOWN (SELECT) — replaces native <select class="select">
-   Provides a themed dropdown list with keyboard support, focus states,
-   and mobile-friendly interaction.
    ========================================================================== */
 function initCustomSelects() {
   document
@@ -1176,18 +1176,19 @@ function initCustomSelects() {
       if (nativeSelect.dataset.customized === "true") return;
       nativeSelect.dataset.customized = "true";
 
-      // Build the visual wrapper
       var wrapper = document.createElement("div");
       wrapper.className = "cselect";
 
-      // Trigger button
+      if (nativeSelect.closest(".modal-backdrop")) {
+        wrapper.classList.add("cselect--in-modal");
+      }
+
       var trigger = document.createElement("button");
       trigger.type = "button";
       trigger.className = "cselect-trigger";
       trigger.setAttribute("aria-haspopup", "listbox");
       trigger.setAttribute("aria-expanded", "false");
       if (nativeSelect.id) {
-        // Associate the label with the trigger for accessibility
         trigger.id = nativeSelect.id + "-trigger";
         var lbl = document.querySelector(
           'label[for="' + nativeSelect.id + '"]',
@@ -1204,35 +1205,48 @@ function initCustomSelects() {
       trigger.appendChild(triggerText);
       trigger.appendChild(triggerIcon);
 
-      // The custom list
       var list = document.createElement("div");
       list.className = "cselect-list";
       list.setAttribute("role", "listbox");
 
-      // Copy options
-      var options = Array.prototype.slice.call(nativeSelect.options);
-      options.forEach(function (opt, idx) {
-        var item = document.createElement("div");
-        item.className = "cselect-option";
-        item.setAttribute("role", "option");
-        item.setAttribute("data-value", opt.value);
-        item.tabIndex = -1;
-        item.textContent = opt.textContent;
-        if (opt.selected || nativeSelect.value === opt.value) {
-          item.classList.add("is-selected");
-        }
-        list.appendChild(item);
+      var options = [];
+
+      function syncOptions() {
+        list.innerHTML = "";
+        var currentOptions = Array.prototype.slice.call(nativeSelect.options);
+        options = currentOptions;
+        currentOptions.forEach(function (opt) {
+          var item = document.createElement("div");
+          item.className = "cselect-option";
+          item.setAttribute("role", "option");
+          item.setAttribute("data-value", opt.value);
+          item.tabIndex = -1;
+          item.textContent = opt.textContent;
+          if (opt.selected || nativeSelect.value === opt.value) {
+            item.classList.add("is-selected");
+          }
+          list.appendChild(item);
+        });
+        updateTriggerText();
+      }
+      syncOptions();
+
+      var selectObserver = new MutationObserver(function () {
+        syncOptions();
+      });
+      selectObserver.observe(nativeSelect, {
+        childList: true,
+        subtree: true,
       });
 
-      // Assemble the wrapper
+      nativeSelect.addEventListener("change", updateTriggerText);
+
       wrapper.appendChild(trigger);
       wrapper.appendChild(list);
 
-      // Insert wrapper right after the native select, then hide the select
       nativeSelect.parentNode.insertBefore(wrapper, nativeSelect.nextSibling);
       nativeSelect.classList.add("cselect-native");
 
-      // ---- Sync helper: reflects the current value into the trigger text ----
       function updateTriggerText() {
         var sel = nativeSelect.options[nativeSelect.selectedIndex];
         triggerText.textContent = sel ? sel.textContent : "";
@@ -1245,15 +1259,12 @@ function initCustomSelects() {
       }
       updateTriggerText();
 
-      // ---- Open / close ----
       function open() {
-        // Close any other open cselects
         document.querySelectorAll(".cselect.is-open").forEach(function (other) {
           if (other !== wrapper) other.classList.remove("is-open");
         });
         wrapper.classList.add("is-open");
         trigger.setAttribute("aria-expanded", "true");
-        // Scroll the selected item into view
         var sel = list.querySelector(".cselect-option.is-selected");
         if (sel) sel.scrollIntoView({ block: "nearest" });
       }
@@ -1272,21 +1283,18 @@ function initCustomSelects() {
         toggle();
       });
 
-      // Option selection
       list.addEventListener("click", function (e) {
         var opt = e.target.closest(".cselect-option");
         if (!opt) return;
         e.preventDefault();
         e.stopPropagation();
         nativeSelect.value = opt.getAttribute("data-value");
-        // Fire change event so listeners on the native select still work
         nativeSelect.dispatchEvent(new Event("change", { bubbles: true }));
         updateTriggerText();
         close();
         trigger.focus({ preventScroll: true });
       });
 
-      // Keyboard support
       wrapper.addEventListener("keydown", function (e) {
         var isOpen = wrapper.classList.contains("is-open");
         var currentIdx = options.findIndex(function (o) {
@@ -1334,14 +1342,53 @@ function initCustomSelects() {
         }
       });
 
-      // External updates to nativeSelect.value reflect back
       nativeSelect.addEventListener("change", updateTriggerText);
 
-      // Click outside closes
       document.addEventListener("click", function (e) {
         if (!wrapper.contains(e.target)) close();
       });
     });
+}
+
+function observeModalsForSelects() {
+  if (document._modalSelectObserver) return;
+  document._modalSelectObserver = true;
+
+  var observer = new MutationObserver(function (mutations) {
+    mutations.forEach(function (m) {
+      if (m.type === "attributes" && m.attributeName === "class") {
+        var el = m.target;
+        if (
+          el.classList.contains("modal-backdrop") &&
+          el.classList.contains("is-open")
+        ) {
+          setTimeout(initCustomSelects, 30);
+        }
+      }
+    });
+  });
+
+  document.querySelectorAll(".modal-backdrop").forEach(function (modal) {
+    observer.observe(modal, { attributes: true, attributeFilter: ["class"] });
+  });
+
+  var bodyObserver = new MutationObserver(function (mutations) {
+    mutations.forEach(function (m) {
+      m.addedNodes.forEach(function (node) {
+        if (
+          node.nodeType === 1 &&
+          node.classList &&
+          node.classList.contains("modal-backdrop")
+        ) {
+          observer.observe(node, {
+            attributes: true,
+            attributeFilter: ["class"],
+          });
+        }
+      });
+    });
+  });
+  bodyObserver.observe(document.body, { childList: true });
 }
 
 /* -------------------------------------------------------------------------
@@ -1355,11 +1402,10 @@ document.addEventListener("DOMContentLoaded", () => {
   initPasswordToggles();
   initExternalLinks();
   initCustomSelects();
+  observeModalsForSelects();
   highlightActiveNav();
 
-  // Start session timer only on pages that are inside the app shell
   if (document.body.classList.contains("has-session")) Session.start();
 
-  // Demo: smooth initial page fade
   flashPageTransition();
 });

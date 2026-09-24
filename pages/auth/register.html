@@ -414,5 +414,23 @@
     <script src="../../js/main.js"></script>
     <script src="../../js/validation.js"></script>
     <script src="../../js/auth.js"></script>
+    <script>
+      /* Block the register form if Super Admin has paused registrations. */
+      document.addEventListener("DOMContentLoaded", function () {
+        if (typeof SystemSettings === "undefined") return;
+        if (SystemSettings.isEnabled("allow_registration")) return;
+
+        var formWrap = document.querySelector(".auth-form-wrap");
+        if (!formWrap) return;
+
+        formWrap.innerHTML =
+          '<h1 class="auth-title">Registrations are paused</h1>' +
+          '<p class="auth-subtitle">New student registrations are temporarily closed. Please check back later, or contact Admin if you believe this is an error.</p>' +
+          '<div class="stack" style="margin-top:24px;">' +
+          '<a class="btn btn-primary btn-block btn-lg" href="login.html"><i class="fa-solid fa-right-to-bracket"></i> Sign in instead</a>' +
+          '<a class="btn btn-secondary btn-block" href="../../index.html"><i class="fa-solid fa-house"></i> Back to home</a>' +
+          "</div>";
+      });
+    </script>
   </body>
 </html>

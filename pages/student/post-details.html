@@ -84,9 +84,19 @@
     <script src="../../js/community.js"></script>
     <script>
       /* ==========================================================================
-   Post details — reads the post and its comments from the Community store,
-   keeps them in sync with the feed, and persists new comments + likes.
-   ========================================================================== */
+         Post details — reads the post and its comments from the Community store,
+         keeps them in sync with the feed, and persists new comments + likes.
+
+         Leader tags (post author and comment authors) are resolved LIVE at
+         render time via Community's resolveTagForAuthor helper, so a
+         newly-assigned leader's old posts and comments pick up their
+         association acronym automatically.
+
+         Notifications:
+           - When a comment is added, the post author gets a
+             "New reply to your post" notification.
+           - Self-comments (author replying to their own post) do not notify.
+         ========================================================================== */
       document.addEventListener("DOMContentLoaded", function () {
         var session = Auth.current();
         if (!session) {
@@ -94,6 +104,28 @@
           return;
         }
         initAppShell("student");
+
+        /* ---- Verification gate ---- */
+        if (Auth.requireVerifiedStudent && !Auth.requireVerifiedStudent())
+          return;
+
+        /* ---- System access gate: commenting ---- */
+        var canComment =
+          typeof SystemSettings === "undefined" ||
+          SystemSettings.isEnabled("community_enabled");
+        if (!canComment) {
+          var commentForm = document.getElementById("comment-form");
+          if (commentForm) {
+            commentForm.outerHTML =
+              '<div class="access-disabled-notice access-disabled-notice--inline">' +
+              '<i class="fa-solid fa-lock"></i>' +
+              "<div>" +
+              "<strong>Commenting is temporarily disabled</strong>" +
+              "<p>Admin has paused new comments. You can still read the conversation above.</p>" +
+              "</div>" +
+              "</div>";
+          }
+        }
 
         var id = new URLSearchParams(location.search).get("id");
         var allPosts = Community.all();
@@ -129,8 +161,70 @@
           return "";
         }
 
+        /* ---- Resolve the live tag for a given handle ----
+           Delegates to the shared helper in community.js so the post and its
+           comments all use the same resolution rules. */
+        function liveTagFor(handle, fallbackTag) {
+          if (typeof resolveTagForAuthor === "function") {
+            return resolveTagForAuthor(handle, fallbackTag);
+          }
+          return fallbackTag || "";
+        }
+
         function commentCount() {
           return Community.countComments(post);
+        }
+
+        /* ---- Emit helper: notify the post author about a new comment ---- */
+        function emitCommentNotification(comment) {
+          if (
+            typeof Notifications === "undefined" ||
+            typeof Notifications.emit !== "function"
+          ) {
+            return;
+          }
+
+          var authorUsername = post.handle;
+          if (!authorUsername) return;
+
+          if (authorUsername === session.username) return;
+
+          var preview =
+            comment.text.length > 90
+              ? comment.text.slice(0, 87) + "…"
+              : comment.text;
+
+          var commenterName = session.name || session.username;
+          var body = commenterName + " replied to your post: " + preview;
+
+          Notifications.emit({
+            type: "comment_reply",
+            icon: "fa-comment-dots",
+            tone: "success",
+            title: "New reply to your post",
+            body: body,
+            link:
+              "post-details.html?id=" +
+              encodeURIComponent(post.id) +
+              "#comment-" +
+              encodeURIComponent(comment.id),
+            audience: { usernames: [authorUsername], roles: [] },
+            actorUsername: session.username,
+          });
+        }
+
+        /* ---- Anchor scroll — if the URL has #comment-<id>, scroll to it ---- */
+        function scrollToCommentFromHash() {
+          var hash = window.location.hash;
+          if (!hash || hash.indexOf("#comment-") !== 0) return;
+          var targetId = hash.slice(1);
+          var node = document.getElementById(targetId);
+          if (!node) return;
+          node.scrollIntoView({ behavior: "smooth", block: "center" });
+          node.classList.add("is-highlighted");
+          setTimeout(function () {
+            node.classList.remove("is-highlighted");
+          }, 2200);
         }
 
         /* ---- Initial layout ---- */
@@ -144,6 +238,9 @@
               '" alt="" style="width:100%; border-radius:10px;"></div>'
             : "";
 
+          /* Post author's tag — resolved live */
+          var postTag = liveTagFor(post.handle, post.tag);
+
           wrap.innerHTML =
             '<article class="card" style="margin-bottom:20px;">' +
             '<div class="card-body">' +
@@ -155,7 +252,7 @@
             '<div class="post-author-name">' +
             Util.escape(post.author) +
             " " +
-            tagHtmlFor(post.tag) +
+            tagHtmlFor(postTag) +
             "</div>" +
             '<div class="post-author-handle">@' +
             Util.escape(post.handle) +
@@ -231,6 +328,11 @@
           post.comments.forEach(function (c) {
             var el = document.createElement("div");
             el.className = "comment";
+            el.id = "comment-" + c.id;
+
+            /* Comment author's tag — resolved live */
+            var commentTag = liveTagFor(c.handle, c.tag);
+
             el.innerHTML =
               '<span class="avatar avatar-32 avatar-fallback">' +
               Util.initials(c.author || c.name) +
@@ -243,7 +345,7 @@
               '<span class="handle">@' +
               Util.escape(c.handle) +
               "</span>" +
-              tagHtmlFor(c.tag) +
+              tagHtmlFor(commentTag) +
               '<span class="handle" style="margin-left:auto;">' +
               Util.relativeTime(c.time) +
               "</span>" +
@@ -322,7 +424,7 @@
               var text = input.value.trim();
               if (!text) return;
 
-              /* Build the new comment */
+              /* Build the new comment — tag left blank, resolved live on render */
               var newComment = {
                 id: "c" + Date.now(),
                 author: session.name || session.username,
@@ -332,7 +434,6 @@
                 text: text,
               };
 
-              /* Push to the post's comments array and persist */
               post.comments.push(newComment);
               var stored = Community.all();
               var target = stored.find(function (p) {
@@ -346,11 +447,12 @@
               input.value = "";
               renderComments();
 
-              /* Update both count displays */
               var hdr = document.getElementById("comments-header-count");
               var badge = document.getElementById("detail-comment-count");
               if (hdr) hdr.textContent = commentCount();
               if (badge) badge.textContent = commentCount();
+
+              emitCommentNotification(newComment);
 
               Toast.success("Comment posted.", "Posted");
             });
@@ -358,6 +460,7 @@
         }
 
         renderShell();
+        scrollToCommentFromHash();
       });
     </script>
   </body>

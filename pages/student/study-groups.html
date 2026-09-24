@@ -205,7 +205,22 @@
         }
         initAppShell("student");
 
+        /* ---- Verification gate ---- */
+        if (!Auth.requireVerifiedStudent()) return;
+
+        /* ------------------------------------------------------------------
+           Identify the current student and their username
+           (declared FIRST so everything below can use them)
+           ------------------------------------------------------------------ */
         var me = session.username;
+
+        var student = DEMO_STUDENTS.find(function (s) {
+          return s.username === session.username;
+        });
+        if (!student) {
+          Toast.error("Could not load your student record.", "Error");
+          return;
+        }
 
         /* ------------------------------------------------------------------
            DOM refs
@@ -216,20 +231,33 @@
         var countEl = document.getElementById("sg-count");
 
         /* ------------------------------------------------------------------
-           Course dropdown — allow ALL courses
+           Course dropdown — scoped to the student's own department + level
            ------------------------------------------------------------------ */
         var courseSelect = document.getElementById("cg-course");
         if (courseSelect && typeof DEMO_COURSES !== "undefined") {
-          DEMO_COURSES.slice()
-            .sort(function (a, b) {
-              return a.code.localeCompare(b.code);
-            })
-            .forEach(function (c) {
+          var myCourses = DEMO_COURSES.filter(function (c) {
+            return (
+              c.department === student.department && c.level === student.level
+            );
+          }).sort(function (a, b) {
+            return a.code.localeCompare(b.code);
+          });
+
+          if (myCourses.length) {
+            myCourses.forEach(function (c) {
               var opt = document.createElement("option");
               opt.value = c.code;
               opt.textContent = c.code + " — " + c.title;
               courseSelect.appendChild(opt);
             });
+          } else {
+            var emptyOpt = document.createElement("option");
+            emptyOpt.value = "";
+            emptyOpt.disabled = true;
+            emptyOpt.textContent =
+              "No courses listed for your department and level yet";
+            courseSelect.appendChild(emptyOpt);
+          }
         }
 
         /* ------------------------------------------------------------------
@@ -257,7 +285,6 @@
           var isCreator = Groups.isCreator(g, me);
           var creatorName = Groups.displayName(g.createdBy);
 
-          /* --- Top row: course badge + Group Admin badge (if creator) --- */
           var topRow =
             '<div class="cluster" style="margin-bottom:12px;">' +
             '<span class="qa-icon marine"><i class="fa-solid fa-users"></i></span>' +
@@ -269,7 +296,6 @@
               : "") +
             "</div>";
 
-          /* --- Title + creator line --- */
           var titleHtml =
             '<h3 style="font-size:var(--fs-md); margin-bottom:6px;">' +
             Util.escape(g.name) +
@@ -285,7 +311,6 @@
             timeAgo(g.createdAt) +
             "</div>";
 
-          /* --- Meta block --- */
           var metaHtml =
             '<div class="stack" style="font-size:var(--fs-xs); color:var(--text-tertiary); gap:6px; margin-bottom:16px;">' +
             '<div><i class="fa-solid fa-location-dot"></i> ' +
@@ -299,7 +324,6 @@
             "</div>" +
             "</div>";
 
-          /* --- Action button --- */
           var actionHtml = "";
           if (isCreator) {
             actionHtml =
@@ -332,7 +356,6 @@
               "</button>";
           }
 
-          /* --- Creator's request inbox --- */
           var requestsHtml = "";
           if (isCreator && (g.joinRequests || []).length) {
             requestsHtml =
@@ -391,7 +414,6 @@
             actionHtml +
             requestsHtml;
 
-          /* ---- Bind: Request Join ---- */
           var reqBtn = card.querySelector("[data-request-join]");
           if (reqBtn) {
             reqBtn.addEventListener("click", function () {
@@ -404,7 +426,6 @@
             });
           }
 
-          /* ---- Bind: Cancel Request ---- */
           var cancelBtn = card.querySelector("[data-cancel-request]");
           if (cancelBtn) {
             cancelBtn.addEventListener("click", function () {
@@ -414,7 +435,6 @@
             });
           }
 
-          /* ---- Bind: Delete Group (creator only) ---- */
           var delBtn = card.querySelector("[data-delete-group]");
           if (delBtn) {
             delBtn.addEventListener("click", async function () {
@@ -434,7 +454,6 @@
             });
           }
 
-          /* ---- Bind: Accept / Reject requests ---- */
           card.querySelectorAll("[data-req-user]").forEach(function (row) {
             var username = row.getAttribute("data-req-user");
             var accept = row.querySelector("[data-accept]");
@@ -466,7 +485,7 @@
            Render all cards (with search + filter)
            ------------------------------------------------------------------ */
         function render() {
-          var list = Groups.all(); // non-deleted only
+          var list = Groups.all();
           var q = (searchEl.value || "").trim().toLowerCase();
           var filter = filterEl.value;
 
@@ -516,7 +535,6 @@
           countEl.textContent =
             list.length + " group" + (list.length === 1 ? "" : "s");
 
-          /* Pending requests banner — shown to creators who have pending requests */
           renderPendingBanner();
         }
 
@@ -567,8 +585,6 @@
               course: [Rules.required],
             },
             function (data) {
-              /* Look up the selected course to derive dept + level for the
-                 group's own metadata, so Admin can filter by dept later. */
               var courseCode = data.get("course");
               var course =
                 typeof DEMO_COURSES !== "undefined"

@@ -1,6 +1,10 @@
 /* ==========================================================================
    CAMPUS SPACE — community.js
    Community feed: posts, comments, likes, reports.
+
+   Leader tags are resolved LIVE at render time — a newly-assigned leader's
+   old posts and comments automatically pick up their association acronym
+   without needing any data migration.
    ========================================================================== */
 "use strict";
 
@@ -163,9 +167,6 @@ const Community = (() => {
         },
       ],
     },
-
-    /* ---- DEMO REPORTS — posts with a reported flag and reason ----
-       These give the admin moderation page real content to work with. */
     {
       id: "p6",
       author: "Grace Oladipo",
@@ -226,7 +227,7 @@ const Community = (() => {
       id: "p" + Date.now(),
       author: session.name || session.username,
       handle: session.username,
-      tag: "",
+      tag: "" /* tag resolved live at render — no longer stored */,
       initials: Util.initials(session.name || session.username),
       time: Date.now(),
       text: text || "",
@@ -260,8 +261,6 @@ const Community = (() => {
     save(posts);
   }
 
-  /* Compute the number of comments: live array length if present,
-     otherwise the seeded count. */
   function countComments(post) {
     if (Array.isArray(post.comments))
       return post.comments.length || post.commentCount || 0;
@@ -284,7 +283,6 @@ const Community = (() => {
     return true;
   }
 
-  /* Returns all reported posts, sorted by report date (newest first). */
   function reported() {
     return all()
       .filter(function (p) {
@@ -295,19 +293,16 @@ const Community = (() => {
       });
   }
 
-  /* Mark a report as resolved or dismissed. The post stays in the feed
-     unless hide/delete is called separately. */
   function resolveReport(id, resolution) {
     const posts = all();
     const p = posts.find((x) => x.id === id);
     if (!p) return false;
-    p.reportStatus = resolution; // "resolved" | "dismissed"
+    p.reportStatus = resolution;
     p.reportResolvedAt = Date.now();
     save(posts);
     return true;
   }
 
-  /* Hide a post from student feeds. It remains visible to Admin. */
   function hide(id) {
     const posts = all();
     const p = posts.find((x) => x.id === id);
@@ -333,6 +328,47 @@ const Community = (() => {
 })();
 
 /* -------------------------------------------------------------------------
+   LIVE LEADER TAG RESOLVER
+
+   Returns the public tag that should appear next to a given author's
+   name. Uses the LIVE leaders store so a newly-assigned leader's old
+   posts and comments immediately pick up their association acronym.
+
+   Order of precedence:
+     1. Admin handles → "ADMIN"
+     2. Live leaders   → association acronym (e.g. "NACOS")
+     3. Everyone else  → ""
+   ------------------------------------------------------------------------- */
+function resolveTagForAuthor(handle, fallbackTag) {
+  if (!handle) return fallbackTag || "";
+
+  /* Admin detection — admin handles are prefixed "admin." or are "superadmin" */
+  var isAdminHandle =
+    handle === "superadmin" ||
+    handle === "admin" ||
+    handle.indexOf("admin.") === 0;
+  if (isAdminHandle) return "ADMIN";
+
+  /* Live leader lookup — overrides any stored tag */
+  if (typeof getLeaderList === "function") {
+    try {
+      var leaders = getLeaderList();
+      var match = leaders.find(function (l) {
+        return l.student && l.student.username === handle;
+      });
+      if (match && match.assoc && match.assoc.acronym) {
+        return match.assoc.acronym;
+      }
+    } catch (e) {
+      /* fall through to stored tag if the leaders module hiccups */
+    }
+  }
+
+  /* Nothing live matched — fall back to the stored tag if present */
+  return fallbackTag || "";
+}
+
+/* -------------------------------------------------------------------------
    Post renderer
    ------------------------------------------------------------------------- */
 function renderPost(post, { linkToDetails = true } = {}) {
@@ -340,11 +376,13 @@ function renderPost(post, { linkToDetails = true } = {}) {
   el.className = "post-card";
   el.dataset.postId = post.id;
 
+  /* Resolve the author's tag live — a new leader's old posts update instantly */
+  const liveTag = resolveTagForAuthor(post.handle, post.tag);
   const tagHtml =
-    post.tag === "ADMIN"
+    liveTag === "ADMIN"
       ? '<span class="tag-admin"><i class="fa-solid fa-shield-halved"></i> Admin</span>'
-      : post.tag
-        ? `<span class="tag-leader">${Util.escape(post.tag)}</span>`
+      : liveTag
+        ? `<span class="tag-leader">${Util.escape(liveTag)}</span>`
         : "";
 
   const currentSession = Auth.current();
@@ -405,7 +443,6 @@ function renderPost(post, { linkToDetails = true } = {}) {
       </button>
     </div>`;
 
-  /* ---- Like ---- */
   el.querySelector('[data-action="like"]').addEventListener("click", (e) => {
     Community.toggleLike(post.id);
     e.currentTarget.classList.toggle("is-liked");
@@ -418,7 +455,6 @@ function renderPost(post, { linkToDetails = true } = {}) {
       : parseInt(span.textContent, 10) - 1;
   });
 
-  /* ---- Share + Copy: same action, both copy the URL ---- */
   function copyPostLink() {
     const url = new URL(
       "post-details.html?id=" + encodeURIComponent(post.id),
@@ -457,7 +493,6 @@ function renderPost(post, { linkToDetails = true } = {}) {
     copyPostLink,
   );
 
-  /* ---- Report (only exists for posts you don't own) ---- */
   const reportBtn = el.querySelector('[data-action="report"]');
   if (reportBtn) {
     reportBtn.addEventListener("click", () => {

@@ -48,29 +48,23 @@
   <body class="has-session">
     <a href="#main" class="skip-link">Skip to main content</a>
 
-    <!-- =====================================================================
-     App shell
-     ===================================================================== -->
     <div class="app-shell">
-      <!-- Sidebar (populated by navigation.js) -->
       <aside
         class="sidebar"
         id="app-sidebar"
         aria-label="Sidebar navigation"
       ></aside>
-
-      <!-- Main column -->
       <div class="app-main">
-        <!-- Header -->
         <header class="app-header" id="app-header"></header>
-
-        <!-- Content -->
         <main class="app-content" id="main">
           <!-- Greeting -->
           <div class="dashboard-greeting">
             <h1 id="greeting">Welcome Back, @student</h1>
             <p>Here's what's happening in your campus space today.</p>
           </div>
+
+          <!-- Pending verification banner (shown only when unverified) -->
+          <div id="pending-banner-mount"></div>
 
           <!-- Hero row -->
           <div class="dash-hero" style="margin-bottom: 32px">
@@ -103,9 +97,7 @@
 
           <!-- Dashboard grid -->
           <div class="dash-grid">
-            <!-- Main column -->
             <div class="dash-col-main stack-lg">
-              <!-- Quick actions -->
               <section>
                 <div class="cluster-between" style="margin-bottom: 16px">
                   <h2 style="font-size: var(--fs-lg)">Quick actions</h2>
@@ -156,7 +148,6 @@
                 </div>
               </section>
 
-              <!-- Announcements -->
               <section>
                 <div class="cluster-between" style="margin-bottom: 16px">
                   <h2 style="font-size: var(--fs-lg)">Latest announcements</h2>
@@ -167,7 +158,6 @@
                 <div id="dashboard-announcements" class="stack"></div>
               </section>
 
-              <!-- Community activity -->
               <section>
                 <div class="cluster-between" style="margin-bottom: 16px">
                   <h2 style="font-size: var(--fs-lg)">
@@ -181,9 +171,7 @@
               </section>
             </div>
 
-            <!-- Side column -->
             <aside class="dash-col-side">
-              <!-- Academic resources -->
               <div class="card">
                 <div class="card-head">
                   <h3>New resources</h3>
@@ -206,7 +194,6 @@
                 </div>
               </div>
 
-              <!-- Notifications preview -->
               <div class="card">
                 <div class="card-head">
                   <h3>Notifications</h3>
@@ -221,7 +208,6 @@
                 <div id="dashboard-notifications"></div>
               </div>
 
-              <!-- Immediate response teaser -->
               <div
                 class="card card-pad"
                 style="border-color: rgba(192, 57, 43, 0.25)"
@@ -257,10 +243,7 @@
       </div>
     </div>
 
-    <!-- Mobile bottom nav mount -->
     <div id="mobile-nav-mount"></div>
-
-    <!-- Mobile menu drawer -->
     <div class="mobile-menu-backdrop"></div>
     <aside
       class="mobile-menu"
@@ -268,7 +251,6 @@
       aria-label="Mobile menu"
     ></aside>
 
-    <!-- Scripts -->
     <script src="../../data/students.js"></script>
     <script src="../../data/pending-announcements.js"></script>
     <script src="../../data/courses.js"></script>
@@ -286,9 +268,6 @@
     <script src="../../js/academics.js"></script>
     <script src="../../js/leaders.js"></script>
     <script>
-      /* ==========================================================================
-   Dashboard page init
-   ========================================================================== */
       document.addEventListener("DOMContentLoaded", () => {
         const session = Auth.current();
         if (!session) {
@@ -296,25 +275,28 @@
           return;
         }
 
-        /* Resolve the current student's record.
-           Works for regular students AND student admins viewing
-           their student account (looked up by studentId when available). */
         const student =
-          typeof DEMO_STUDENTS !== "undefined"
-            ? DEMO_STUDENTS.find(
+          typeof getAllStudentsForAuth === "function"
+            ? getAllStudentsForAuth().find(
                 (s) =>
                   s.id === session.studentId || s.username === session.username,
-              ) || null
-            : null;
+              )
+            : typeof DEMO_STUDENTS !== "undefined"
+              ? DEMO_STUDENTS.find(
+                  (s) =>
+                    s.id === session.studentId ||
+                    s.username === session.username,
+                )
+              : null;
 
-        // Personalised greeting — username only (per spec)
         const greeting = document.getElementById("greeting");
         greeting.textContent = "Welcome Back, @" + session.username;
 
-        // Build the app shell
         initAppShell("student");
 
-        // Show unauthorized notice if redirected
+        /* ---- Pending verification banner ---- */
+        renderPendingBanner(session, student);
+
         if (new URLSearchParams(location.search).get("unauthorized") === "1") {
           Toast.warning(
             "You do not have permission to view that page.",
@@ -322,27 +304,27 @@
           );
         }
 
-        // ---- Announcements preview ----
+        /* ---- Announcements preview ---- */
         const annWrap = document.getElementById("dashboard-announcements");
         DEMO_ANNOUNCEMENTS.slice(0, 2).forEach((a) => {
           const el = document.createElement("div");
           el.className = "announcement" + (a.important ? " is-important" : "");
           el.innerHTML = `
-      <div class="announcement-head">
-        <i class="fa-solid fa-bullhorn" style="color:var(--brand-secondary);"></i>
-        <strong style="font-size:var(--fs-sm);">${Util.escape(a.author)}</strong>
-        ${a.important ? '<span class="badge badge-brand">Important</span>' : ""}
-        <span class="badge badge-neutral" style="margin-left:auto;">${Util.relativeTime(a.date)}</span>
-      </div>
-      <h3>${Util.escape(a.title)}</h3>
-      <p>${Util.escape(a.body.split("\n")[0])}</p>
-      <div class="announcement-foot">
-        <a href="announcements.html" class="btn btn-ghost btn-sm">Read more <i class="fa-solid fa-arrow-right"></i></a>
-      </div>`;
+            <div class="announcement-head">
+              <i class="fa-solid fa-bullhorn" style="color:var(--brand-secondary);"></i>
+              <strong style="font-size:var(--fs-sm);">${Util.escape(a.author)}</strong>
+              ${a.important ? '<span class="badge badge-brand">Important</span>' : ""}
+              <span class="badge badge-neutral" style="margin-left:auto;">${Util.relativeTime(a.date)}</span>
+            </div>
+            <h3>${Util.escape(a.title)}</h3>
+            <p>${Util.escape(a.body.split("\n")[0])}</p>
+            <div class="announcement-foot">
+              <a href="announcements.html" class="btn btn-ghost btn-sm">Read more <i class="fa-solid fa-arrow-right"></i></a>
+            </div>`;
           annWrap.appendChild(el);
         });
 
-        // ---- Community preview ----
+        /* ---- Community preview ---- */
         const commWrap = document.getElementById("dashboard-community");
         const posts = [
           {
@@ -380,34 +362,24 @@
           el.style.border = "0";
           el.style.borderBottom = "1px solid var(--border-subtle)";
           el.innerHTML = `
-      <div class="post-head">
-        <span class="avatar avatar-40 avatar-fallback">${Util.initials(p.name)}</span>
-        <div class="post-author">
-          <div class="post-author-name">
-            ${Util.escape(p.name)}
-            ${
-              p.tag === "ADMIN"
-                ? '<span class="tag-admin"><i class="fa-solid fa-shield-halved"></i> Admin</span>'
-                : p.tag
-                  ? `<span class="tag-leader">${Util.escape(p.tag)}</span>`
-                  : ""
-            }
-          </div>
-          <div class="post-author-handle">@${Util.escape(p.handle)} · ${Util.relativeTime(p.time)}</div>
-        </div>
-      </div>
-      <div class="post-body truncate">${Util.escape(p.text)}</div>`;
+            <div class="post-head">
+              <span class="avatar avatar-40 avatar-fallback">${Util.initials(p.name)}</span>
+              <div class="post-author">
+                <div class="post-author-name">
+                  ${Util.escape(p.name)}
+                  ${p.tag === "ADMIN" ? '<span class="tag-admin"><i class="fa-solid fa-shield-halved"></i> Admin</span>' : p.tag ? `<span class="tag-leader">${Util.escape(p.tag)}</span>` : ""}
+                </div>
+                <div class="post-author-handle">@${Util.escape(p.handle)} · ${Util.relativeTime(p.time)}</div>
+              </div>
+            </div>
+            <div class="post-body truncate">${Util.escape(p.text)}</div>`;
           commWrap.appendChild(el);
         });
 
-        // ---- Academic resources preview ----
-        // Shows the latest resources including any structured ones (calendar).
+        /* ---- Academic resources preview ---- */
         const resWrap = document.getElementById("dashboard-resources");
-
-        // Build a merged list: structured calendar (if published) + latest file resources
         const structuredItems = [];
 
-        // Structured Academic Calendar — appears first if admin has published events
         if (typeof CalendarAdmin !== "undefined") {
           const split = CalendarAdmin.getSplitEvents("2026/2027");
           const total =
@@ -426,7 +398,6 @@
           }
         }
 
-        // Structured Lecture/Exam Timetables for this student's audience
         if (typeof TimetableAdmin !== "undefined" && student) {
           const lt = TimetableAdmin.getMergedLectureTimetables().find(
             (t) =>
@@ -472,7 +443,6 @@
           }
         }
 
-        // File resources (latest 3, but leave room for the structured ones)
         const fileItems = (
           typeof DEMO_RESOURCES !== "undefined" ? DEMO_RESOURCES : []
         )
@@ -493,9 +463,7 @@
 
         if (!combined.length) {
           resWrap.innerHTML =
-            '<div style="padding:24px; text-align:center; color:var(--text-tertiary); font-size:var(--fs-sm);">' +
-            "No resources yet." +
-            "</div>";
+            '<div style="padding:24px; text-align:center; color:var(--text-tertiary); font-size:var(--fs-sm);">No resources yet.</div>';
         }
 
         combined.forEach((item) => {
@@ -503,31 +471,29 @@
           el.className = "resource-row";
           el.style.padding = "12px 20px";
           el.innerHTML = `
-              <div class="resource-icon ${item.iconBg}"><i class="fa-solid ${item.icon}"></i></div>
-              <div class="resource-info">
-                <div class="resource-name" title="${Util.escape(item.name)}">${Util.escape(item.name)}</div>
-                <div class="resource-meta"><span>${Util.escape(item.meta)}</span></div>
-              </div>
-              <button class="btn-icon" aria-label="Open ${Util.escape(item.name)}">
-                <i class="fa-solid ${item.isStructured ? "fa-arrow-right" : "fa-download"}"></i>
-              </button>`;
+            <div class="resource-icon ${item.iconBg}"><i class="fa-solid ${item.icon}"></i></div>
+            <div class="resource-info">
+              <div class="resource-name" title="${Util.escape(item.name)}">${Util.escape(item.name)}</div>
+              <div class="resource-meta"><span>${Util.escape(item.meta)}</span></div>
+            </div>
+            <button class="btn-icon" aria-label="Open ${Util.escape(item.name)}">
+              <i class="fa-solid ${item.isStructured ? "fa-arrow-right" : "fa-download"}"></i>
+            </button>`;
 
           el.querySelector("button").addEventListener("click", () => {
             if (item.isStructured && item.href) {
               window.location.href = item.href;
             } else if (item.raw) {
-              if (typeof downloadResourceFile === "function") {
+              if (typeof downloadResourceFile === "function")
                 downloadResourceFile(item.raw);
-              } else {
-                Toast.success("Download started.", "Downloading");
-              }
+              else Toast.success("Download started.", "Downloading");
             }
           });
 
           resWrap.appendChild(el);
         });
 
-        // ---- Notifications preview ----
+        /* ---- Notifications preview ---- */
         const notifWrap = document.getElementById("dashboard-notifications");
         const notifs = Notifications.all().slice(0, 3);
         if (!notifs.length) {
@@ -539,20 +505,83 @@
             el.className = "notif-item" + (n.read ? "" : " is-unread");
             el.style.padding = "14px 20px";
             el.innerHTML = `
-        <div class="notif-icon ${n.tone || "brand"}"><i class="fa-solid ${n.icon}"></i></div>
-        <div class="notif-body">
-          <h4>${Util.escape(n.title)}</h4>
-          <p>${Util.escape(n.body)}</p>
-          <time>${Util.relativeTime(n.time)}</time>
-        </div>`;
+              <div class="notif-icon ${n.tone || "brand"}"><i class="fa-solid ${n.icon}"></i></div>
+              <div class="notif-body">
+                <h4>${Util.escape(n.title)}</h4>
+                <p>${Util.escape(n.body)}</p>
+                <time>${Util.relativeTime(n.time)}</time>
+              </div>`;
             notifWrap.appendChild(el);
           });
         }
       });
 
-      /* ============================================================
+      /* ==========================================================================
+         Pending verification banner
+         Shows a friendly notice when the student's account hasn't been
+         verified by Admin yet. Disappears automatically once verified.
+         ========================================================================== */
+      function renderPendingBanner(session, student) {
+        var mount = document.getElementById("pending-banner-mount");
+        if (!mount) return;
+
+        /* Only students can be pending. Admins are always verified. */
+        if (session.role === "admin" || session.role === "super_admin") return;
+
+        var status = "verified";
+        if (typeof Auth !== "undefined" && Auth.verificationStatus) {
+          status = Auth.verificationStatus() || "pending";
+        } else if (student) {
+          status = student.verificationStatus || "verified";
+        }
+
+        if (status === "verified") {
+          mount.innerHTML = "";
+          return;
+        }
+
+        var isRejected = status === "rejected";
+        var title = isRejected
+          ? "Your student verification was rejected"
+          : "Your account is pending verification";
+        var body = isRejected
+          ? "Admin reviewed your student details and rejected them. Please contact Admin to resolve this before accessing restricted features."
+          : "Thanks for signing up! Admin is reviewing your student details. You can already explore Academics, Announcements, and Immediate Response while you wait — Community, Complaints, Study Groups, and other write features unlock the moment your account is verified.";
+        var icon = isRejected ? "fa-user-slash" : "fa-hourglass-half";
+        var accent = isRejected ? "var(--danger)" : "var(--warning)";
+        var accentSoft = isRejected
+          ? "var(--danger-soft)"
+          : "var(--warning-soft)";
+
+        mount.innerHTML =
+          '<div class="pending-banner" style="border-left-color:' +
+          accent +
+          "; background:" +
+          accentSoft +
+          '; margin-bottom: 28px;">' +
+          '<div class="pending-banner-icon" style="background:' +
+          accent +
+          '; color: #fff;"><i class="fa-solid ' +
+          icon +
+          '"></i></div>' +
+          '<div class="pending-banner-body">' +
+          "<h3>" +
+          title +
+          "</h3>" +
+          "<p>" +
+          body +
+          "</p>" +
+          '<div class="pending-banner-actions">' +
+          '<a class="btn btn-secondary btn-sm" href="help-support.html"><i class="fa-solid fa-circle-question"></i> Get help</a>' +
+          '<a class="btn btn-ghost btn-sm" href="immediate-response.html"><i class="fa-solid fa-circle-exclamation"></i> Immediate Response</a>' +
+          "</div>" +
+          "</div>" +
+          "</div>";
+      }
+
+      /* ==========================================================================
    Leader-only: Send urgent message to Admin
-   ============================================================ */
+   ========================================================================== */
       (function () {
         const session = Auth.current();
         if (!session) return;
@@ -561,13 +590,18 @@
           typeof DEMO_STUDENTS !== "undefined"
             ? DEMO_STUDENTS.find((s) => s.username === session.username)
             : null;
-        if (!student || !student.isLeader) return;
 
-        // Find the greeting area to inject the button
+        /* Live leader lookup — uses the leaders store, not the stale seed flag */
+        const liveLeader =
+          student && typeof getLeaderById === "function"
+            ? getLeaderById(student.id, { includeInactive: false })
+            : null;
+
+        if (!student || !liveLeader) return;
+
         const greeting = document.querySelector(".dashboard-greeting");
         if (!greeting) return;
 
-        // Build the action button
         const wrap = document.createElement("div");
         wrap.style.marginTop = "12px";
         wrap.innerHTML =
@@ -576,13 +610,8 @@
           "</button>";
         greeting.appendChild(wrap);
 
-        // Find leader info for pre-filling source
-        const lInfo =
-          typeof getLeaderList === "function"
-            ? getLeaderList().find((l) => l.student.id === student.id)
-            : null;
+        const lInfo = liveLeader;
 
-        // Build the modal (once)
         if (!document.getElementById("leader-message-modal")) {
           const modal = document.createElement("div");
           modal.className = "modal-backdrop";
@@ -637,16 +666,13 @@
             "</div>";
           document.body.appendChild(modal);
 
-          // Open modal
           document
             .getElementById("open-leader-message")
             .addEventListener("click", function () {
               Modal.open("leader-message-modal");
-              // Refresh custom selects inside the modal (it just got added to the DOM)
               if (typeof initCustomSelects === "function") initCustomSelects();
             });
 
-          // Submit handler
           var form = document.getElementById("leader-message-form");
           bindForm(
             form,
@@ -685,7 +711,6 @@
               if (typeof submitPendingAnnouncement === "function") {
                 submitPendingAnnouncement(entry);
               } else {
-                // Fallback if the helper isn't loaded
                 var list = Store.get("pending_announcements", []) || [];
                 list.unshift(entry);
                 Store.set("pending_announcements", list);

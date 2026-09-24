@@ -261,55 +261,21 @@
               </div>
             </div>
 
-            <div class="field">
-              <label class="label" for="aa-password"
-                >Temporary password <span class="req">*</span></label
-              >
-              <div class="input-wrap">
-                <i class="fa-solid fa-lock input-icon"></i>
-                <input
-                  class="input"
-                  type="password"
-                  id="aa-password"
-                  name="password"
-                  autocomplete="new-password"
-                  style="padding-right: 44px"
-                />
-                <button
-                  type="button"
-                  class="input-suffix"
-                  data-toggle-password="aa-password"
-                  aria-label="Show password"
+            <!-- ==========================================================
+                 Password is auto-generated. No manual input field.
+                 ========================================================== -->
+            <div class="password-auto-notice">
+              <i class="fa-solid fa-key" aria-hidden="true"></i>
+              <div>
+                <strong
+                  >A secure password will be generated automatically</strong
                 >
-                  <i class="fa-solid fa-eye"></i>
-                </button>
-              </div>
-              <div class="pw-strength" data-level="0">
-                <span></span><span></span><span></span><span></span>
-              </div>
-              <ul class="pw-reqs">
-                <li data-req="length">
-                  <i class="fa-solid fa-xmark"></i> At least 8 characters
-                </li>
-                <li data-req="upper">
-                  <i class="fa-solid fa-xmark"></i> One uppercase letter
-                </li>
-                <li data-req="lower">
-                  <i class="fa-solid fa-xmark"></i> One lowercase letter
-                </li>
-                <li data-req="number">
-                  <i class="fa-solid fa-xmark"></i> One number
-                </li>
-                <li data-req="special">
-                  <i class="fa-solid fa-xmark"></i> One special character
-                </li>
-              </ul>
-              <div class="field-help">
-                The new admin will be prompted to change this on first login.
-              </div>
-              <div class="field-error">
-                <i class="fa-solid fa-circle-exclamation"></i
-                ><span>Password does not meet requirements.</span>
+                <p>
+                  It will be shown <strong>once</strong> after you create the
+                  account, and included in the invite email. For security, it
+                  cannot be retrieved later — the admin can change it from their
+                  own Settings after first sign-in.
+                </p>
               </div>
             </div>
           </div>
@@ -368,7 +334,7 @@
       aria-modal="true"
       aria-labelledby="invite-title"
     >
-      <div class="modal">
+      <div class="modal modal-lg">
         <div class="modal-head">
           <h3 id="invite-title">Admin created</h3>
           <button class="btn-icon" data-modal-close aria-label="Close">
@@ -416,6 +382,11 @@
 
          Audit trail:
            - cs_admin_audit — array of actions taken by the Super Admin
+
+         Password flow:
+           - Passwords are auto-generated on submit (12 chars, mixed).
+           - Shown ONCE in the invite modal and included in the invite email.
+           - Never stored in plain text beyond localStorage demo scope.
          ========================================================================== */
       document.addEventListener("DOMContentLoaded", function () {
         var session = Auth.current();
@@ -517,6 +488,40 @@
 
         function getAudit() {
           return Store.get(AUDIT_KEY, []) || [];
+        }
+
+        /* ------------------------------------------------------------------
+           PASSWORD GENERATOR
+           Produces a 12-char password that satisfies:
+             - at least 1 uppercase
+             - at least 1 lowercase
+             - at least 1 number
+             - at least 1 special
+           Character sets avoid ambiguous glyphs (0/O, 1/l/I).
+           ------------------------------------------------------------------ */
+        function generatePassword() {
+          var upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+          var lower = "abcdefghijkmnpqrstuvwxyz";
+          var digits = "23456789";
+          var special = "!@#$%&*?";
+          var all = upper + lower + digits + special;
+          var pw = "";
+          // Guarantee one of each class
+          pw += upper.charAt(Math.floor(Math.random() * upper.length));
+          pw += lower.charAt(Math.floor(Math.random() * lower.length));
+          pw += digits.charAt(Math.floor(Math.random() * digits.length));
+          pw += special.charAt(Math.floor(Math.random() * special.length));
+          // Fill to 12 chars
+          for (var i = 0; i < 8; i++) {
+            pw += all.charAt(Math.floor(Math.random() * all.length));
+          }
+          // Shuffle to remove positional bias
+          return pw
+            .split("")
+            .sort(function () {
+              return Math.random() - 0.5;
+            })
+            .join("");
         }
 
         /* ------------------------------------------------------------------
@@ -1069,15 +1074,9 @@
 
         /* ------------------------------------------------------------------
            ADD ADMIN
+           Note: The password field is gone. A secure password is generated
+           on submit and shown once in the invite modal.
            ------------------------------------------------------------------ */
-        var passwordInput = document.getElementById("aa-password");
-        var reqsEl = addForm.querySelector(".pw-reqs");
-        var strengthEl = addForm.querySelector(".pw-strength");
-        initPasswordFeedback(passwordInput, {
-          reqsEl: reqsEl,
-          strengthEl: strengthEl,
-        });
-
         bindForm(
           addForm,
           {
@@ -1086,7 +1085,6 @@
             username: [Rules.required, Rules.username],
             email: [Rules.required, Rules.email],
             role: [Rules.required],
-            password: [Rules.required, Rules.password],
           },
           function (data) {
             var firstName = data.get("firstName").trim();
@@ -1094,7 +1092,6 @@
             var username = data.get("username").trim();
             var email = data.get("email").trim().toLowerCase();
             var role = data.get("role");
-            var password = data.get("password");
 
             /* ---- Duplicate checks ---- */
             var dupUsername = admins.find(function (a) {
@@ -1115,6 +1112,9 @@
               return;
             }
 
+            /* ---- Auto-generate the password ---- */
+            var generatedPassword = generatePassword();
+
             /* ---- Build the new admin record ---- */
             var newAdmin = {
               id: "ADM" + Date.now(),
@@ -1131,7 +1131,7 @@
               lastActive: new Date().toISOString().slice(0, 10),
               createdBy: session.username,
               createdAt: new Date().toISOString().slice(0, 10),
-              password: password,
+              password: generatedPassword,
               mustChangePassword: true,
             };
 
@@ -1151,14 +1151,9 @@
             render();
             Modal.close("add-admin-modal");
             addForm.reset();
-            if (reqsEl)
-              reqsEl.querySelectorAll("li").forEach(function (li) {
-                li.classList.remove("met");
-              });
-            if (strengthEl) strengthEl.setAttribute("data-level", "0");
 
-            /* ---- Confirmation modal showing the simulated email ---- */
-            showInviteSent(newAdmin, inviteEmail);
+            /* ---- Confirmation modal showing credentials + email preview ---- */
+            showInviteSent(newAdmin, inviteEmail, generatedPassword);
           },
         );
 
@@ -1192,9 +1187,19 @@
           );
         }
 
-        function showInviteSent(newAdmin, emailText) {
+        /* ------------------------------------------------------------------
+           INVITE MODAL
+           Shows:
+             1. New admin identity (avatar, name, role)
+             2. "Password shown once" block with copy buttons and eye toggle
+             3. Simulated email preview (still includes the password, since
+                the recipient needs to see it)
+           ------------------------------------------------------------------ */
+        function showInviteSent(newAdmin, emailText, generatedPassword) {
           var body = document.getElementById("invite-body");
+
           body.innerHTML =
+            /* --- Identity --- */
             '<div style="display:flex; align-items:flex-start; gap:14px; margin-bottom:20px;">' +
             '<span class="avatar avatar-56 avatar-fallback" style="background:var(--brand-secondary); flex-shrink:0;">' +
             Util.initials(newAdmin.firstName + " " + newAdmin.lastName) +
@@ -1217,20 +1222,149 @@
             "</span></div>" +
             "</div>" +
             "</div>" +
+            /* --- Invite email sent notice --- */
             '<div style="background:var(--info-soft); border-left:3px solid var(--info); padding:14px; border-radius:var(--radius-md); margin-bottom:16px; font-size:var(--fs-sm); color:var(--text-secondary);">' +
             '<i class="fa-solid fa-envelope" style="color:var(--info); margin-right:6px;"></i> ' +
             "An invite email has been sent to <strong>" +
             Util.escape(newAdmin.email) +
             "</strong> with their login credentials and instructions to change their password." +
             "</div>" +
-            '<div class="activity-meta-label" style="margin-bottom:8px;">Email preview (simulated)</div>' +
-            '<pre style="font-family: SFMono-Regular, Consolas, monospace; font-size:12px; line-height:1.55; color:var(--text-primary); background:var(--bg-subtle); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:14px; white-space:pre-wrap; word-break:break-word; max-height:280px; overflow-y:auto; margin:0;">' +
+            /* --- Password shown once block --- */
+            '<div class="password-shown-once">' +
+            '<div class="password-shown-once-head">' +
+            '<i class="fa-solid fa-key"></i>' +
+            "<strong>Password shown once</strong>" +
+            "</div>" +
+            '<p class="password-shown-once-hint">Save this now. For security, the password cannot be retrieved again. The admin can change it from their own Settings after first sign-in.</p>' +
+            '<div class="password-shown-once-fields">' +
+            /* Username */
+            "<div>" +
+            '<div class="activity-meta-label" style="margin-bottom:4px;">Username</div>' +
+            '<div class="input-wrap">' +
+            '<input class="input" type="text" id="invite-username" readonly value="' +
+            Util.escape(newAdmin.username) +
+            '" style="padding-right:44px; font-family:SFMono-Regular, Consolas, monospace; font-size:var(--fs-sm);">' +
+            '<button type="button" class="input-suffix" data-copy-target="invite-username" aria-label="Copy username">' +
+            '<i class="fa-solid fa-copy"></i>' +
+            "</button>" +
+            "</div>" +
+            "</div>" +
+            /* Password */
+            "<div>" +
+            '<div class="activity-meta-label" style="margin-bottom:4px;">Temporary password</div>' +
+            '<div class="input-wrap">' +
+            '<input class="input" type="password" id="invite-password" readonly value="' +
+            Util.escape(generatedPassword) +
+            '" style="padding-right:88px; font-family:SFMono-Regular, Consolas, monospace; font-size:var(--fs-sm); letter-spacing:0.02em;">' +
+            '<button type="button" class="input-suffix" id="toggle-invite-pw" aria-label="Show or hide password" style="right:44px;">' +
+            '<i class="fa-solid fa-eye"></i>' +
+            "</button>" +
+            '<button type="button" class="input-suffix" data-copy-target="invite-password" aria-label="Copy password">' +
+            '<i class="fa-solid fa-copy"></i>' +
+            "</button>" +
+            "</div>" +
+            "</div>" +
+            "</div>" +
+            '<button type="button" class="btn btn-secondary btn-block btn-sm" id="copy-all-btn" style="margin-top:12px;">' +
+            '<i class="fa-solid fa-copy"></i> Copy all credentials' +
+            "</button>" +
+            "</div>" +
+            /* --- Email preview --- */
+            '<div class="activity-meta-label" style="margin:20px 0 8px;">Email preview (simulated)</div>' +
+            '<pre style="font-family: SFMono-Regular, Consolas, monospace; font-size:12px; line-height:1.55; color:var(--text-primary); background:var(--bg-subtle); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:14px; white-space:pre-wrap; word-break:break-word; max-height:240px; overflow-y:auto; margin:0;">' +
             Util.escape(emailText) +
             "</pre>" +
             '<div style="font-size:var(--fs-xs); color:var(--text-tertiary); margin-top:14px;">' +
             '<i class="fa-solid fa-circle-info"></i> In the live product, this email would arrive in the new admin’s inbox within a few seconds.' +
             "</div>";
+
+          /* Wire up the invite modal interactions */
+          wireInviteModal();
+
           Modal.open("invite-sent-modal");
+        }
+
+        /* Attach handlers to the invite modal's password field and copy buttons */
+        function wireInviteModal() {
+          var toggle = document.getElementById("toggle-invite-pw");
+          if (toggle) {
+            toggle.addEventListener("click", function () {
+              var field = document.getElementById("invite-password");
+              var icon = this.querySelector("i");
+              if (field.type === "password") {
+                field.type = "text";
+                icon.className = "fa-solid fa-eye-slash";
+              } else {
+                field.type = "password";
+                icon.className = "fa-solid fa-eye";
+              }
+            });
+          }
+
+          /* Per-field copy buttons */
+          document
+            .querySelectorAll("[data-copy-target]")
+            .forEach(function (btn) {
+              btn.addEventListener("click", function () {
+                var target = document.getElementById(
+                  btn.getAttribute("data-copy-target"),
+                );
+                if (!target) return;
+                /* If it's a password field that's currently hidden, still
+                   copy the value — the user explicitly asked to copy. */
+                var value = target.value;
+                var ta = document.createElement("textarea");
+                ta.value = value;
+                ta.style.position = "fixed";
+                ta.style.opacity = "0";
+                document.body.appendChild(ta);
+                ta.select();
+                try {
+                  document.execCommand("copy");
+                  Toast.success("Copied to clipboard.", "Copied");
+                } catch (e) {
+                  Toast.warning(
+                    "Copy failed. Please copy manually.",
+                    "Copy error",
+                  );
+                }
+                document.body.removeChild(ta);
+              });
+            });
+
+          /* Copy all */
+          var copyAll = document.getElementById("copy-all-btn");
+          if (copyAll) {
+            copyAll.addEventListener("click", function () {
+              var username = document.getElementById("invite-username").value;
+              var password = document.getElementById("invite-password").value;
+              var text =
+                "Campus Space — Admin credentials\n" +
+                "Username: " +
+                username +
+                "\n" +
+                "Temporary password: " +
+                password +
+                "\n" +
+                "Please sign in and change your password from Settings.";
+              var ta = document.createElement("textarea");
+              ta.value = text;
+              ta.style.position = "fixed";
+              ta.style.opacity = "0";
+              document.body.appendChild(ta);
+              ta.select();
+              try {
+                document.execCommand("copy");
+                Toast.success("All credentials copied to clipboard.", "Copied");
+              } catch (e) {
+                Toast.warning(
+                  "Copy failed. Please copy manually.",
+                  "Copy error",
+                );
+              }
+              document.body.removeChild(ta);
+            });
+          }
         }
 
         /* ------------------------------------------------------------------
@@ -1243,11 +1377,6 @@
             addForm.querySelectorAll(".field").forEach(function (f) {
               f.classList.remove("is-invalid", "is-valid");
             });
-            if (reqsEl)
-              reqsEl.querySelectorAll("li").forEach(function (li) {
-                li.classList.remove("met");
-              });
-            if (strengthEl) strengthEl.setAttribute("data-level", "0");
             Modal.open("add-admin-modal");
           });
 

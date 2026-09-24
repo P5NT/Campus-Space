@@ -9,7 +9,31 @@
       type="image/x-icon"
       href="../../assets/favicon/favicon.ico"
     />
-    <link rel="stylesheet" href="../../css/style.css" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../../assets/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="../../assets/favicon/favicon-16x16.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="../../assets/favicon/apple-touch-icon.png"
+    />
+    <link rel="manifest" href="../../assets/favicon/site.webmanifest" />
+    <meta name="theme-color" content="#B33A3A" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
@@ -17,20 +41,103 @@
       crossorigin="anonymous"
       referrerpolicy="no-referrer"
     />
+    <link rel="stylesheet" href="../../css/style.css" />
   </head>
-  <body>
-    <div class="status-page">
-      <div class="status-icon brand">
-        <i class="fa-solid fa-screwdriver-wrench"></i>
+  <body class="maintenance-page">
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <main id="main" class="status-page">
+      <div class="brand-icon-lg" aria-hidden="true">
+        <img
+          src="../../assets/icons/brand-icon.svg"
+          alt=""
+          width="72"
+          height="72"
+        />
       </div>
-      <h1>Campus Space is under maintenance</h1>
+
+      <span class="badge badge-warning" style="margin-bottom: 20px">
+        <i class="fa-solid fa-screwdriver-wrench"></i> Scheduled maintenance
+      </span>
+
+      <h1 id="mm-page-headline">Campus Space is offline for maintenance</h1>
       <p>
-        We're making some improvements. Please check back shortly — we'll be
-        back soon.
+        We're making some improvements behind the scenes. Your work is safe —
+        we'll be back as soon as the update is complete.
       </p>
-      <a href="../auth/login.html" class="btn btn-secondary btn-lg"
-        >Try signing in later</a
-      >
-    </div>
+
+      <div class="maintenance-card">
+        <div class="maintenance-row">
+          <i class="fa-solid fa-clock" aria-hidden="true"></i>
+          <div>
+            <strong>Expected duration</strong>
+            <span id="mm-page-duration">Usually under 30 minutes</span>
+          </div>
+        </div>
+        <div class="maintenance-row">
+          <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+          <div>
+            <strong>What you can do</strong>
+            <span>Nothing to worry about — no action needed on your part.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="maintenance-actions">
+        <button class="btn btn-primary btn-lg" id="retry-btn" type="button">
+          <i class="fa-solid fa-rotate-right"></i> Try again
+        </button>
+        <a class="btn btn-secondary btn-lg" href="immediate-response.html">
+          <i class="fa-solid fa-circle-exclamation"></i> Open Immediate Response
+        </a>
+      </div>
+
+      <p class="maintenance-footnote">
+        Need urgent help during maintenance?
+        <a href="immediate-response.html"
+          >Emergency contacts are still available →</a
+        >
+      </p>
+    </main>
+
+    <script src="../../js/main.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        /* ---- Apply any custom maintenance copy ---- */
+        var settings =
+          (typeof Store !== "undefined"
+            ? Store.get("system_settings", {})
+            : {}) || {};
+        var customHeadline = (settings.maintenance_headline || "").trim();
+        var customDuration = (settings.maintenance_duration || "").trim();
+
+        if (customHeadline) {
+          var h = document.getElementById("mm-page-headline");
+          if (h) h.textContent = customHeadline;
+        }
+        if (customDuration) {
+          var d = document.getElementById("mm-page-duration");
+          if (d) d.textContent = customDuration;
+        }
+
+        /* ---- Retry button ---- */
+        var retryBtn = document.getElementById("retry-btn");
+        if (retryBtn) {
+          retryBtn.addEventListener("click", function () {
+            var stillOn =
+              typeof SystemSettings !== "undefined" &&
+              SystemSettings.isEnabled("maintenance_mode");
+            if (stillOn) {
+              Toast.info(
+                "Still under maintenance. Please check back in a few minutes.",
+                "Not ready yet",
+              );
+            } else {
+              window.location.href = "../auth/login.html";
+            }
+          });
+        }
+      });
+    </script>
   </body>
 </html>

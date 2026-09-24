@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Verify Email — Campus Space</title>
+    <title>Verify Phone — Campus Space</title>
     <link
       rel="icon"
       type="image/x-icon"
@@ -56,10 +56,11 @@
             />
             <span>Campus Space</span>
           </div>
-          <h2>Step 1 of 2 — Verify your email.</h2>
+          <h2>Step 2 of 2 — Verify your phone.</h2>
           <p>
-            We've sent a 4-digit code to your email. Enter it to continue to
-            phone verification.
+            We've sent a 6-digit code to
+            <strong id="phone-display">your phone</strong>. Enter it to create
+            your account.
           </p>
         </div>
       </aside>
@@ -76,9 +77,9 @@
             <span>Campus Space</span>
           </div>
 
-          <h1 class="auth-title">Verify your email</h1>
+          <h1 class="auth-title">Verify your phone</h1>
           <p class="auth-subtitle">
-            Enter the 4-digit code we sent to your email.
+            Enter the 6-digit code we sent to your phone.
           </p>
 
           <div
@@ -89,10 +90,10 @@
             "
           >
             <h5 style="color: var(--info)">
-              <i class="fa-solid fa-circle-info"></i> Demo: your email code
+              <i class="fa-solid fa-circle-info"></i> Demo: your phone code
             </h5>
             <div class="row">
-              <span>Use this code:</span> <code id="otp-hint">----</code>
+              <span>Use this code:</span> <code id="otp-hint">------</code>
             </div>
           </div>
 
@@ -101,7 +102,8 @@
               class="otp-inputs"
               id="otp-container"
               role="group"
-              aria-label="Email verification code"
+              aria-label="Phone verification code"
+              style="gap: 8px"
             >
               <input
                 class="otp-input"
@@ -131,6 +133,20 @@
                 maxlength="1"
                 aria-label="Digit 4"
               />
+              <input
+                class="otp-input"
+                type="text"
+                inputmode="numeric"
+                maxlength="1"
+                aria-label="Digit 5"
+              />
+              <input
+                class="otp-input"
+                type="text"
+                inputmode="numeric"
+                maxlength="1"
+                aria-label="Digit 6"
+              />
             </div>
 
             <button
@@ -138,7 +154,8 @@
               class="btn btn-primary btn-block btn-lg"
               id="verify-submit"
             >
-              <i class="fa-solid fa-check"></i> Verify email and continue
+              <i class="fa-solid fa-user-check"></i> Verify phone and create
+              account
             </button>
           </form>
 

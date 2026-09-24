@@ -66,7 +66,7 @@
       </div>
     </div>
 
-    <!-- ============ Assign role modal (Super Admin only) ============ -->
+    <!-- Assign role modal (Super Admin only) -->
     <div
       class="modal-backdrop"
       id="assign-role-modal"
@@ -93,7 +93,6 @@
               Roles are internal. They grant this student additional tools
               inside their account without changing their public profile.
             </p>
-
             <div class="field">
               <label class="label">Role <span class="req">*</span></label>
               <select class="select" name="role" id="ar-role">
@@ -126,6 +125,96 @@
       </div>
     </div>
 
+    <!-- Assign leader modal -->
+    <div
+      class="modal-backdrop"
+      id="assign-leader-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="al-title"
+    >
+      <div class="modal">
+        <div class="modal-head">
+          <h3 id="al-title">Assign leadership role</h3>
+          <button class="btn-icon" data-modal-close aria-label="Close">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <form id="assign-leader-form" novalidate>
+          <div class="modal-body">
+            <div class="leader-edit-student" style="margin-bottom: 20px">
+              <span class="avatar avatar-40 avatar-fallback" id="al-avatar"
+                >--</span
+              >
+              <div class="leader-edit-student-info">
+                <div class="leader-edit-student-name" id="al-name">—</div>
+                <div class="leader-edit-student-handle" id="al-handle">—</div>
+              </div>
+              <span class="badge badge-neutral"
+                ><i class="fa-solid fa-lock"></i> Fixed</span
+              >
+            </div>
+
+            <div class="field">
+              <label class="label" for="al-assoc"
+                >Association <span class="req">*</span></label
+              >
+              <select class="select" name="associationId" id="al-assoc">
+                <option value="">Select association</option>
+              </select>
+              <div class="field-error">
+                <i class="fa-solid fa-circle-exclamation"></i
+                ><span>Please select an association.</span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="label" for="al-pos"
+                >Position <span class="req">*</span></label
+              >
+              <select class="select" name="positionId" id="al-pos">
+                <option value="">Select position</option>
+              </select>
+              <div class="field-error">
+                <i class="fa-solid fa-circle-exclamation"></i
+                ><span>Please select a position.</span>
+              </div>
+            </div>
+
+            <p
+              style="
+                font-size: var(--fs-xs);
+                color: var(--text-tertiary);
+                margin-top: 8px;
+              "
+            >
+              Need a new association or position? Create one first from
+              <a
+                href="student-associations.html"
+                style="color: var(--brand-primary); font-weight: 600"
+                >Student Associations</a
+              >
+              or
+              <a
+                href="leadership-positions.html"
+                style="color: var(--brand-primary); font-weight: 600"
+                >Leadership Positions</a
+              >.
+            </p>
+          </div>
+          <div class="modal-foot">
+            <button type="button" class="btn btn-secondary" data-modal-close>
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fa-solid fa-check"></i>
+              <span id="al-submit-label">Assign leader</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <div class="mobile-menu-backdrop"></div>
     <aside
       class="mobile-menu"
@@ -146,15 +235,13 @@
     <script src="../../js/admin.js"></script>
     <script>
       /* ==========================================================================
-   Student Details — Admin workspace.
+         Student Details — Admin workspace.
+         Adds an Assign/Change Leader flow on top of the existing panels.
 
-   Sections adapt to the current admin's role:
-   - Profile hero (always)
-   - Account info + leadership info (always)
-   - Verification panel (students.verify)
-   - Role assignment panel (admins.assign_roles — Super Admin only)
-   - Action buttons (students.suspend)
-   ========================================================================== */
+         Notification emitted:
+           - On leader assignment / change → the student gets a
+             "You've been assigned a leadership role" notification.
+         ========================================================================== */
       document.addEventListener("DOMContentLoaded", function () {
         var session = Auth.current();
         if (!session || !Permissions.isAdminRole(session)) {
@@ -188,12 +275,21 @@
           " " +
           (s.otherName ? s.otherName + " " : "") +
           s.lastName;
-        var isVerified = s.verified !== false;
+        var isVerified =
+          s.verificationStatus === "verified" ||
+          s.verified === true ||
+          s.verificationStatus === undefined;
         var isSuper = Permissions.can(session, "admins.assign_roles");
         var canSuspend = Permissions.can(session, "students.suspend");
         var canVerify = Permissions.can(session, "students.verify");
+        var canAssignLeader = Permissions.can(session, "leaders.assign");
 
-        /* ------------ Status helpers ------------ */
+        /* ------------ Current leader info (if any) ------------ */
+        function currentLeader() {
+          if (typeof getLeaderById !== "function") return null;
+          return getLeaderById(s.id, { includeInactive: true });
+        }
+
         var statusClass =
           s.status === "active"
             ? "badge-success"
@@ -237,17 +333,13 @@
           '">' +
           s.status +
           "</span>" +
-          "</div>" +
-          "</div>" +
-          "</div>" +
-          "</div>";
+          "</div></div></div></div>";
 
-        /* ------------ Info cards ------------ */
+        /* ------------ Account info ------------ */
         var accountCard =
           '<div class="card card-pad">' +
           '<h3 style="font-size:var(--fs-md); margin-bottom:16px; display:flex; align-items:center; gap:8px;">' +
-          '<i class="fa-solid fa-id-card" style="color:var(--brand-primary);"></i> Account Information' +
-          "</h3>" +
+          '<i class="fa-solid fa-id-card" style="color:var(--brand-primary);"></i> Account Information</h3>' +
           '<div class="stack">' +
           '<div><div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Email</div>' +
           '<div class="font-semibold" style="word-break:break-all;">' +
@@ -265,57 +357,74 @@
             year: "numeric",
           }) +
           "</div></div>" +
-          "</div>" +
-          "</div>";
+          "</div></div>";
+
+        /* ------------ Leadership card ------------ */
+        var leader = currentLeader();
+        var leaderActionHtml = "";
+        if (canAssignLeader) {
+          if (leader) {
+            leaderActionHtml =
+              '<button class="btn btn-secondary btn-block" data-modal-open="assign-leader-modal" type="button" style="margin-top:16px;">' +
+              '<i class="fa-solid fa-pen"></i> Change leadership role' +
+              "</button>";
+          } else {
+            leaderActionHtml =
+              '<button class="btn btn-primary btn-block" data-modal-open="assign-leader-modal" type="button" style="margin-top:16px;">' +
+              '<i class="fa-solid fa-user-plus"></i> Assign leader' +
+              "</button>";
+          }
+        }
+
+        var leaderBodyHtml = leader
+          ? '<div class="stack">' +
+            '<div><div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Association</div>' +
+            '<div class="font-semibold">' +
+            Util.escape(leader.assoc.name) +
+            " (" +
+            Util.escape(leader.assoc.acronym) +
+            ")</div></div>" +
+            '<div><div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Position</div>' +
+            '<div class="font-semibold">' +
+            Util.escape(leader.pos.name) +
+            "</div></div>" +
+            '<div><div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Status</div>' +
+            '<span class="badge ' +
+            (leader.active !== false ? "badge-success" : "badge-neutral") +
+            '">' +
+            (leader.active !== false ? "Active leader" : "Inactive leader") +
+            "</span></div>" +
+            "</div>"
+          : '<p style="font-size:var(--fs-sm); color:var(--text-tertiary); margin:0;">This student is not currently a leader.</p>';
 
         var leadershipCard =
           '<div class="card card-pad">' +
           '<h3 style="font-size:var(--fs-md); margin-bottom:16px; display:flex; align-items:center; gap:8px;">' +
-          '<i class="fa-solid fa-ranking-star" style="color:var(--brand-primary);"></i> Leadership &amp; Roles' +
-          "</h3>" +
-          '<div class="stack">' +
-          '<div><div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Association</div>' +
-          '<div class="font-semibold">' +
-          (s.association
-            ? Util.escape(s.associationFull) +
-              " (" +
-              Util.escape(s.association) +
-              ")"
-            : "—") +
-          "</div></div>" +
-          '<div><div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Position</div>' +
-          '<div class="font-semibold">' +
-          (s.position ? Util.escape(s.position) : "—") +
-          "</div></div>" +
-          '<div><div class="text-xs text-muted font-semibold" style="text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Emergency Contact</div>' +
+          '<i class="fa-solid fa-ranking-star" style="color:var(--brand-primary);"></i> Leadership</h3>' +
+          leaderBodyHtml +
+          leaderActionHtml +
+          "</div>";
+
+        /* ------------ Emergency contact info ------------ */
+        var emergencyCard =
+          '<div class="card card-pad">' +
+          '<h3 style="font-size:var(--fs-md); margin-bottom:16px; display:flex; align-items:center; gap:8px;">' +
+          '<i class="fa-solid fa-shield-heart" style="color:var(--brand-secondary);"></i> Emergency Contact</h3>' +
           '<div class="font-semibold">' +
           (s.isEmergencyContact
             ? "Yes — " + Util.escape(s.emergencyCategory)
             : "No") +
-          "</div></div>" +
-          "</div>" +
-          "</div>";
+          "</div></div>";
 
-        /* ------------ Verification panel (students.verify only) ------------ */
+        /* ------------ Verification panel ------------ */
         var verificationCard = "";
-        if (canVerify) {
+        if (canVerify && !isVerified) {
           verificationCard =
             '<div class="card card-pad">' +
             '<h3 style="font-size:var(--fs-md); margin-bottom:16px; display:flex; align-items:center; gap:8px;">' +
-            '<i class="fa-solid fa-user-check" style="color:var(--success);"></i> Verification' +
-            "</h3>" +
-            '<p style="font-size:var(--fs-sm); color:var(--text-secondary); margin-bottom:16px;">' +
-            (isVerified
-              ? "This student has been verified against official records."
-              : "This student has not yet been verified. Compare their details against the official student-detail records.") +
-            "</p>" +
-            (isVerified
-              ? '<button class="btn btn-secondary btn-block" type="button" disabled>' +
-                '<i class="fa-solid fa-circle-check"></i> Verified' +
-                "</button>"
-              : '<button class="btn btn-primary btn-block" id="verify-student" type="button">' +
-                '<i class="fa-solid fa-user-check"></i> Verify this student' +
-                "</button>") +
+            '<i class="fa-solid fa-user-check" style="color:var(--success);"></i> Verification</h3>' +
+            '<p style="font-size:var(--fs-sm); color:var(--text-secondary); margin-bottom:16px;">This student is not yet verified.</p>' +
+            '<button class="btn btn-primary btn-block" id="verify-student" type="button"><i class="fa-solid fa-user-check"></i> Verify this student</button>' +
             "</div>";
         }
 
@@ -326,8 +435,7 @@
           rolesCard =
             '<div class="card card-pad">' +
             '<h3 style="font-size:var(--fs-md); margin-bottom:16px; display:flex; align-items:center; gap:8px;">' +
-            '<i class="fa-solid fa-user-shield" style="color:var(--brand-secondary);"></i> Admin Roles' +
-            "</h3>" +
+            '<i class="fa-solid fa-user-shield" style="color:var(--brand-secondary);"></i> Admin Roles</h3>' +
             '<div class="stack" style="margin-bottom:16px;">' +
             (currentRoles.length
               ? currentRoles
@@ -348,12 +456,11 @@
               : '<p style="font-size:var(--fs-sm); color:var(--text-tertiary); margin:0;">No admin roles assigned.</p>') +
             "</div>" +
             '<button class="btn btn-secondary btn-block" data-modal-open="assign-role-modal" type="button">' +
-            '<i class="fa-solid fa-plus"></i> Assign admin role' +
-            "</button>" +
+            '<i class="fa-solid fa-plus"></i> Assign admin role</button>' +
             "</div>";
         }
 
-        /* ------------ Action buttons (students.suspend only) ------------ */
+        /* ------------ Account actions ------------ */
         var actionsHtml = "";
         if (canSuspend) {
           var showReactivate = s.status !== "active";
@@ -361,40 +468,124 @@
           var showDeactivate = s.status !== "deactivated";
 
           var actionButtons = [];
-          if (showReactivate) {
+          if (showReactivate)
             actionButtons.push(
-              '<button class="btn btn-primary btn-block" data-activate type="button">' +
-                '<i class="fa-solid fa-circle-check"></i> Reactivate account</button>',
+              '<button class="btn btn-primary btn-block" data-activate type="button"><i class="fa-solid fa-circle-check"></i> Reactivate account</button>',
             );
-          }
-          if (showSuspend) {
+          if (showSuspend)
             actionButtons.push(
-              '<button class="btn btn-secondary btn-block" data-suspend type="button">' +
-                '<i class="fa-solid fa-ban"></i> Suspend account</button>',
+              '<button class="btn btn-secondary btn-block" data-suspend type="button"><i class="fa-solid fa-ban"></i> Suspend account</button>',
             );
-          }
-          if (showDeactivate) {
+          if (showDeactivate)
             actionButtons.push(
-              '<button class="btn btn-danger btn-block" data-deactivate type="button">' +
-                '<i class="fa-solid fa-user-slash"></i> Deactivate account</button>',
+              '<button class="btn btn-danger btn-block" data-deactivate type="button"><i class="fa-solid fa-user-slash"></i> Deactivate account</button>',
             );
-          }
 
           actionsHtml =
             '<div class="card card-pad">' +
             '<h3 style="font-size:var(--fs-md); margin-bottom:16px; display:flex; align-items:center; gap:8px;">' +
-            '<i class="fa-solid fa-sliders" style="color:var(--text-tertiary);"></i> Account Actions' +
-            "</h3>" +
+            '<i class="fa-solid fa-sliders" style="color:var(--text-tertiary);"></i> Account Actions</h3>' +
             '<div class="stack">' +
             actionButtons.join("") +
             "</div>" +
             "</div>";
         }
 
-        /* ------------ Assemble the page ------------ */
+        /* ------------ Contact change panel ------------ */
+        var contactChangeCard = "";
+        var overrides = Store.get("student_overrides", {}) || {};
+        var studentEdit = (overrides.edits && overrides.edits[s.id]) || {};
+        var pending = studentEdit.pendingContactChange;
+        var previous = studentEdit.previousContacts || [];
+
+        if (pending || previous.length) {
+          var pendingHtml = "";
+          if (pending) {
+            pendingHtml =
+              '<div class="contact-change-pending">' +
+              '<div class="contact-change-row">' +
+              '<span class="contact-change-label">Field</span>' +
+              '<span class="contact-change-value">' +
+              Util.escape(pending.field) +
+              "</span>" +
+              "</div>" +
+              '<div class="contact-change-row">' +
+              '<span class="contact-change-label">Current value</span>' +
+              '<span class="contact-change-value">' +
+              Util.escape(s[pending.field]) +
+              "</span>" +
+              "</div>" +
+              '<div class="contact-change-row">' +
+              '<span class="contact-change-label">Requested new value</span>' +
+              '<span class="contact-change-value" style="font-weight:600; color:var(--brand-primary);">' +
+              Util.escape(pending.newValue) +
+              "</span>" +
+              "</div>" +
+              '<div class="contact-change-row">' +
+              '<span class="contact-change-label">Requested</span>' +
+              '<span class="contact-change-value">' +
+              Util.relativeTime(pending.requestedAt) +
+              "</span>" +
+              "</div>" +
+              '<button class="btn btn-danger btn-block" id="cancel-contact-change" type="button" style="margin-top:14px;">' +
+              '<i class="fa-solid fa-ban"></i> Cancel this change' +
+              "</button>" +
+              "</div>";
+          }
+
+          var historyHtml = "";
+          if (previous.length) {
+            historyHtml =
+              '<div class="contact-change-history">' +
+              '<div class="contact-change-history-title">Previous contacts</div>' +
+              previous
+                .slice()
+                .reverse()
+                .slice(0, 5)
+                .map(function (p) {
+                  return (
+                    '<div class="contact-change-history-row">' +
+                    "<span>" +
+                    Util.escape(p.field) +
+                    "</span>" +
+                    "<span>" +
+                    Util.escape(p.value) +
+                    "</span>" +
+                    '<span class="muted">' +
+                    Util.relativeTime(p.replacedAt) +
+                    "</span>" +
+                    "</div>"
+                  );
+                })
+                .join("") +
+              "</div>";
+          }
+
+          contactChangeCard =
+            '<div class="card card-pad">' +
+            '<h3 style="font-size:var(--fs-md); margin-bottom:16px; display:flex; align-items:center; gap:8px;">' +
+            '<i class="fa-solid fa-address-card" style="color:var(--brand-primary);"></i> Contact Information' +
+            "</h3>" +
+            pendingHtml +
+            historyHtml +
+            "</div>";
+        }
+
+        var gridChildren = [
+          accountCard,
+          contactChangeCard,
+          leadershipCard,
+          emergencyCard,
+          verificationCard,
+          rolesCard,
+          actionsHtml,
+        ].filter(Boolean);
+
+        /* ------------ Assemble ------------ */
         var gridChildren = [
           accountCard,
           leadershipCard,
+          emergencyCard,
           verificationCard,
           rolesCard,
           actionsHtml,
@@ -407,11 +598,144 @@
           "</div>";
 
         /* ==================================================================
-     WIRE ACTIONS
-     ================================================================== */
+           POPULATE THE LEADER MODAL
+           ================================================================== */
+        var leaderModal = document.getElementById("assign-leader-modal");
+        var leaderForm = document.getElementById("assign-leader-form");
+        var alAssoc = document.getElementById("al-assoc");
+        var alPos = document.getElementById("al-pos");
 
+        (typeof DEMO_ASSOCIATIONS !== "undefined" ? DEMO_ASSOCIATIONS : [])
+          .filter(function (a) {
+            return a.active;
+          })
+          .forEach(function (a) {
+            var opt = document.createElement("option");
+            opt.value = a.id;
+            opt.textContent = a.acronym + " — " + a.name;
+            alAssoc.appendChild(opt);
+          });
+
+        (typeof DEMO_POSITIONS !== "undefined" ? DEMO_POSITIONS : [])
+          .filter(function (p) {
+            return p.active;
+          })
+          .forEach(function (p) {
+            var opt = document.createElement("option");
+            opt.value = p.id;
+            opt.textContent = p.name;
+            alPos.appendChild(opt);
+          });
+
+        document.getElementById("al-avatar").textContent =
+          Util.initials(fullName);
+        document.getElementById("al-name").textContent = fullName;
+        document.getElementById("al-handle").textContent = "@" + s.username;
+
+        if (leader) {
+          alAssoc.value = leader.assoc.id;
+          alPos.value = leader.pos.id;
+          document.getElementById("al-submit-label").textContent =
+            "Save changes";
+        }
+
+        /* Submit handler */
+        bindForm(
+          leaderForm,
+          {
+            associationId: [Rules.required],
+            positionId: [Rules.required],
+          },
+          function (data) {
+            var assocId = data.get("associationId");
+            var posId = data.get("positionId");
+
+            if (typeof getAllLeaders === "function") {
+              var clash = getAllLeaders({}).find(function (l) {
+                return (
+                  l.student.id !== s.id &&
+                  l.assoc.id === assocId &&
+                  l.pos.id === posId &&
+                  l.active !== false
+                );
+              });
+              if (clash) {
+                Toast.error(
+                  "That position in this association is already held by " +
+                    clash.student.firstName +
+                    " " +
+                    clash.student.lastName +
+                    ".",
+                  "Position already held",
+                );
+                return;
+              }
+            }
+
+            if (typeof Leaders !== "undefined" && Leaders.assign) {
+              Leaders.assign(s.id, assocId, posId, session.username);
+            }
+
+            /* -------- Notify the newly-assigned student -------- */
+            var assoc = (
+              typeof DEMO_ASSOCIATIONS !== "undefined" ? DEMO_ASSOCIATIONS : []
+            ).find(function (a) {
+              return a.id === assocId;
+            });
+            var pos = (
+              typeof DEMO_POSITIONS !== "undefined" ? DEMO_POSITIONS : []
+            ).find(function (p) {
+              return p.id === posId;
+            });
+
+            var assocLabel = assoc
+              ? assoc.acronym + " — " + assoc.name
+              : "an association";
+            var posLabel = pos ? pos.name : "a leadership position";
+
+            try {
+              if (
+                typeof Notifications !== "undefined" &&
+                typeof Notifications.emit === "function"
+              ) {
+                Notifications.emit({
+                  type: leader ? "leader_updated" : "leader_assigned",
+                  icon: "fa-ranking-star",
+                  tone: "brand",
+                  title: leader
+                    ? "Your leadership role was updated"
+                    : "You've been assigned a leadership role",
+                  body:
+                    "You are now " +
+                    posLabel +
+                    " at " +
+                    assocLabel +
+                    ". Your profile now shows the verified leader badge.",
+                  link: "profile.html" + encodeURIComponent(s.id),
+                  audience: { usernames: [s.username], roles: [] },
+                  actorUsername: session.username,
+                });
+              }
+            } catch (e) {
+              /* swallow — notifications must never block the assignment */
+            }
+
+            Modal.close("assign-leader-modal");
+            Toast.success(
+              leader ? "Leadership role updated." : "Leadership role assigned.",
+              "Saved",
+            );
+            setTimeout(function () {
+              window.location.reload();
+            }, 600);
+          },
+        );
+
+        /* ==================================================================
+           WIRE EXISTING ACTIONS
+           ================================================================== */
         var activateBtn = wrap.querySelector("[data-activate]");
-        if (activateBtn) {
+        if (activateBtn)
           activateBtn.addEventListener("click", async function () {
             var ok = await Confirmation.confirm({
               title: "Reactivate this account?",
@@ -420,17 +744,15 @@
             });
             if (!ok) return;
             s.status = "active";
-            /* Simulate persistence */
             Store.set("student_status_" + s.id, "active");
             Toast.success("Account reactivated.", "Done");
             setTimeout(function () {
               window.location.reload();
             }, 500);
           });
-        }
 
         var suspendBtn = wrap.querySelector("[data-suspend]");
-        if (suspendBtn) {
+        if (suspendBtn)
           suspendBtn.addEventListener("click", async function () {
             var ok = await Confirmation.confirm({
               title: "Suspend this account?",
@@ -447,10 +769,9 @@
               window.location.reload();
             }, 500);
           });
-        }
 
         var deactivateBtn = wrap.querySelector("[data-deactivate]");
-        if (deactivateBtn) {
+        if (deactivateBtn)
           deactivateBtn.addEventListener("click", async function () {
             var ok = await Confirmation.confirm({
               title: "Deactivate this account?",
@@ -467,19 +788,18 @@
               window.location.reload();
             }, 500);
           });
-        }
 
         var verifyBtn = document.getElementById("verify-student");
-        if (verifyBtn) {
+        if (verifyBtn)
           verifyBtn.addEventListener("click", async function () {
             var ok = await Confirmation.confirm({
               title: "Verify this student?",
               message:
-                "Confirm that the details match the official student-detail records. Once verified, the student gains full access.",
+                "Confirm that the details match the official student-detail records.",
               confirmLabel: "Verify student",
             });
             if (!ok) return;
-            s.verified = true;
+            s.verificationStatus = "verified";
             Store.set("student_verified_" + s.id, true);
             Toast.success(
               "Student verified. They now have full access.",
@@ -489,45 +809,58 @@
               window.location.reload();
             }, 600);
           });
-        }
 
-        /* ==================================================================
-     ASSIGN ROLE MODAL (Super Admin only)
-     ================================================================== */
         var roleForm = document.getElementById("assign-role-form");
         if (roleForm && isSuper) {
-          bindForm(
-            roleForm,
-            {
-              role: [Rules.required],
-            },
-            function (data) {
-              var role = data.get("role");
-              if (!Array.isArray(s.adminRoles)) s.adminRoles = [];
-              if (s.adminRoles.indexOf(role) === -1) s.adminRoles.push(role);
-              Store.set("student_roles_" + s.id, s.adminRoles);
+          bindForm(roleForm, { role: [Rules.required] }, function (data) {
+            var role = data.get("role");
+            if (!Array.isArray(s.adminRoles)) s.adminRoles = [];
+            if (s.adminRoles.indexOf(role) === -1) s.adminRoles.push(role);
+            Store.set("student_roles_" + s.id, s.adminRoles);
+            Modal.close("assign-role-modal");
+            roleForm.reset();
+            var label =
+              role === "academia"
+                ? "Academic Admin"
+                : role === "su_pro"
+                  ? "SU PRO"
+                  : role;
+            Toast.success(
+              label +
+                " role assigned. A welcome email has been sent to " +
+                s.email +
+                " (simulated).",
+              "Role assigned",
+            );
+            setTimeout(function () {
+              window.location.reload();
+            }, 700);
+          });
+        }
 
-              Modal.close("assign-role-modal");
-              roleForm.reset();
-
-              var label =
-                role === "academia"
-                  ? "Academic Admin"
-                  : role === "su_pro"
-                    ? "SU PRO"
-                    : role;
-              Toast.success(
-                label +
-                  " role assigned. A welcome email has been sent to " +
-                  s.email +
-                  " (simulated).",
-                "Role assigned",
-              );
-              setTimeout(function () {
-                window.location.reload();
-              }, 700);
-            },
-          );
+        var cancelChangeBtn = document.getElementById("cancel-contact-change");
+        if (cancelChangeBtn) {
+          cancelChangeBtn.addEventListener("click", async function () {
+            var ok = await Confirmation.confirm({
+              title: "Cancel this pending change?",
+              message:
+                "The student's " +
+                (pending ? pending.field : "contact") +
+                " will not change.",
+              confirmLabel: "Cancel change",
+              variant: "danger",
+            });
+            if (!ok) return;
+            var o = Store.get("student_overrides", {}) || {};
+            if (o.edits && o.edits[s.id]) {
+              delete o.edits[s.id].pendingContactChange;
+              Store.set("student_overrides", o);
+            }
+            Toast.success("Pending change cancelled.", "Cancelled");
+            setTimeout(function () {
+              window.location.reload();
+            }, 400);
+          });
         }
       });
     </script>

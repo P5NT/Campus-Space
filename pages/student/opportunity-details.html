@@ -93,6 +93,9 @@
         }
         initAppShell("student");
 
+        /* ---- Verification gate ---- */
+        if (!Auth.requireVerifiedStudent()) return;
+
         var id = new URLSearchParams(location.search).get("id");
         var wrap = document.getElementById("opp-detail");
 

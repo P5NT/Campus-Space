@@ -96,6 +96,10 @@
         }
         initAppShell("student");
 
+        /* ---- Verification gate ---- */
+        if (Auth.requireVerifiedStudent && !Auth.requireVerifiedStudent())
+          return;
+
         var wrap = document.getElementById("complaint-detail");
         var id = new URLSearchParams(location.search).get("id");
 
@@ -126,7 +130,7 @@
         var isOwn = c.submittedBy === session.username;
         var isPublic = c.visibility === "public";
 
-        /* ---- Visibility check — private complaints are filer + admins only ---- */
+        /* ---- Visibility check ---- */
         if (!isAdmin && !isPublic && !isOwn) {
           wrap.innerHTML =
             '<div class="empty-state" style="padding: 64px 24px; max-width: 480px; margin: 0 auto;">' +
@@ -153,34 +157,21 @@
           Other: "fa-circle-info",
         };
 
-        /* ---- Visibility + author line ---- */
+        /* ---- Visibility badge ---- */
         var visibilityBadge = isPublic
           ? '<span class="badge badge-marine"><i class="fa-solid fa-globe"></i> Public</span>'
           : '<span class="badge badge-neutral"><i class="fa-solid fa-lock"></i> Private</span>';
 
-        /* On public complaints, show the filer as @username (not full name) */
-        var authorHtml = "";
+        /* ---- Author label ---- */
+        var authorLabel = "";
         if (isPublic) {
-          authorHtml =
-            '<div class="cm-author-row">' +
-            '<i class="fa-solid fa-user"></i> ' +
-            (isOwn
-              ? "<span>You</span>"
-              : "<span>@" + Util.escape(c.submittedBy) + "</span>") +
-            "</div>";
+          authorLabel = isOwn ? "You" : "@" + Util.escape(c.submittedBy);
         } else {
-          /* Private — the filer is either the viewer or an admin */
-          authorHtml =
-            '<div class="cm-author-row">' +
-            '<i class="fa-solid fa-user"></i> ' +
-            (isAdmin
-              ? "<span>" +
-                Util.escape(c.submittedByName || c.submittedBy || "Unknown") +
-                " · @" +
-                Util.escape(c.submittedBy || "") +
-                "</span>"
-              : "<span>You</span>") +
-            "</div>";
+          authorLabel = isAdmin
+            ? Util.escape(c.submittedByName || c.submittedBy || "Unknown") +
+              " · @" +
+              Util.escape(c.submittedBy || "")
+            : "You";
         }
 
         /* ---- Build response thread ---- */
@@ -193,7 +184,6 @@
             "</div>";
         } else {
           c.responses.forEach(function (r) {
-            /* Response may carry a tag (e.g. ADMIN) */
             var rtagHtml =
               r.tag === "ADMIN"
                 ? '<span class="tag-admin"><i class="fa-solid fa-shield-halved"></i> Admin</span>'
@@ -208,9 +198,9 @@
               "</span>" +
               '<div class="thread-msg-bubble">' +
               '<div class="cm-response-head">' +
-              "<strong>" +
+              '<strong class="cm-response-name">' +
               Util.escape(r.name || "Space Admin") +
-              "</strong> " +
+              "</strong>" +
               rtagHtml +
               '<span class="cm-response-time">' +
               Util.relativeTime(r.at) +
@@ -243,6 +233,33 @@
           })
           .join("");
 
+        /* ---- Build public notice text ---- */
+        var publicNoticeHtml = "";
+        if (isPublic) {
+          var headline = isOwn
+            ? "You shared this publicly"
+            : "This is a public complaint";
+          var body = isOwn
+            ? "The whole campus can see this complaint and its responses. Your username (@" +
+              Util.escape(c.submittedBy) +
+              ") is shown, not your full name."
+            : "Anyone on Campus Space can see this and its responses. The filer\u2019s username (@" +
+              Util.escape(c.submittedBy) +
+              ") is shown, not their full name.";
+          publicNoticeHtml =
+            '<div class="cm-public-notice">' +
+            '<i class="fa-solid fa-globe"></i>' +
+            "<div>" +
+            "<strong>" +
+            headline +
+            "</strong>" +
+            "<p>" +
+            body +
+            "</p>" +
+            "</div>" +
+            "</div>";
+        }
+
         /* ---- Render the page ---- */
         wrap.innerHTML =
           /* Header card */
@@ -261,12 +278,17 @@
           "</div>" +
           complaintStatusPill(c.status) +
           "</div>" +
-          '<h1 class="page-title" style="font-size: var(--fs-xl); margin-bottom: 10px;">' +
+          '<h1 class="page-title" style="font-size: var(--fs-xl); margin-bottom: 14px;">' +
           Util.escape(c.subject) +
           "</h1>" +
-          '<div class="cm-meta-row">' +
-          authorHtml +
-          '<div class="cm-author-row">' +
+          '<div class="cm-meta-list">' +
+          '<div class="cm-meta-item">' +
+          '<i class="fa-solid fa-user"></i>' +
+          "<span>" +
+          authorLabel +
+          "</span>" +
+          "</div>" +
+          '<div class="cm-meta-item">' +
           '<i class="fa-regular fa-calendar"></i>' +
           "<span>Submitted " +
           Util.formatDate(c.date, {
@@ -277,7 +299,7 @@
           "</span>" +
           "</div>" +
           (c.updated && c.updated !== c.date
-            ? '<div class="cm-author-row">' +
+            ? '<div class="cm-meta-item">' +
               '<i class="fa-solid fa-rotate"></i>' +
               "<span>Updated " +
               Util.relativeTime(c.updated) +
@@ -285,27 +307,10 @@
               "</div>"
             : "") +
           "</div>" +
-          (isPublic && !isOwn
-            ? '<div class="cm-public-notice">' +
-              '<i class="fa-solid fa-globe"></i>' +
-              "<div>" +
-              "<strong>This is a public complaint</strong>" +
-              "<p>Anyone on Campus Space can see this and its responses. The filer\u2019s username (@' + Util.escape(c.submittedBy) + ') is shown, not their full name.</p>" +
-              "</div>" +
-              "</div>"
-            : "") +
-          (isPublic && isOwn
-            ? '<div class="cm-public-notice">' +
-              '<i class="fa-solid fa-globe"></i>' +
-              "<div>" +
-              "<strong>You shared this publicly</strong>" +
-              "<p>The whole campus can see this complaint and its responses. Your username (@' + Util.escape(c.submittedBy) + ') is shown, not your full name.</p>" +
-              "</div>" +
-              "</div>"
-            : "") +
-          '<div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-subtle);">' +
-          '<div class="text-xs text-muted font-semibold" style="text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Description</div>' +
-          '<p style="line-height: 1.7; color: var(--text-secondary); margin: 0;">' +
+          publicNoticeHtml +
+          '<div class="cm-description">' +
+          '<div class="cm-description-label">Description</div>' +
+          '<p class="cm-description-text">' +
           Util.escape(c.description) +
           "</p>" +
           "</div>" +

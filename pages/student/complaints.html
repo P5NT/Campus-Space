@@ -59,14 +59,14 @@
             <div class="page-head-text">
               <h1 class="page-title">Complaints</h1>
               <p class="page-subtitle">
-                Submit issues and track their resolution. Choose to keep it
-                private or share it with the campus community.
+                Submit issues and track their resolution. Handled privately by
+                Admin.
               </p>
             </div>
             <button
               class="btn btn-primary"
+              data-modal-open="new-complaint-modal"
               id="new-complaint-btn"
-              type="button"
             >
               <i class="fa-solid fa-plus"></i> New complaint
             </button>
@@ -254,6 +254,24 @@
           return;
         }
         initAppShell("student");
+
+        /* ---- System access gate: complaints intake ---- */
+        var canSubmitComplaints =
+          typeof SystemSettings === "undefined" ||
+          SystemSettings.isEnabled("complaints_enabled");
+        if (!canSubmitComplaints) {
+          var ncBtn = document.getElementById("new-complaint-btn");
+          if (ncBtn) {
+            ncBtn.outerHTML =
+              '<div class="access-disabled-notice access-disabled-notice--compact">' +
+              '<i class="fa-solid fa-lock"></i>' +
+              "<span>New complaint submissions are temporarily paused.</span>" +
+              "</div>";
+          }
+        }
+
+        /* ---- Verification gate ---- */
+        if (!Auth.requireVerifiedStudent()) return;
 
         var listEl = document.getElementById("complaints-list");
         var countEl = document.getElementById("cm-count");

@@ -1,5 +1,15 @@
 /* ==========================================================================
    CAMPUS SPACE — profile.js
+   Renders the signed-in student's own profile.
+
+   If the student is a leader (assigned by Admin), the profile is
+   rendered in the same layout as the public leader-profile page:
+     - Cover + avatar hero (with avatar-edit and cover-edit affordances)
+     - Verified checkmark next to name
+     - Association acronym + position chips in the tags row
+     - "Leadership Role" card in the main grid column
+     - Bio reads "<Position> of the <Association Full Name> · <Faculty>"
+   Otherwise, the standard student profile layout is used.
    ========================================================================== */
 "use strict";
 
@@ -14,12 +24,26 @@ function renderProfilePage() {
     DEMO_STUDENTS.find(function (s) {
       return s.username === session.username;
     }) || DEMO_STUDENTS[0];
+
   var fullName = [student.firstName, student.otherName, student.lastName]
     .filter(Boolean)
     .join(" ");
   var initials = Util.initials(fullName);
 
-  var isLeader = student.isLeader === true;
+  /* ---- Leadership detection (live, not seed-based) ---- */
+  var leaderInfo = null;
+  if (typeof getLeaderById === "function") {
+    leaderInfo = getLeaderById(student.id, { includeInactive: false });
+  }
+  if (!leaderInfo && typeof getLeaderList === "function") {
+    /* Fallback if getLeaderById isn't available — older builds */
+    leaderInfo =
+      getLeaderList().find(function (l) {
+        return l.student.id === student.id;
+      }) || null;
+  }
+  var isLeader = !!leaderInfo;
+
   var phoneVisible = isLeader || student.phoneVisible === true;
 
   var phoneRow;
@@ -58,19 +82,58 @@ function renderProfilePage() {
       '); background-size:cover; background-position:center;"'
     : "";
 
+  /* ---- Leader chip in tags row ---- */
   var leaderTag = "";
-  if (isLeader && typeof getLeaderList === "function") {
-    var lInfo = getLeaderList().find(function (l) {
-      return l.student.id === student.id;
-    });
-    if (lInfo) {
-      leaderTag =
-        '<span class="badge badge-brand"><i class="fa-solid fa-ranking-star"></i> ' +
-        Util.escape(lInfo.assoc.acronym) +
-        " \u2014 " +
-        Util.escape(lInfo.pos.name) +
-        "</span>";
-    }
+  if (isLeader && leaderInfo) {
+    leaderTag =
+      '<span class="badge badge-brand"><i class="fa-solid fa-ranking-star"></i> ' +
+      Util.escape(leaderInfo.assoc.acronym) +
+      " \u00b7 " +
+      Util.escape(leaderInfo.pos.name) +
+      "</span>";
+  }
+
+  /* ---- Bio — leader-aware ---- */
+  var bioText =
+    isLeader && leaderInfo
+      ? Util.escape(leaderInfo.pos.name) +
+        " of the " +
+        Util.escape(leaderInfo.assoc.name) +
+        " \u00b7 " +
+        Util.escape(student.faculty)
+      : Util.escape(student.department) +
+        " student at OAUSTECH \u00b7 Faculty of " +
+        Util.escape(student.faculty);
+
+  /* ---- Leadership Role card (main column, above Academic Information) ---- */
+  var leaderSection = "";
+  if (isLeader && leaderInfo) {
+    leaderSection =
+      '<div class="card profile-v2-card">' +
+      '<div class="card-head">' +
+      '<h3><i class="fa-solid fa-ranking-star" style="color:var(--brand-primary); margin-right:8px;"></i> Leadership Role</h3>' +
+      "</div>" +
+      '<div class="profile-v2-info-grid">' +
+      '<div class="profile-v2-info">' +
+      '<span class="label">Association</span>' +
+      '<span class="value">' +
+      Util.escape(leaderInfo.assoc.name) +
+      "</span>" +
+      "</div>" +
+      '<div class="profile-v2-info">' +
+      '<span class="label">Public tag</span>' +
+      '<span class="value">' +
+      Util.escape(leaderInfo.assoc.acronym) +
+      "</span>" +
+      "</div>" +
+      '<div class="profile-v2-info profile-v2-info-wide">' +
+      '<span class="label">Position</span>' +
+      '<span class="value">' +
+      Util.escape(leaderInfo.pos.name) +
+      "</span>" +
+      "</div>" +
+      "</div>" +
+      "</div>";
   }
 
   var html = "";
@@ -108,6 +171,8 @@ function renderProfilePage() {
   html += '<div class="profile-hero-info">';
   html +=
     '<div class="profile-hero-name-row"><h1>' + Util.escape(fullName) + "</h1>";
+  /* Verified checkmark — always shown when the account is active.
+     For leaders the checkmark also implies "verified leader". */
   if (student.status === "active")
     html += '<i class="fa-solid fa-circle-check tag-verified"></i>';
   html += "</div>";
@@ -127,12 +192,7 @@ function renderProfilePage() {
   html +=
     '<span class="badge badge-success"><i class="fa-solid fa-shield-halved"></i> Verified</span>';
   html += "</div>";
-  html +=
-    '<p class="profile-hero-bio" id="profile-bio">' +
-    Util.escape(student.department) +
-    " student at OAUSTECH \u00b7 Faculty of " +
-    Util.escape(student.faculty) +
-    "</p>";
+  html += '<p class="profile-hero-bio" id="profile-bio">' + bioText + "</p>";
   html += "</div>";
 
   html += '<div class="profile-hero-actions">';
@@ -146,6 +206,9 @@ function renderProfilePage() {
 
   html += '<div class="profile-v2-grid">';
   html += '<div class="profile-v2-main">';
+
+  /* Leadership card goes first if the student is a leader */
+  html += leaderSection;
 
   html += '<div class="card profile-v2-card">';
   html +=
@@ -226,6 +289,7 @@ function renderProfilePage() {
 
   root.innerHTML = html;
 
+  /* ---- Wire avatar / cover / edit form ---- */
   var avatarInput = document.getElementById("profile-avatar-input");
   var avatarEdit = document.getElementById("profile-avatar-edit");
   var uploadBtn = document.getElementById("upload-avatar-btn");
@@ -340,6 +404,7 @@ function renderProfilePage() {
     });
   }
 
+  /* ---- Edit profile form ---- */
   var form = document.getElementById("edit-profile-form");
   if (form) {
     form.querySelector('[name="firstName"]').value = student.firstName;
@@ -359,8 +424,12 @@ function renderProfilePage() {
         phone: [Rules.required, Rules.phone],
       },
       function (data) {
-        var bio = data.get("bio");
-        if (bioEl && bio) bioEl.textContent = bio;
+        /* For leaders, the bio is derived from the association + position
+           — don't let the student overwrite it. For non-leaders, allow edits. */
+        if (!isLeader) {
+          var bio = data.get("bio");
+          if (bioEl && bio) bioEl.textContent = bio;
+        }
         var newName = [
           data.get("firstName"),
           data.get("otherName"),

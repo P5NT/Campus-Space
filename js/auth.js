@@ -1,17 +1,7 @@
 /* ==========================================================================
    CAMPUS SPACE — auth.js
-   Frontend authentication simulation: login, register, verification,
-   password reset, session handling.
-
-   Student admin support:
-     Student admins (academia / su_pro) have BOTH an admin record and a
-     linked student record. Their session carries:
-       - studentId: pointer to the student record
-       - adminRole / adminRoles: preserved so the admin view still works
-       - viewMode: "admin" | "student" — which view is currently active
-     A deactivated student admin is auto-downgraded to student view on
-     their next page load — they keep their student account and never
-     lose their student-side access.
+   Frontend authentication simulation: login, register, dual verification
+   (email + phone), password reset, session handling.
    ========================================================================== */
 "use strict";
 
@@ -59,6 +49,49 @@ function getAllAdminsForAuth() {
 }
 
 /* -------------------------------------------------------------------------
+   STUDENT LOOKUP — merges seed + registered students, applies overrides
+   ------------------------------------------------------------------------- */
+function getAllStudentsForAuth() {
+  var base = (typeof DEMO_STUDENTS !== "undefined" ? DEMO_STUDENTS : []).map(
+    function (s) {
+      return Object.assign({}, s);
+    },
+  );
+
+  var registered = null;
+  try {
+    registered = Store.get("registered_students", []);
+  } catch (e) {
+    registered = [];
+  }
+  if (Array.isArray(registered)) {
+    registered.forEach(function (s) {
+      if (
+        !base.some(function (x) {
+          return x.id === s.id || x.username === s.username;
+        })
+      ) {
+        base.push(s);
+      }
+    });
+  }
+
+  var overrides = null;
+  try {
+    overrides = Store.get("student_overrides", null);
+  } catch (e) {
+    overrides = null;
+  }
+  if (overrides && overrides.edits) {
+    base.forEach(function (s) {
+      var edit = overrides.edits[s.id];
+      if (edit) Object.assign(s, edit);
+    });
+  }
+  return base;
+}
+
+/* -------------------------------------------------------------------------
    Auth — session helpers
    ------------------------------------------------------------------------- */
 const Auth = {
@@ -69,8 +102,80 @@ const Auth = {
     return !!Auth.current();
   },
 
+  /* Returns the current session's student record (or null if it's a
+     pure admin without a student link). */
+  currentStudent() {
+    var session = Auth.current();
+    if (!session) return null;
+    var students = getAllStudentsForAuth();
+    return (
+      students.find(function (s) {
+        return s.username === session.username;
+      }) ||
+      students.find(function (s) {
+        return s.id === session.studentId;
+      }) ||
+      null
+    );
+  },
+
+  /* Is the current student verified? Admins are considered verified. */
+  isVerified() {
+    var session = Auth.current();
+    if (!session) return false;
+    if (session.role === "admin" || session.role === "super_admin") return true;
+    var student = Auth.currentStudent();
+    if (!student) return false;
+    return student.verificationStatus === "verified";
+  },
+
+  /* Returns "verified" | "pending" | "rejected" | null.
+     Admins return "verified". */
+  verificationStatus() {
+    var session = Auth.current();
+    if (!session) return null;
+    if (session.role === "admin" || session.role === "super_admin")
+      return "verified";
+    var student = Auth.currentStudent();
+    return student ? student.verificationStatus || "pending" : null;
+  },
+
+  /* Called by gated pages. If the current student is not verified, shows
+     a lock screen in the #main container and returns false. */
+  requireVerifiedStudent(options) {
+    if (Auth.isVerified()) return true;
+    var status = Auth.verificationStatus();
+    var main = document.getElementById("main");
+    if (!main) return false;
+
+    var isRejected = status === "rejected";
+    var title = isRejected
+      ? "Verification rejected"
+      : "Awaiting student verification";
+    var body = isRejected
+      ? "Your student details were rejected by Admin. Please contact Admin to resolve this before accessing this feature."
+      : "Your student details are still being verified by Admin. This feature will unlock once your account is verified.";
+    var icon = isRejected ? "fa-user-slash" : "fa-hourglass-half";
+
+    main.innerHTML =
+      '<div class="card" style="max-width: 560px; margin: 40px auto; padding: 40px 32px; text-align: center;">' +
+      '<div class="empty-icon" style="margin: 0 auto 20px; background: var(--warning-soft); color: var(--warning);"><i class="fa-solid ' +
+      icon +
+      '"></i></div>' +
+      '<h2 style="font-size: var(--fs-xl); margin-bottom: 12px;">' +
+      title +
+      "</h2>" +
+      '<p style="font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.6; margin-bottom: 24px;">' +
+      body +
+      "</p>" +
+      '<div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">' +
+      '<a class="btn btn-primary" href="dashboard.html"><i class="fa-solid fa-house"></i> Back to Dashboard</a>' +
+      '<a class="btn btn-secondary" href="help-support.html"><i class="fa-solid fa-circle-question"></i> Get help</a>' +
+      "</div></div>";
+    return false;
+  },
+
   save(user) {
-    /* Preserve existing viewMode if we're re-saving the same user */
     var existing = Auth.current();
     var viewMode = "admin";
     if (existing && existing.id === user.id && existing.viewMode) {
@@ -95,15 +200,12 @@ const Auth = {
     });
   },
 
-  /* Switch between admin and student views for a student admin.
-     Only works if the session has a studentId. */
   switchView(target) {
     var session = Auth.current();
     if (!session) return false;
     if (!session.studentId) return false;
     if (target !== "admin" && target !== "student") return false;
 
-    /* If switching to admin, verify the admin record is still active */
     if (target === "admin") {
       var adminList = getAllAdminsForAuth();
       var record = adminList.find(function (a) {
@@ -157,20 +259,6 @@ function initLoginPage() {
     const notice = document.getElementById("expired-notice");
     if (notice) notice.style.display = "block";
   }
-  if (new URLSearchParams(location.search).get("deactivated") === "1") {
-    const notice = document.getElementById("expired-notice");
-    if (notice) {
-      notice.style.display = "block";
-      var h5 = notice.querySelector("h5");
-      var row = notice.querySelector(".row");
-      if (h5)
-        h5.innerHTML =
-          '<i class="fa-solid fa-user-slash"></i> Account deactivated';
-      if (row)
-        row.textContent =
-          "Your admin access has been revoked. Contact the Super Admin if this was a mistake.";
-    }
-  }
 
   bindForm(
     form,
@@ -199,7 +287,8 @@ function initLoginPage() {
       }
 
       setTimeout(() => {
-        const student = DEMO_STUDENTS.find(
+        const students = getAllStudentsForAuth();
+        const student = students.find(
           (s) =>
             s.username.toLowerCase() === id || s.email.toLowerCase() === id,
         );
@@ -211,9 +300,6 @@ function initLoginPage() {
 
         let matched = null;
 
-        /* Prefer the admin record when the account is an admin.
-         Seun and Temilade exist in BOTH DEMO_STUDENTS and DEMO_ADMINS —
-         we want the admin password to win for them. */
         if (admin) {
           const roleKey =
             admin.adminRole === "super_admin"
@@ -253,12 +339,10 @@ function initLoginPage() {
           return;
         }
 
-        /* Deactivation check — student admins get auto-downgraded, others blocked */
+        /* Deactivation check */
         if (matched.user.status === "deactivated") {
           if (matched.isAdmin && matched.user.studentId) {
-            /* Student admin whose admin access was revoked → auto-downgrade to
-             their student account. They never lose student-side access. */
-            var studentRecord = DEMO_STUDENTS.find(function (s) {
+            var studentRecord = getAllStudentsForAuth().find(function (s) {
               return s.id === matched.user.studentId;
             });
             if (studentRecord) {
@@ -287,6 +371,18 @@ function initLoginPage() {
           return;
         }
 
+        /* Rejected verification check — block login */
+        if (
+          !matched.isAdmin &&
+          matched.user.verificationStatus === "rejected"
+        ) {
+          Toast.error(
+            "Your verification was rejected. Contact Admin.",
+            "Verification rejected",
+          );
+          return;
+        }
+
         if (pw !== matched.expected) {
           Toast.error(
             "Incorrect password. Please try again.",
@@ -295,10 +391,8 @@ function initLoginPage() {
           return;
         }
 
-        /* Determine the initial view mode */
         var initialView = "student";
         if (matched.isAdmin) {
-          /* Admins default to admin view */
           initialView = "admin";
         }
         Auth.save(Object.assign({}, matched.user, { viewMode: initialView }));
@@ -318,7 +412,7 @@ function initLoginPage() {
 }
 
 /* -------------------------------------------------------------------------
-   Register
+   Register — collects details and generates BOTH email + phone OTPs
    ------------------------------------------------------------------------- */
 function initRegisterPage() {
   const form = document.getElementById("register-form");
@@ -365,6 +459,7 @@ function initRegisterPage() {
       firstName: [Rules.required, Rules.name],
       lastName: [Rules.required, Rules.name],
       username: [Rules.required, Rules.username],
+      email: [Rules.required, Rules.email],
       phone: [Rules.required, Rules.phone],
       faculty: [Rules.required],
       department: [Rules.required],
@@ -379,17 +474,20 @@ function initRegisterPage() {
         otherName: data.get("otherName") || "",
         lastName: data.get("lastName"),
         username: data.get("username"),
+        email: data.get("email"),
         phone: data.get("phone"),
         faculty: data.get("faculty"),
         department: data.get("department"),
         level: data.get("level"),
         matric: data.get("matric"),
         password: data.get("password"),
-        code: String(Math.floor(1000 + Math.random() * 9000)),
+        emailCode: String(Math.floor(1000 + Math.random() * 9000)),
+        phoneCode: String(Math.floor(100000 + Math.random() * 900000)),
+        emailVerified: false,
       };
       Store.set("pending_registration", pending);
       Toast.info(
-        "A 4-digit verification code has been sent to your email (simulated).",
+        "A 4-digit code has been sent to your email (simulated).",
         "Check your email",
       );
       setTimeout(() => {
@@ -400,9 +498,12 @@ function initRegisterPage() {
 }
 
 /* -------------------------------------------------------------------------
-   Email verification
+   Email verification — verify 4-digit code, then redirect to phone step
    ------------------------------------------------------------------------- */
 function initEmailVerificationPage() {
+  /* Only run on the email verification page */
+  if (!window.location.pathname.endsWith("email-verification.html")) return;
+
   const container = document.getElementById("otp-container");
   if (!container) return;
 
@@ -415,7 +516,7 @@ function initEmailVerificationPage() {
   initOtpInputs(container);
 
   const hint = document.getElementById("otp-hint");
-  if (hint) hint.textContent = pending.code;
+  if (hint) hint.textContent = pending.emailCode;
 
   const form = document.getElementById("verify-form");
   form.addEventListener("submit", (e) => {
@@ -429,7 +530,7 @@ function initEmailVerificationPage() {
       btn.classList.remove("is-loading");
       btn.disabled = false;
 
-      if (entered !== pending.code) {
+      if (entered !== pending.emailCode) {
         Toast.error(
           "The code you entered does not match. Please try again.",
           "Verification failed",
@@ -437,23 +538,16 @@ function initEmailVerificationPage() {
         return;
       }
 
+      pending.emailVerified = true;
+      Store.set("pending_registration", pending);
+
       Toast.success(
-        "Account verified. A welcome email has been sent (simulated).",
-        "Welcome to Campus Space",
+        "Email verified. Now let's verify your phone number.",
+        "Email verified",
       );
-      Auth.save({
-        id: "STU-" + Date.now(),
-        username: pending.username,
-        firstName: pending.firstName,
-        lastName: pending.lastName,
-        role: "student",
-        viewMode: "student",
-        avatar: "",
-      });
-      Store.remove("pending_registration");
       setTimeout(() => {
-        window.location.href = "../student/dashboard.html";
-      }, 900);
+        window.location.href = "phone-verification.html";
+      }, 800);
     }, 600);
   });
 
@@ -461,9 +555,120 @@ function initEmailVerificationPage() {
   if (resend) {
     resend.addEventListener("click", (e) => {
       e.preventDefault();
-      pending.code = String(Math.floor(1000 + Math.random() * 9000));
+      pending.emailCode = String(Math.floor(1000 + Math.random() * 9000));
       Store.set("pending_registration", pending);
-      if (hint) hint.textContent = pending.code;
+      if (hint) hint.textContent = pending.emailCode;
+      Toast.info(
+        "A new verification code has been sent (simulated).",
+        "Code resent",
+      );
+    });
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Phone verification — verify 6-digit code, then create the account
+   ------------------------------------------------------------------------- */
+function initPhoneVerificationPage() {
+  /* Only run on the phone verification page */
+  if (!window.location.pathname.endsWith("phone-verification.html")) return;
+
+  const container = document.getElementById("otp-container");
+  if (!container) return;
+
+  const pending = Store.get("pending_registration");
+  if (!pending) {
+    window.location.href = "register.html";
+    return;
+  }
+  if (!pending.emailVerified) {
+    /* Skip back to email step if it wasn't done */
+    window.location.href = "email-verification.html";
+    return;
+  }
+
+  initOtpInputs(container);
+
+  const hint = document.getElementById("otp-hint");
+  if (hint) hint.textContent = pending.phoneCode;
+
+  const phoneDisplay = document.getElementById("phone-display");
+  if (phoneDisplay) phoneDisplay.textContent = pending.phone;
+
+  const form = document.getElementById("verify-form");
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const entered = getOtpValue(container);
+    const btn = document.getElementById("verify-submit");
+    btn.classList.add("is-loading");
+    btn.disabled = true;
+
+    setTimeout(() => {
+      btn.classList.remove("is-loading");
+      btn.disabled = false;
+
+      if (entered !== pending.phoneCode) {
+        Toast.error(
+          "The code you entered does not match. Please try again.",
+          "Verification failed",
+        );
+        return;
+      }
+
+      /* Create the student account — pending student-detail verification */
+      const newStudent = {
+        id: "STU-" + Date.now(),
+        firstName: pending.firstName,
+        otherName: pending.otherName || "",
+        lastName: pending.lastName,
+        username: pending.username,
+        email: pending.email,
+        phone: pending.phone,
+        faculty: pending.faculty,
+        department: pending.department,
+        level: pending.level,
+        matric: pending.matric,
+        password: pending.password,
+        association: "",
+        associationFull: "",
+        position: "",
+        avatar: "",
+        status: "active",
+        role: "student",
+        verificationStatus: "pending",
+        isLeader: false,
+        isEmergencyContact: false,
+        emergencyCategory: "",
+        joined: new Date().toISOString().slice(0, 10),
+      };
+
+      /* Persist to the registered_students bucket */
+      var registered = Store.get("registered_students", []) || [];
+      registered.unshift(newStudent);
+      Store.set("registered_students", registered);
+
+      Store.remove("pending_registration");
+
+      Toast.success(
+        "Account created. Please wait for Admin to verify your student details.",
+        "Welcome to Campus Space",
+      );
+
+      Auth.save(newStudent);
+
+      setTimeout(() => {
+        window.location.href = "../student/dashboard.html";
+      }, 1200);
+    }, 600);
+  });
+
+  const resend = document.getElementById("otp-resend");
+  if (resend) {
+    resend.addEventListener("click", (e) => {
+      e.preventDefault();
+      pending.phoneCode = String(Math.floor(100000 + Math.random() * 900000));
+      Store.set("pending_registration", pending);
+      if (hint) hint.textContent = pending.phoneCode;
       Toast.info(
         "A new verification code has been sent (simulated).",
         "Code resent",
@@ -542,12 +747,7 @@ function initLogoutButtons() {
 }
 
 /* -------------------------------------------------------------------------
-   Page guard
-   - Redirects to login if there's no session
-   - Enforces admin deactivation: a deactivated student admin is
-     auto-downgraded to student view; a deactivated non-student admin is
-     signed out.
-   - Enforces the correct view for the page (admin vs student)
+   Page guard — role + verification enforced at page level
    ------------------------------------------------------------------------- */
 function guardPage(requiredRole) {
   const session = Auth.current();
@@ -558,18 +758,15 @@ function guardPage(requiredRole) {
     return false;
   }
 
-  /* ---- Admin deactivation check ---- */
+  /* Admin deactivation check */
   if (session.role === "admin" || session.role === "super_admin") {
     const adminList = getAllAdminsForAuth();
     const record = adminList.find(
       (a) => a.id === session.id || a.username === session.username,
     );
     if (record && record.status === "deactivated") {
-      /* Student admin → auto-downgrade to student view */
       if (session.studentId) {
-        var studentRecord = (
-          typeof DEMO_STUDENTS !== "undefined" ? DEMO_STUDENTS : []
-        ).find(function (s) {
+        var studentRecord = getAllStudentsForAuth().find(function (s) {
           return s.id === session.studentId;
         });
         if (studentRecord) {
@@ -588,7 +785,6 @@ function guardPage(requiredRole) {
           return false;
         }
       }
-      /* Non-student admin → sign out */
       Store.remove("session");
       Toast.warning(
         "Your admin account has been deactivated. You have been signed out.",
@@ -601,13 +797,12 @@ function guardPage(requiredRole) {
     }
   }
 
-  /* ---- Page access check ---- */
+  /* Page access check */
   if (requiredRole) {
     const isAdminPage = requiredRole === "admin";
     const isAdminSession =
       session.role === "admin" || session.role === "super_admin";
 
-    /* Viewing admin page requires admin role AND admin view mode */
     if (isAdminPage) {
       if (!isAdminSession) {
         window.location.href =
@@ -615,23 +810,17 @@ function guardPage(requiredRole) {
         return false;
       }
       if (session.viewMode === "student") {
-        /* Student admin with student view active trying to open admin page →
-           silently switch back to admin view */
         session.viewMode = "admin";
         Store.set("session", session);
       }
       return true;
     }
 
-    /* Viewing student page */
     if (requiredRole === "student") {
-      /* Admins (non-student) shouldn't be here — send them to the admin dashboard */
       if (isAdminSession && !session.studentId) {
         window.location.href = base + "pages/admin/dashboard.html";
         return false;
       }
-      /* Student admins in admin view mode landing on a student page →
-         treat it as an implicit switch to student view */
       if (isAdminSession && session.studentId && session.viewMode === "admin") {
         session.viewMode = "student";
         Store.set("session", session);
@@ -650,6 +839,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initLoginPage();
   initRegisterPage();
   initEmailVerificationPage();
+  initPhoneVerificationPage();
   initForgotPasswordPage();
   initResetPasswordPage();
   initLogoutButtons();

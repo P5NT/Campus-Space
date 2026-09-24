@@ -114,6 +114,9 @@
         }
         initAppShell("student");
 
+        /* ---- Verification gate ---- */
+        if (!Auth.requireVerifiedStudent()) return;
+
         const grid = document.getElementById("events-grid");
         let cat = "all";
         function apply() {

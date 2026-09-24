@@ -4,7 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Settings — Campus Space</title>
-
     <link
       rel="icon"
       type="image/x-icon"
@@ -29,7 +28,6 @@
     />
     <link rel="manifest" href="../../assets/favicon/site.webmanifest" />
     <meta name="theme-color" content="#B33A3A" />
-
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -54,11 +52,9 @@
         id="app-sidebar"
         aria-label="Sidebar navigation"
       ></aside>
-
       <div class="app-main">
         <header class="app-header" id="app-header"></header>
-
-        <main class="app-content" id="main">
+        <main class="app-content" id="main" id="settings-root">
           <div class="page-head">
             <div class="page-head-text">
               <h1 class="page-title">Settings</h1>
@@ -70,12 +66,14 @@
           </div>
 
           <div class="settings-layout">
-            <!-- Settings navigation -->
             <nav class="settings-nav" aria-label="Settings sections">
               <button
                 class="settings-nav-item is-active"
-                data-target="sec-account"
+                data-target="sec-contact"
               >
+                <i class="fa-solid fa-address-card"></i> Contact info
+              </button>
+              <button class="settings-nav-item" data-target="sec-account">
                 <i class="fa-solid fa-user"></i> Account
               </button>
               <button class="settings-nav-item" data-target="sec-privacy">
@@ -95,8 +93,53 @@
               </button>
             </nav>
 
-            <!-- Settings content -->
             <div>
+              <!-- Leadership (leaders only) -->
+              <section
+                class="settings-section"
+                id="sec-leadership"
+                style="display: none"
+              >
+                <div class="card">
+                  <div class="card-head">
+                    <div>
+                      <h3>Leadership</h3>
+                      <p class="section-desc" style="margin: 2px 0 0">
+                        Your current leadership role on Campus Space.
+                      </p>
+                    </div>
+                    <span class="badge badge-brand"
+                      ><i class="fa-solid fa-ranking-star"></i> Leader</span
+                    >
+                  </div>
+                  <div
+                    class="card-body"
+                    id="settings-leadership-body"
+                    style="padding-top: 0"
+                  ></div>
+                </div>
+              </section>
+
+              <!-- Contact information -->
+              <section class="settings-section" id="sec-contact">
+                <div class="card">
+                  <div class="card-head">
+                    <div>
+                      <h3>Contact information</h3>
+                      <p class="section-desc" style="margin: 2px 0 0">
+                        Changes to your email or phone require verification with
+                        a code sent to the new contact.
+                      </p>
+                    </div>
+                  </div>
+                  <div
+                    class="card-body"
+                    id="contact-body"
+                    style="padding-top: 0"
+                  ></div>
+                </div>
+              </section>
+
               <!-- Account -->
               <section class="settings-section" id="sec-account">
                 <div class="card">
@@ -124,17 +167,16 @@
                     </div>
                   </div>
                   <div class="card-body" style="padding-top: 0">
-                    <div class="setting-row" id="phone-visibility-row">
+                    <div class="setting-row" id="privacy-phone-row">
                       <div class="setting-row-info">
                         <h4>Show my phone number</h4>
-                        <p id="phone-visibility-desc">
+                        <p>
                           Allow other verified students to see your contact
                           number on your profile.
                         </p>
                       </div>
                       <button
                         class="toggle"
-                        id="phone-visibility-toggle"
                         data-setting="privacy_show_phone"
                         aria-checked="false"
                         aria-label="Toggle phone visibility"
@@ -258,22 +300,37 @@
                     </div>
                   </div>
                   <div class="card-body" style="padding-top: 0">
-                    <div class="setting-row">
+                    <div
+                      class="setting-row setting-row-stacked"
+                      style="border-top: 0"
+                    >
                       <div class="setting-row-info">
-                        <h4>Password</h4>
+                        <h4>Change password</h4>
                         <p>
-                          Change the password you use to sign in to Campus
-                          Space.
+                          We'll verify your identity with a code sent to your
+                          email before you set a new password.
                         </p>
                       </div>
                       <button
-                        type="button"
                         class="btn btn-secondary"
                         id="open-change-password"
-                        data-modal-open="change-password-modal"
+                        type="button"
                       >
                         <i class="fa-solid fa-key"></i> Change password
                       </button>
+                    </div>
+
+                    <div class="setting-row">
+                      <div class="setting-row-info">
+                        <h4>Two-factor verification</h4>
+                        <p>
+                          Your email and phone are verified. Contact changes go
+                          through a verification step.
+                        </p>
+                      </div>
+                      <span class="badge badge-success"
+                        ><i class="fa-solid fa-circle-check"></i> Enabled</span
+                      >
                     </div>
                   </div>
                 </div>
@@ -310,7 +367,7 @@
                 </div>
               </section>
 
-              <!-- Danger zone -->
+              <!-- Danger -->
               <section class="settings-section" id="sec-danger">
                 <div class="card" style="border-color: rgba(192, 57, 43, 0.25)">
                   <div
@@ -348,20 +405,7 @@
       </div>
     </div>
 
-    <div id="mobile-nav-mount"></div>
-    <div class="mobile-menu-backdrop"></div>
-    <aside
-      class="mobile-menu"
-      id="mobile-menu-mount"
-      aria-label="Mobile menu"
-    ></aside>
-
-    <!-- =====================================================================
-     Change Password modal — 3-step flow
-     Step 1: Verify identity (current password OR forgot-password path)
-     Step 2: Enter 4-digit code sent to email
-     Step 3: Set new password
-     ===================================================================== -->
+    <!-- CHANGE PASSWORD — multi-step modal -->
     <div
       class="modal-backdrop"
       id="change-password-modal"
@@ -377,30 +421,27 @@
           </button>
         </div>
 
-        <!-- Progress indicator -->
         <div class="cp-steps" id="cp-steps">
           <div class="cp-step is-active" data-step="1">
             <span class="cp-step-num">1</span>
-            <span class="cp-step-label">Verify identity</span>
+            <span class="cp-step-label">Verify</span>
           </div>
           <div class="cp-step" data-step="2">
             <span class="cp-step-num">2</span>
-            <span class="cp-step-label">Enter code</span>
+            <span class="cp-step-label">Confirm</span>
           </div>
           <div class="cp-step" data-step="3">
             <span class="cp-step-num">3</span>
-            <span class="cp-step-label">New password</span>
+            <span class="cp-step-label">Update</span>
           </div>
         </div>
 
-        <!-- Step 1 — Verify identity -->
-        <form id="cp-step-1" class="cp-step-form" novalidate>
+        <form class="cp-step-form" id="cp-step-1" novalidate>
           <div class="modal-body">
             <p class="cp-step-desc">
-              Confirm it's you. Enter your current password, or verify by email
-              if you've forgotten it.
+              Enter your current password to begin. We'll verify it's really you
+              before allowing a change.
             </p>
-
             <div class="field">
               <label class="label" for="cp-current"
                 >Current password <span class="req">*</span></label
@@ -431,53 +472,50 @@
               </div>
             </div>
 
-            <!-- Alternative path for users who forgot their password -->
             <div class="cp-forgot-row">
-              <div class="cp-forgot-divider"><span>or</span></div>
-              <button
-                type="button"
+              <div class="cp-forgot-divider">Or</div>
+              <a
                 class="btn btn-ghost btn-block"
                 id="cp-forgot-password"
+                href="../auth/forgot-password.html"
               >
-                <i class="fa-solid fa-envelope-circle-check"></i>
-                Forgot your password? Verify by email instead
-              </button>
+                <i class="fa-solid fa-question-circle"></i> Forgot your current
+                password?
+              </a>
             </div>
           </div>
           <div class="modal-foot">
             <button type="button" class="btn btn-secondary" data-modal-close>
               Cancel
             </button>
-            <button type="submit" class="btn btn-primary">
-              <i class="fa-solid fa-paper-plane"></i> Send verification code
+            <button type="submit" class="btn btn-primary" id="cp-step-1-submit">
+              Continue <i class="fa-solid fa-arrow-right"></i>
             </button>
           </div>
         </form>
 
-        <!-- Step 2 — Verification code -->
-        <form id="cp-step-2" class="cp-step-form" novalidate hidden>
+        <form class="cp-step-form" id="cp-step-2" novalidate hidden>
           <div class="modal-body">
             <p class="cp-step-desc">
-              We've sent a 4-digit verification code to
-              <strong id="cp-email-mask">your email</strong>. Enter it below to
-              continue.
+              We sent a 6-digit code to
+              <strong id="cp-email-target">your email</strong>. Enter it below
+              to confirm your identity.
             </p>
-
             <div
               class="demo-box"
               style="
                 background: var(--info-soft);
                 border-color: rgba(44, 111, 168, 0.25);
+                margin-bottom: 8px;
               "
             >
               <h5 style="color: var(--info)">
-                <i class="fa-solid fa-circle-info"></i> Demo: your code
+                <i class="fa-solid fa-circle-info"></i> Demo code
               </h5>
               <div class="row">
-                <span>Use this code:</span> <code id="cp-otp-hint">----</code>
+                <span>Use this code:</span> <code id="cp-otp-hint">------</code>
               </div>
             </div>
-
             <div
               class="otp-inputs"
               id="cp-otp-container"
@@ -512,47 +550,41 @@
                 maxlength="1"
                 aria-label="Digit 4"
               />
+              <input
+                class="otp-input"
+                type="text"
+                inputmode="numeric"
+                maxlength="1"
+                aria-label="Digit 5"
+              />
+              <input
+                class="otp-input"
+                type="text"
+                inputmode="numeric"
+                maxlength="1"
+                aria-label="Digit 6"
+              />
             </div>
-            <div
-              class="field-error"
-              id="cp-otp-error"
-              style="justify-content: center"
-            >
+            <div class="field-error" id="cp-otp-error">
               <i class="fa-solid fa-circle-exclamation"></i
-              ><span>The code you entered is incorrect.</span>
+              ><span>The code you entered doesn't match. Try again.</span>
             </div>
-
-            <p
-              style="
-                text-align: center;
-                font-size: var(--fs-xs);
-                color: var(--text-tertiary);
-                margin-top: 12px;
-              "
-            >
-              Didn't get it?
-              <a
-                href="#"
-                id="cp-otp-resend"
-                style="color: var(--brand-primary); font-weight: 600"
-                >Resend code</a
-              >
-            </p>
           </div>
           <div class="modal-foot">
-            <button type="button" class="btn btn-ghost" id="cp-back-to-1">
+            <button type="button" class="btn btn-secondary" id="cp-step-2-back">
               <i class="fa-solid fa-arrow-left"></i> Back
             </button>
-            <button type="submit" class="btn btn-primary">
-              <i class="fa-solid fa-check"></i> Verify code
+            <button type="submit" class="btn btn-primary" id="cp-step-2-submit">
+              Verify code
             </button>
           </div>
         </form>
 
-        <!-- Step 3 — New password -->
-        <form id="cp-step-3" class="cp-step-form" novalidate hidden>
+        <form class="cp-step-form" id="cp-step-3" novalidate hidden>
           <div class="modal-body">
-            <p class="cp-step-desc">Create a new password for your account.</p>
+            <p class="cp-step-desc">
+              Choose a strong password. It must meet all the requirements below.
+            </p>
 
             <div class="field">
               <label class="label" for="cp-new"
@@ -635,10 +667,10 @@
             </div>
           </div>
           <div class="modal-foot">
-            <button type="button" class="btn btn-ghost" id="cp-back-to-2">
-              <i class="fa-solid fa-arrow-left"></i> Back
+            <button type="button" class="btn btn-secondary" data-modal-close>
+              Cancel
             </button>
-            <button type="submit" class="btn btn-primary">
+            <button type="submit" class="btn btn-primary" id="cp-step-3-submit">
               <i class="fa-solid fa-check"></i> Update password
             </button>
           </div>
@@ -646,125 +678,277 @@
       </div>
     </div>
 
+    <!-- Change contact modal -->
+    <div
+      class="modal-backdrop"
+      id="change-contact-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="cc-title"
+    >
+      <div class="modal">
+        <div class="modal-head">
+          <h3 id="cc-title">Change email</h3>
+          <button class="btn-icon" data-modal-close aria-label="Close">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <form id="change-contact-form" novalidate>
+          <div class="modal-body">
+            <p
+              style="
+                font-size: var(--fs-sm);
+                color: var(--text-secondary);
+                margin-bottom: 20px;
+              "
+            >
+              We'll send a verification code to the new address. The change
+              takes effect once you confirm the code.
+            </p>
+            <div class="field">
+              <label class="label" for="cc-value"
+                >New email <span class="req">*</span></label
+              >
+              <input
+                class="input"
+                id="cc-value"
+                name="value"
+                type="email"
+                autocomplete="email"
+              />
+              <div class="field-error">
+                <i class="fa-solid fa-circle-exclamation"></i
+                ><span>Please enter a valid value.</span>
+              </div>
+            </div>
+          </div>
+          <div class="modal-foot">
+            <button type="button" class="btn btn-secondary" data-modal-close>
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary" id="cc-submit">
+              <i class="fa-solid fa-paper-plane"></i> Send verification code
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Verify contact change modal -->
+    <div
+      class="modal-backdrop"
+      id="verify-contact-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="vc-title"
+    >
+      <div class="modal">
+        <div class="modal-head">
+          <h3 id="vc-title">Verify your new email</h3>
+          <button class="btn-icon" data-modal-close aria-label="Close">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <form id="verify-contact-form" novalidate>
+          <div class="modal-body">
+            <p
+              style="
+                font-size: var(--fs-sm);
+                color: var(--text-secondary);
+                margin-bottom: 16px;
+              "
+            >
+              We sent a code to <strong id="vc-target">—</strong>.
+            </p>
+            <div
+              class="demo-box"
+              style="
+                background: var(--info-soft);
+                border-color: rgba(44, 111, 168, 0.25);
+                margin-bottom: 20px;
+              "
+            >
+              <h5 style="color: var(--info)">
+                <i class="fa-solid fa-circle-info"></i> Demo code
+              </h5>
+              <div class="row">
+                <span>Use this code:</span> <code id="vc-hint">------</code>
+              </div>
+            </div>
+            <div
+              class="otp-inputs"
+              id="vc-otp-container"
+              role="group"
+              aria-label="Verification code"
+            ></div>
+          </div>
+          <div class="modal-foot">
+            <button type="button" class="btn btn-secondary" data-modal-close>
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary" id="vc-submit">
+              <i class="fa-solid fa-check"></i> Confirm change
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="mobile-nav-mount"></div>
+    <div class="mobile-menu-backdrop"></div>
+    <aside
+      class="mobile-menu"
+      id="mobile-menu-mount"
+      aria-label="Mobile menu"
+    ></aside>
+
     <script src="../../data/students.js"></script>
+    <script src="../../data/associations.js"></script>
     <script src="../../js/main.js"></script>
     <script src="../../js/validation.js"></script>
     <script src="../../js/auth.js"></script>
     <script src="../../js/navigation.js"></script>
     <script src="../../js/notifications.js"></script>
+    <script src="../../js/leaders.js"></script>
     <script src="../../js/settings.js"></script>
+    <script src="../../js/contact-change.js"></script>
+    <script src="../../js/password-change.js"></script>
     <script>
-      /* ==========================================================================
-   Settings page — account summary, nav scroll, phone override.
-   (Password flow logic lives in js/settings.js.)
-   ========================================================================== */
-      document.addEventListener("DOMContentLoaded", function () {
-        var session = Auth.current();
+      document.addEventListener("DOMContentLoaded", () => {
+        const session = Auth.current();
         if (!session) {
           window.location.href = "../auth/login.html";
           return;
         }
         initAppShell("student");
 
-        /* ---- Account summary ---- */
-        var body = document.getElementById("settings-account-body");
-        var student =
-          DEMO_STUDENTS.find(function (s) {
-            return s.username === session.username;
-          }) || {};
+        const student =
+          typeof getAllStudentsForAuth === "function"
+            ? getAllStudentsForAuth().find(
+                (s) =>
+                  s.username === session.username || s.id === session.studentId,
+              )
+            : (DEMO_STUDENTS || []).find(
+                (s) => s.username === session.username,
+              );
 
-        body.innerHTML =
-          '<div class="setting-row" style="border-top:0;">' +
-          '<div class="setting-row-info">' +
-          "<h4>Username</h4>" +
-          "<p>@" +
-          Util.escape(session.username) +
-          "</p>" +
-          "</div>" +
-          '<span class="badge badge-neutral">Fixed</span>' +
-          "</div>" +
-          '<div class="setting-row">' +
-          '<div class="setting-row-info">' +
-          "<h4>Full name</h4>" +
-          "<p>" +
-          Util.escape(session.name || "—") +
-          "</p>" +
-          "</div>" +
-          '<a href="profile.html" class="btn btn-ghost btn-sm">Edit profile <i class="fa-solid fa-arrow-right"></i></a>' +
-          "</div>" +
-          '<div class="setting-row">' +
-          '<div class="setting-row-info">' +
-          "<h4>Faculty &amp; Department</h4>" +
-          "<p>" +
-          Util.escape(student.faculty || "—") +
-          " · " +
-          Util.escape(student.department || "—") +
-          "</p>" +
-          "</div>" +
-          '<span class="badge badge-neutral">Admin managed</span>' +
-          "</div>" +
-          '<div class="setting-row">' +
-          '<div class="setting-row-info">' +
-          "<h4>Level</h4>" +
-          "<p>" +
-          Util.escape(student.level || "—") +
-          " Level</p>" +
-          "</div>" +
-          '<span class="badge badge-neutral">Admin managed</span>' +
-          "</div>" +
-          '<div class="setting-row">' +
-          '<div class="setting-row-info">' +
-          "<h4>Matric number</h4>" +
-          "<p>" +
-          Util.escape(student.matric || "—") +
-          "</p>" +
-          "</div>" +
-          '<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Verified</span>' +
-          "</div>";
+        /* ---------- Live leader detection ---------- */
+        let leaderInfo = null;
+        if (student && typeof getLeaderById === "function") {
+          leaderInfo = getLeaderById(student.id, { includeInactive: false });
+        }
+        const isLeader = !!leaderInfo;
 
-        /* ---- Settings nav scroll + active state ---- */
-        document.querySelectorAll(".settings-nav-item").forEach(function (btn) {
-          btn.addEventListener("click", function () {
-            var target = document.getElementById(
+        /* ---------- Leadership card (leaders only) ---------- */
+        if (isLeader) {
+          const sec = document.getElementById("sec-leadership");
+          const body = document.getElementById("settings-leadership-body");
+          if (sec && body) {
+            sec.style.display = "";
+            body.innerHTML = `
+              <div class="setting-row" style="border-top:0;">
+                <div class="setting-row-info">
+                  <h4>Association</h4>
+                  <p>${Util.escape(leaderInfo.assoc.name)}</p>
+                </div>
+                <span class="badge badge-neutral">Admin managed</span>
+              </div>
+              <div class="setting-row">
+                <div class="setting-row-info">
+                  <h4>Position</h4>
+                  <p>${Util.escape(leaderInfo.pos.name)}</p>
+                </div>
+                <span class="badge badge-neutral">Admin managed</span>
+              </div>
+              <div class="setting-row">
+                <div class="setting-row-info">
+                  <h4>Public tag</h4>
+                  <p>${Util.escape(leaderInfo.assoc.acronym)}</p>
+                </div>
+                <span class="badge badge-brand">
+                  <i class="fa-solid fa-ranking-star"></i> Displayed on posts
+                </span>
+              </div>`;
+
+            /* Move the Leadership nav item to the top */
+            const nav = document.querySelector(".settings-nav");
+            if (nav) {
+              const item = document.createElement("button");
+              item.className = "settings-nav-item";
+              item.setAttribute("data-target", "sec-leadership");
+              item.innerHTML =
+                '<i class="fa-solid fa-ranking-star"></i> Leadership';
+              nav.insertBefore(item, nav.firstChild);
+            }
+          }
+        }
+
+        /* ---------- Lock the phone-visibility toggle for leaders ---------- */
+        if (isLeader) {
+          const row = document.getElementById("privacy-phone-row");
+          if (row) {
+            row.innerHTML = `
+              <div class="setting-row-info">
+                <h4>Phone number visibility</h4>
+                <p>
+                  As a student leader, your phone number is always visible to
+                  other verified students. This is required for your role.
+                </p>
+              </div>
+              <span class="badge badge-success">
+                <i class="fa-solid fa-lock"></i> Always visible
+              </span>`;
+          }
+        }
+
+        /* ---------- Account details summary ---------- */
+        const body = document.getElementById("settings-account-body");
+        if (body && student) {
+          body.innerHTML = `
+            <div class="setting-row" style="border-top:0;">
+              <div class="setting-row-info"><h4>Username</h4><p>@${Util.escape(session.username)}</p></div>
+              <span class="badge badge-neutral">Fixed</span>
+            </div>
+            <div class="setting-row">
+              <div class="setting-row-info"><h4>Full name</h4><p>${Util.escape(session.name || "—")}</p></div>
+              <a href="profile.html" class="btn btn-ghost btn-sm">Edit profile <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+            <div class="setting-row">
+              <div class="setting-row-info"><h4>Faculty &amp; Department</h4><p>${Util.escape(student.faculty || "—")} · ${Util.escape(student.department || "—")}</p></div>
+              <span class="badge badge-neutral">Admin managed</span>
+            </div>
+            <div class="setting-row">
+              <div class="setting-row-info"><h4>Level</h4><p>${Util.escape(student.level || "—")} Level</p></div>
+              <span class="badge badge-neutral">Admin managed</span>
+            </div>
+            <div class="setting-row">
+              <div class="setting-row-info"><h4>Matric number</h4><p>${Util.escape(student.matric || "—")}</p></div>
+              <span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Verified</span>
+            </div>`;
+        }
+
+        /* ---------- Settings nav scroll + active state ---------- */
+        document.querySelectorAll(".settings-nav-item").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const target = document.getElementById(
               btn.getAttribute("data-target"),
             );
             if (target)
               target.scrollIntoView({ behavior: "smooth", block: "start" });
             document
               .querySelectorAll(".settings-nav-item")
-              .forEach(function (b) {
-                b.classList.remove("is-active");
-              });
+              .forEach((b) => b.classList.remove("is-active"));
             btn.classList.add("is-active");
           });
         });
 
-        /* ---- Phone visibility — respects leader override ---- */
-        var isLeader = student.isLeader === true;
-        var toggle = document.getElementById("phone-visibility-toggle");
-        var desc = document.getElementById("phone-visibility-desc");
+        /* ---------- Contact change system ---------- */
+        if (typeof initContactChange === "function")
+          initContactChange(session, student);
 
-        if (isLeader) {
-          if (toggle) {
-            toggle.setAttribute("aria-checked", "true");
-            toggle.setAttribute("disabled", "true");
-            toggle.style.opacity = "0.6";
-            toggle.style.cursor = "not-allowed";
-            toggle.setAttribute(
-              "title",
-              "Phone is always visible for verified leaders",
-            );
-          }
-          if (desc) {
-            desc.innerHTML =
-              "You are a verified student leader — your phone number is always visible on your profile. This is required for your leadership role.";
-          }
-        } else if (toggle) {
-          toggle.setAttribute(
-            "aria-checked",
-            student.phoneVisible === true ? "true" : "false",
-          );
-        }
+        /* ---------- Password change system ---------- */
+        if (typeof initPasswordChange === "function")
+          initPasswordChange(session, student);
       });
     </script>
   </body>

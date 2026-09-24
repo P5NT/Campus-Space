@@ -59,10 +59,10 @@
             <div class="page-head-text">
               <h1 class="page-title">Announcements</h1>
               <p class="page-subtitle">
-                Publish and manage official announcements.
+                Publish official announcements to all students.
               </p>
             </div>
-            <button class="btn btn-primary" id="ann-publish-btn" type="button">
+            <button class="btn btn-primary" id="new-ann-btn" type="button">
               <i class="fa-solid fa-bullhorn"></i> New announcement
             </button>
           </div>
@@ -406,6 +406,35 @@
         }
 
         initAppShell("admin");
+        /* ---- System access gate: announcements publishing ----
+           Super Admin is not gated. Only regular Admins are. */
+        var isSuper =
+          typeof Permissions !== "undefined" &&
+          Permissions.can(session, "admins.manage");
+        var canPublishAnnouncements =
+          typeof SystemSettings === "undefined" ||
+          SystemSettings.isEnabled("announcements_enabled");
+        if (!isSuper && !canPublishAnnouncements) {
+          var annBtn = document.getElementById("new-ann-btn");
+          if (annBtn) {
+            annBtn.disabled = true;
+            annBtn.title = "Publishing is temporarily disabled by Super Admin";
+            annBtn.style.opacity = "0.5";
+            annBtn.style.cursor = "not-allowed";
+            annBtn.addEventListener(
+              "click",
+              function (e) {
+                e.stopPropagation();
+                e.preventDefault();
+                Toast.warning(
+                  "Announcements publishing has been paused by Super Admin.",
+                  "Paused",
+                );
+              },
+              true,
+            );
+          }
+        }
 
         var STORAGE_KEY = "announcements_overrides";
 
@@ -923,11 +952,12 @@
         /* ------------------------------------------------------------------
            TRIGGERS
            ------------------------------------------------------------------ */
-        document
-          .getElementById("ann-publish-btn")
-          .addEventListener("click", function () {
+        var newAnnBtn = document.getElementById("new-ann-btn");
+        if (newAnnBtn) {
+          newAnnBtn.addEventListener("click", function () {
             openEditor(null);
           });
+        }
 
         filterBar.addEventListener("click", function (e) {
           var btn = e.target.closest("[data-status]");

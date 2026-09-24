@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Study Groups — Admin — Campus Space</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="../../assets/favicon/favicon.ico"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../../assets/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="../../assets/favicon/favicon-16x16.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="../../assets/favicon/apple-touch-icon.png"
+    />
+    <link rel="manifest" href="../../assets/favicon/site.webmanifest" />
+    <meta name="theme-color" content="#B33A3A" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="../../css/style.css" />
+  </head>
+  <body class="has-session admin-body">
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <div class="app-shell">
+      <aside
+        class="sidebar admin-sidebar"
+        id="app-sidebar"
+        aria-label="Sidebar navigation"
+      ></aside>
+      <div class="app-main">
+        <header class="app-header" id="app-header"></header>
+        <main class="app-content" id="main">
+          <div class="page-head">
+            <div class="page-head-text">
+              <h1 class="page-title">Study Groups</h1>
+              <p class="page-subtitle">
+                All study groups, their creators, members, and full message
+                history. Deleted groups and deleted messages remain visible here
+                for record-keeping.
+              </p>
+            </div>
+          </div>
+
+          <!-- Stats -->
+          <div class="grid grid-4" style="margin-bottom: 32px">
+            <div class="stat">
+              <div class="stat-label">Total groups</div>
+              <div class="stat-value" id="stat-total">—</div>
+              <div class="stat-meta">All groups ever created</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Active</div>
+              <div
+                class="stat-value"
+                id="stat-active"
+                style="color: var(--success)"
+              >
+                —
+              </div>
+              <div class="stat-meta">Visible to students</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Deleted</div>
+              <div
+                class="stat-value"
+                id="stat-deleted"
+                style="color: var(--danger)"
+              >
+                —
+              </div>
+              <div class="stat-meta">Hidden from students</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Total memberships</div>
+              <div
+                class="stat-value"
+                id="stat-members"
+                style="color: var(--brand-secondary)"
+              >
+                —
+              </div>
+              <div class="stat-meta">Across all active groups</div>
+            </div>
+          </div>
+
+          <!-- Toolbar -->
+          <div class="toolbar">
+            <div class="input-wrap">
+              <i class="fa-solid fa-magnifying-glass input-icon"></i>
+              <input
+                class="input"
+                type="search"
+                id="ag-search"
+                placeholder="Search by group name, course, or creator…"
+                aria-label="Search groups"
+              />
+            </div>
+            <select class="select" id="ag-status" aria-label="Filter by status">
+              <option value="">All statuses</option>
+              <option value="active">Active</option>
+              <option value="deleted">Deleted</option>
+            </select>
+            <select
+              class="select"
+              id="ag-dept"
+              aria-label="Filter by department"
+            >
+              <option value="">All departments</option>
+            </select>
+          </div>
+
+          <div class="cluster-between" style="margin-bottom: 16px">
+            <p class="section-desc" style="margin: 0" id="ag-count">Loading…</p>
+            <button
+              class="btn btn-ghost btn-sm"
+              id="ag-clear"
+              type="button"
+              style="display: none"
+            >
+              <i class="fa-solid fa-rotate-left"></i> Clear filters
+            </button>
+          </div>
+
+          <div id="ag-list"></div>
+        </main>
+      </div>
+    </div>
+
+    <!-- Admin chat modal — read-only view of full message history -->
+    <div
+      class="modal-backdrop"
+      id="admin-chat-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ac-title"
+    >
+      <div class="modal modal-lg" style="max-width: 720px">
+        <div class="modal-head">
+          <h3 id="ac-title">Group chat</h3>
+          <button class="btn-icon" data-modal-close aria-label="Close">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div
+          class="modal-body"
+          style="padding: 0; max-height: 70vh; overflow-y: auto"
+        >
+          <div
+            id="ac-body"
+            style="padding: 20px; background: var(--bg-page)"
+          ></div>
+        </div>
+        <div
+          class="modal-foot"
+          style="
+            background: var(--bg-subtle);
+            justify-content: space-between;
+            align-items: center;
+          "
+        >
+          <span style="font-size: var(--fs-xs); color: var(--text-tertiary)">
+            <i class="fa-solid fa-eye"></i> Read-only. Admin audit view.
+          </span>
+          <button class="btn btn-secondary" data-modal-close>Close</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mobile-menu-backdrop"></div>
+    <aside
+      class="mobile-menu"
+      id="mobile-menu-mount"
+      aria-label="Mobile menu"
+    ></aside>
+
+    <script src="../../data/students.js"></script>
+    <script src="../../data/courses.js"></script>
+    <script src="../../data/faculties.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/permissions.js"></script>
+    <script src="../../js/groups.js"></script>
+    <script src="../../js/navigation.js"></script>
+    <script src="../../js/notifications.js"></script>
+    <script>
+      /* ==========================================================================
+         Admin — Study Groups.
+         Read-only view of all groups. Deleted groups and deleted messages
+         remain visible here for record-keeping.
+         ========================================================================== */
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = Auth.current();
+        if (!session || !Permissions.isAdminRole(session)) {
+          window.location.href = "../auth/login.html";
+          return;
+        }
+        initAppShell("admin");
+
+        /* ------------------------------------------------------------------
+           DOM refs
+           ------------------------------------------------------------------ */
+        var listEl = document.getElementById("ag-list");
+        var searchEl = document.getElementById("ag-search");
+        var statusEl = document.getElementById("ag-status");
+        var deptEl = document.getElementById("ag-dept");
+        var countEl = document.getElementById("ag-count");
+        var clearBtn = document.getElementById("ag-clear");
+
+        /* ------------------------------------------------------------------
+           Populate department dropdown from the groups themselves
+           ------------------------------------------------------------------ */
+        (function populateDepts() {
+          var set = {};
+          Groups.all(true).forEach(function (g) {
+            if (g.department && g.department !== "—") set[g.department] = true;
+          });
+          Object.keys(set)
+            .sort()
+            .forEach(function (d) {
+              var opt = document.createElement("option");
+              opt.value = d;
+              opt.textContent = d;
+              deptEl.appendChild(opt);
+            });
+        })();
+
+        /* ------------------------------------------------------------------
+           Helpers
+           ------------------------------------------------------------------ */
+        function timeAgo(ts) {
+          if (typeof Util !== "undefined" && Util.relativeTime)
+            return Util.relativeTime(ts);
+          return new Date(ts).toLocaleString();
+        }
+
+        function fmtDate(ts) {
+          if (typeof Util !== "undefined" && Util.formatDate)
+            return Util.formatDate(ts);
+          return new Date(ts).toLocaleDateString();
+        }
+
+        function initialsOf(name) {
+          return (name || "")
+            .split(" ")
+            .filter(Boolean)
+            .slice(0, 2)
+            .map(function (p) {
+              return p[0].toUpperCase();
+            })
+            .join("");
+        }
+
+        function humanSize(bytes) {
+          if (!bytes) return "";
+          if (bytes < 1024) return bytes + " B";
+          if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+          return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+        }
+
+        function fileIcon(name) {
+          var n = (name || "").toLowerCase();
+          if (/\.(png|jpe?g|gif|webp|bmp|svg)$/.test(n)) return "fa-file-image";
+          if (/\.pdf$/.test(n)) return "fa-file-pdf";
+          if (/\.docx?$/.test(n)) return "fa-file-word";
+          if (/\.xlsx?$/.test(n)) return "fa-file-excel";
+          if (/\.pptx?$/.test(n)) return "fa-file-powerpoint";
+          return "fa-file";
+        }
+
+        /* ------------------------------------------------------------------
+           Render group card
+           ------------------------------------------------------------------ */
+        function renderGroupCard(g) {
+          var card = document.createElement("div");
+          card.className = "card";
+          card.style.marginBottom = "16px";
+
+          var creatorName = Groups.displayName(g.createdBy);
+          var memberCount = (g.members || []).length;
+          var pendingCount = (g.joinRequests || []).length;
+          var msgCount = (g.messages || []).length;
+          var deletedMsgCount = (g.messages || []).filter(function (m) {
+            return m.deleted;
+          }).length;
+
+          var statusBadge = g.deleted
+            ? '<span class="badge badge-deleted"><i class="fa-solid fa-trash"></i> Deleted</span>'
+            : '<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Active</span>';
+
+          var memberPills = (g.members || [])
+            .map(function (u) {
+              var name = Groups.displayName(u);
+              return (
+                '<span class="pill" title="@' +
+                Util.escape(u) +
+                '">' +
+                Util.escape(name || u) +
+                (u === g.createdBy
+                  ? ' <i class="fa-solid fa-crown" style="color:#5b3fa8;"></i>'
+                  : "") +
+                "</span>"
+              );
+            })
+            .join("");
+
+          card.innerHTML =
+            '<div class="card-pad">' +
+            /* Header row */
+            '<div class="cluster-between" style="margin-bottom:12px; align-items:flex-start;">' +
+            "<div>" +
+            '<div class="cluster" style="margin-bottom:8px;">' +
+            '<span class="badge badge-marine">' +
+            Util.escape(g.course || "—") +
+            "</span>" +
+            (g.department && g.department !== "—"
+              ? '<span class="badge badge-neutral">' +
+                Util.escape(g.department) +
+                " · " +
+                Util.escape(g.level || "—") +
+                "L</span>"
+              : "") +
+            statusBadge +
+            "</div>" +
+            '<h3 style="font-size:var(--fs-lg); margin-bottom:6px;">' +
+            Util.escape(g.name) +
+            "</h3>" +
+            '<div style="font-size:var(--fs-xs); color:var(--text-tertiary);">' +
+            '<i class="fa-solid fa-user-pen"></i> Created by ' +
+            '<strong style="color:var(--text-secondary);">' +
+            Util.escape(creatorName) +
+            "</strong>" +
+            ' <span class="tag-group-admin"><i class="fa-solid fa-crown"></i> Group Admin</span>' +
+            " · " +
+            fmtDate(g.createdAt) +
+            "</div>" +
+            "</div>" +
+            '<button class="btn btn-secondary btn-sm" data-open-group="' +
+            Util.escape(g.id) +
+            '" type="button">' +
+            '<i class="fa-solid fa-comments"></i> Open chat' +
+            "</button>" +
+            "</div>" +
+            /* Meta row */
+            '<div class="cluster" style="gap:16px; font-size:var(--fs-xs); color:var(--text-tertiary); padding:12px 0; border-top:1px solid var(--border-subtle); border-bottom:1px solid var(--border-subtle); margin-bottom:12px;">' +
+            '<span><i class="fa-solid fa-user-group"></i> ' +
+            memberCount +
+            " member" +
+            (memberCount === 1 ? "" : "s") +
+            "</span>" +
+            '<span><i class="fa-regular fa-comments"></i> ' +
+            msgCount +
+            " message" +
+            (msgCount === 1 ? "" : "s") +
+            "</span>" +
+            (deletedMsgCount
+              ? '<span><i class="fa-solid fa-trash"></i> ' +
+                deletedMsgCount +
+                " deleted</span>"
+              : "") +
+            (pendingCount
+              ? '<span style="color:var(--brand-primary); font-weight:600;"><i class="fa-solid fa-bell"></i> ' +
+                pendingCount +
+                " pending request" +
+                (pendingCount === 1 ? "" : "s") +
+                "</span>"
+              : "") +
+            (g.deleted && g.deletedAt
+              ? '<span><i class="fa-solid fa-clock"></i> Deleted ' +
+                timeAgo(g.deletedAt) +
+                "</span>"
+              : "") +
+            "</div>" +
+            /* Members pills */
+            '<div style="font-size:var(--fs-xs); font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-tertiary); margin-bottom:8px;">Members</div>' +
+            '<div class="member-pills">' +
+            (memberPills ||
+              '<span style="font-size:var(--fs-sm); color:var(--text-tertiary);">No members yet</span>') +
+            "</div>" +
+            "</div>";
+
+          var openBtn = card.querySelector("[data-open-group]");
+          openBtn.addEventListener("click", function () {
+            openChatModal(g.id);
+          });
+
+          return card;
+        }
+
+        /* ------------------------------------------------------------------
+           Render list
+           ------------------------------------------------------------------ */
+        function render() {
+          var all = Groups.all(true);
+          var q = (searchEl.value || "").trim().toLowerCase();
+          var status = statusEl.value;
+          var dept = deptEl.value;
+
+          var list = all.slice();
+          if (status === "active")
+            list = list.filter(function (g) {
+              return !g.deleted;
+            });
+          else if (status === "deleted")
+            list = list.filter(function (g) {
+              return g.deleted;
+            });
+          if (dept)
+            list = list.filter(function (g) {
+              return g.department === dept;
+            });
+          if (q) {
+            list = list.filter(function (g) {
+              var creatorName = (
+                Groups.displayName(g.createdBy) || ""
+              ).toLowerCase();
+              return (
+                (g.name || "").toLowerCase().indexOf(q) !== -1 ||
+                (g.course || "").toLowerCase().indexOf(q) !== -1 ||
+                (g.createdBy || "").toLowerCase().indexOf(q) !== -1 ||
+                creatorName.indexOf(q) !== -1
+              );
+            });
+          }
+
+          /* Sort: active first, then by createdAt desc */
+          list.sort(function (a, b) {
+            if (!!a.deleted !== !!b.deleted) return a.deleted ? 1 : -1;
+            return (b.createdAt || 0) - (a.createdAt || 0);
+          });
+
+          /* Update stats (across all groups, not filtered) */
+          var totalGroups = all.length;
+          var activeGroups = all.filter(function (g) {
+            return !g.deleted;
+          }).length;
+          var deletedGroups = totalGroups - activeGroups;
+          var totalMemberships = all.reduce(function (s, g) {
+            return s + (g.deleted ? 0 : (g.members || []).length);
+          }, 0);
+          document.getElementById("stat-total").textContent = totalGroups;
+          document.getElementById("stat-active").textContent = activeGroups;
+          document.getElementById("stat-deleted").textContent = deletedGroups;
+          document.getElementById("stat-members").textContent =
+            totalMemberships;
+
+          /* Render */
+          listEl.innerHTML = "";
+          if (!list.length) {
+            listEl.innerHTML =
+              '<div class="card"><div class="empty-state" style="padding:48px 24px;">' +
+              '<div class="empty-icon"><i class="fa-solid fa-users"></i></div>' +
+              "<h3>No groups match your filters</h3>" +
+              "<p>Try clearing the search or filter.</p></div></div>";
+          } else {
+            list.forEach(function (g) {
+              listEl.appendChild(renderGroupCard(g));
+            });
+          }
+
+          countEl.textContent =
+            list.length + " group" + (list.length === 1 ? "" : "s");
+          clearBtn.style.display = q || status || dept ? "inline-flex" : "none";
+        }
+
+        /* ------------------------------------------------------------------
+           Admin chat modal — unfiltered (deleted messages remain visible)
+           ------------------------------------------------------------------ */
+        function openChatModal(groupId) {
+          var g = Groups.get(groupId);
+          if (!g) return;
+          document.getElementById("ac-title").textContent =
+            g.name + " · full history";
+
+          var body = document.getElementById("ac-body");
+          var msgs = g.messages || [];
+
+          if (!msgs.length) {
+            body.innerHTML =
+              '<div class="empty-state" style="padding:32px;">' +
+              '<div class="empty-icon"><i class="fa-regular fa-comments"></i></div>' +
+              "<h3>No messages in this group</h3></div>";
+            Modal.open("admin-chat-modal");
+            return;
+          }
+
+          body.innerHTML = msgs
+            .map(function (m) {
+              var isDeleted = !!m.deleted;
+              var isEdited = !!m.edited;
+              var authorName = Groups.displayName(m.author);
+              var isCreatorOfGroup = m.author === g.createdBy;
+
+              var badgeRow = "";
+              if (isDeleted) {
+                badgeRow +=
+                  '<span class="deleted-tag"><i class="fa-solid fa-trash"></i> Deleted by @' +
+                  Util.escape(m.deletedBy || m.author) +
+                  (m.deletedAt ? " · " + timeAgo(m.deletedAt) : "") +
+                  "</span>";
+              }
+              if (isEdited) {
+                badgeRow +=
+                  '<span class="deleted-tag" style="background:var(--info-soft); color:var(--info);"><i class="fa-solid fa-pen"></i> Edited' +
+                  (m.editedAt ? " · " + timeAgo(m.editedAt) : "") +
+                  "</span>";
+              }
+
+              /* Body per type */
+              var content = "";
+              if (m.type === "text") {
+                content =
+                  '<div class="msg-text">' +
+                  Util.escape(m.text || "") +
+                  "</div>";
+                if (isEdited && m.originalText && m.originalText !== m.text) {
+                  content +=
+                    '<details style="margin-top:6px; font-size:var(--fs-xs); color:var(--text-tertiary);">' +
+                    '<summary style="cursor:pointer;">Show original</summary>' +
+                    '<div style="margin-top:4px; padding:6px 8px; background:var(--bg-subtle); border-radius:var(--radius-sm); color:var(--text-secondary);">' +
+                    Util.escape(m.originalText) +
+                    "</div></details>";
+                }
+              } else if (m.type === "image") {
+                content =
+                  '<img class="chat-img" src="' +
+                  m.dataUrl +
+                  '" alt="' +
+                  Util.escape(m.fileName || "image") +
+                  '" />';
+              } else if (m.type === "file") {
+                content =
+                  '<a class="chat-file-card" href="' +
+                  m.dataUrl +
+                  '" download="' +
+                  Util.escape(m.fileName) +
+                  '">' +
+                  '<span class="icon"><i class="fa-solid ' +
+                  fileIcon(m.fileName) +
+                  '"></i></span>' +
+                  '<span class="info"><span class="fname">' +
+                  Util.escape(m.fileName) +
+                  "</span>" +
+                  '<span class="fsize">' +
+                  humanSize(m.fileSize) +
+                  "</span></span>" +
+                  '<i class="fa-solid fa-download"></i></a>';
+              } else if (m.type === "voice") {
+                content =
+                  '<div class="chat-voice"><i class="fa-solid fa-microphone"></i><audio controls src="' +
+                  m.dataUrl +
+                  '"></audio></div>';
+              }
+
+              return (
+                '<div class="chat-msg' +
+                (isDeleted ? " is-deleted" : "") +
+                '" style="margin-bottom:14px;">' +
+                '<span class="avatar avatar-32 avatar-fallback">' +
+                Util.escape(initialsOf(authorName)) +
+                "</span>" +
+                '<div class="bubble">' +
+                '<div class="author">' +
+                Util.escape(authorName) +
+                (isCreatorOfGroup
+                  ? ' <span class="tag-group-admin" style="font-size:9.5px; padding:2px 6px;"><i class="fa-solid fa-crown"></i> Group Admin</span>'
+                  : "") +
+                "</div>" +
+                badgeRow +
+                content +
+                '<div class="time">' +
+                timeAgo(m.at) +
+                "</div>" +
+                "</div></div>"
+              );
+            })
+            .join("");
+
+          Modal.open("admin-chat-modal");
+        }
+
+        /* ------------------------------------------------------------------
+           Events
+           ------------------------------------------------------------------ */
+        var debounce;
+        searchEl.addEventListener("input", function () {
+          clearTimeout(debounce);
+          debounce = setTimeout(render, 120);
+        });
+        statusEl.addEventListener("change", render);
+        deptEl.addEventListener("change", render);
+        clearBtn.addEventListener("click", function () {
+          searchEl.value = "";
+          statusEl.value = "";
+          deptEl.value = "";
+          render();
+        });
+
+        /* Initial render */
+        render();
+      });
+    </script>
+  </body>
+</html>

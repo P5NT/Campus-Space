@@ -59,11 +59,10 @@
             <div class="page-head-text">
               <h1 class="page-title">Opportunities</h1>
               <p class="page-subtitle">
-                Manage scholarships, internships, SIWES, jobs, competitions and
-                more.
+                Manage scholarships, internships and other listings.
               </p>
             </div>
-            <button class="btn btn-primary" id="opp-publish-btn" type="button">
+            <button class="btn btn-primary" id="new-opp-btn" type="button">
               <i class="fa-solid fa-plus"></i> Add opportunity
             </button>
           </div>
@@ -365,6 +364,35 @@
         }
 
         initAppShell("admin");
+        /* ---- System access gate: opportunities publishing ----
+           Super Admin is not gated. Only regular Admins are. */
+        var isSuper =
+          typeof Permissions !== "undefined" &&
+          Permissions.can(session, "admins.manage");
+        var canPublishOpportunities =
+          typeof SystemSettings === "undefined" ||
+          SystemSettings.isEnabled("opportunities_enabled");
+        if (!isSuper && !canPublishOpportunities) {
+          var oppBtn = document.getElementById("new-opp-btn");
+          if (oppBtn) {
+            oppBtn.disabled = true;
+            oppBtn.title = "Publishing is temporarily disabled by Super Admin";
+            oppBtn.style.opacity = "0.5";
+            oppBtn.style.cursor = "not-allowed";
+            oppBtn.addEventListener(
+              "click",
+              function (e) {
+                e.stopPropagation();
+                e.preventDefault();
+                Toast.warning(
+                  "Opportunities publishing has been paused by Super Admin.",
+                  "Paused",
+                );
+              },
+              true,
+            );
+          }
+        }
 
         var STORAGE_KEY = "opportunities_overrides";
 
@@ -929,11 +957,12 @@
         /* ------------------------------------------------------------------
            TRIGGERS
            ------------------------------------------------------------------ */
-        document
-          .getElementById("opp-publish-btn")
-          .addEventListener("click", function () {
+        var newOppBtn = document.getElementById("new-opp-btn");
+        if (newOppBtn) {
+          newOppBtn.addEventListener("click", function () {
             openEditor(null);
           });
+        }
 
         filterBar.addEventListener("click", function (e) {
           var btn = e.target.closest("[data-status]");

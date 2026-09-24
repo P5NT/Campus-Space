@@ -1,28 +1,18 @@
 /* ==========================================================================
    CAMPUS SPACE — leaders.js
-   Student leaders rendering + data layer.
+   Student leaders rendering + data layer + admin assignment helpers.
 
    Merges DEMO_LEADERS with admin overrides from localStorage:
      - added   → new leader assignments
      - edits   → changes to existing leaders (association, position, active)
      - deleted → removed leaders
-
-   Public API (kept backward-compatible with existing callers):
-     getLeaderList()                    → active leaders with {student, assoc, pos}
-     getAllLeaders(options)             → all leaders (active + inactive)
-     getLeaderById(studentId, opts)     → single leader lookup
-     getLeaderMap()                     → { studentId: leaderRecord } for fast lookups
-     renderLeaderCard(leader)           → DOM element for a leader card
    ========================================================================== */
 "use strict";
 
 /* -------------------------------------------------------------------------
    LOAD — merge demo seed with admin overrides
-   Returns an array of leader records shaped:
-     { studentId, associationId, positionId, active, assignedAt, assignedBy }
    ------------------------------------------------------------------------- */
 function loadMergedLeaders() {
-  /* Start from the seed data — normalise each record so active is boolean */
   var base = (typeof DEMO_LEADERS !== "undefined" ? DEMO_LEADERS : []).map(
     function (l) {
       return {
@@ -36,7 +26,6 @@ function loadMergedLeaders() {
     },
   );
 
-  /* Read overrides — safe if Store isn't loaded (defensive) */
   var saved = null;
   try {
     if (typeof Store !== "undefined" && Store.get) {
@@ -47,7 +36,6 @@ function loadMergedLeaders() {
   }
   if (!saved) return base;
 
-  /* Apply additions */
   if (Array.isArray(saved.added)) {
     saved.added.forEach(function (l) {
       var idx = base.findIndex(function (x) {
@@ -66,7 +54,6 @@ function loadMergedLeaders() {
     });
   }
 
-  /* Apply edits (association, position, active state) */
   if (saved.edits) {
     base.forEach(function (l) {
       var edit = saved.edits[l.studentId];
@@ -78,7 +65,6 @@ function loadMergedLeaders() {
     });
   }
 
-  /* Apply deletions last */
   if (Array.isArray(saved.deleted)) {
     base = base.filter(function (l) {
       return saved.deleted.indexOf(l.studentId) === -1;
@@ -89,8 +75,7 @@ function loadMergedLeaders() {
 }
 
 /* -------------------------------------------------------------------------
-   Get all leaders (raw records), with optional filters
-   options = { active: true|false|undefined }  — undefined returns all
+   Get all leader records with optional active-only filter
    ------------------------------------------------------------------------- */
 function getAllLeaderRecords(options) {
   var all = loadMergedLeaders();
@@ -102,11 +87,9 @@ function getAllLeaderRecords(options) {
 
 /* -------------------------------------------------------------------------
    Enrich a raw leader record into { student, assoc, pos, active }
-   Returns null if any referenced record is missing.
    ------------------------------------------------------------------------- */
 function enrichLeader(record) {
   if (!record) return null;
-
   var student = (
     typeof DEMO_STUDENTS !== "undefined" ? DEMO_STUDENTS : []
   ).find(function (s) {
@@ -122,9 +105,7 @@ function enrichLeader(record) {
       return p.id === record.positionId;
     },
   );
-
   if (!student || !assoc || !pos) return null;
-
   return {
     student: student,
     assoc: assoc,
@@ -136,9 +117,7 @@ function enrichLeader(record) {
 }
 
 /* -------------------------------------------------------------------------
-   Public — getLeaderList()
-   Backward-compatible. Returns ACTIVE leaders only, enriched.
-   This is what student-facing pages should use.
+   PUBLIC — getLeaderList() [backward-compatible with existing callers]
    ------------------------------------------------------------------------- */
 function getLeaderList() {
   return getAllLeaderRecords({ active: true })
@@ -147,15 +126,11 @@ function getLeaderList() {
 }
 
 /* -------------------------------------------------------------------------
-   Public — getAllLeaders(options)
-   Admin-facing. Can include inactive.
-   Returns enriched leaders sorted by student name.
+   PUBLIC — getAllLeaders(options)
    ------------------------------------------------------------------------- */
 function getAllLeaders(options) {
   var records = getAllLeaderRecords(options);
   var enriched = records.map(enrichLeader).filter(Boolean);
-
-  /* Stable sort: by first name then last name */
   enriched.sort(function (a, b) {
     var an = (a.student.firstName || "").toLowerCase();
     var bn = (b.student.firstName || "").toLowerCase();
@@ -165,14 +140,11 @@ function getAllLeaders(options) {
     var bl = (b.student.lastName || "").toLowerCase();
     return al.localeCompare(bl);
   });
-
   return enriched;
 }
 
 /* -------------------------------------------------------------------------
-   Public — getLeaderById(studentId, opts)
-   opts = { includeInactive: true }  → returns even if deactivated
-   Returns enriched leader or null.
+   PUBLIC — getLeaderById(studentId, opts)
    ------------------------------------------------------------------------- */
 function getLeaderById(studentId, opts) {
   if (!studentId) return null;
@@ -186,11 +158,7 @@ function getLeaderById(studentId, opts) {
 }
 
 /* -------------------------------------------------------------------------
-   Public — getLeaderMap()
-   { studentId: { student, assoc, pos, active } } for fast lookups.
-   Used by community post rendering to tag leaders in comments.
-   Includes ONLY active leaders (that's the point — inactive leaders
-   lose their public tag).
+   PUBLIC — getLeaderMap()
    ------------------------------------------------------------------------- */
 function getLeaderMap() {
   var map = {};
@@ -202,9 +170,7 @@ function getLeaderMap() {
 }
 
 /* -------------------------------------------------------------------------
-   Public — renderLeaderCard(leader)
-   Same markup and behavior as before. Also works with enriched objects
-   that include an `active` field (shows an "Inactive" badge when false).
+   PUBLIC — renderLeaderCard(leader)
    ------------------------------------------------------------------------- */
 function renderLeaderCard(l) {
   var student = l.student;
@@ -246,22 +212,79 @@ function renderLeaderCard(l) {
     Util.escape(assoc.acronym) +
     "</div>" +
     (!isActive
-      ? '<div class="leader-inactive-badge">' +
-        '<i class="fa-solid fa-circle-pause"></i> Inactive' +
-        "</div>"
+      ? '<div class="leader-inactive-badge"><i class="fa-solid fa-circle-pause"></i> Inactive</div>'
       : "") +
-    '<button class="btn btn-secondary btn-sm">' +
-    '<i class="fa-solid fa-arrow-right"></i> View profile' +
-    "</button>";
+    '<button class="btn btn-secondary btn-sm"><i class="fa-solid fa-arrow-right"></i> View profile</button>';
 
   return card;
 }
 
-/* -------------------------------------------------------------------------
-   Backward-compatibility exports
-   Some pages reference DEMO_LEADERS directly. To keep them working, we
-   expose a "live" DEMO_LEADERS via a getter-like approach. Since we can't
-   mutate the const, we instead expose a helper that mirrors its shape.
-   Pages that read DEMO_LEADERS directly will still see stale data — if you
-   find such a page, replace `DEMO_LEADERS` with `getAllLeaderRecords()`.
-   ------------------------------------------------------------------------- */
+/* ==========================================================================
+   ADMIN HELPERS — assign / remove leaders
+   Called from pages/admin/student-details.html and student-leaders.html
+   ========================================================================== */
+const Leaders = (() => {
+  const KEY = "leaders_overrides";
+
+  function loadOverrides() {
+    return Store.get(KEY, {}) || {};
+  }
+
+  function saveOverrides(o) {
+    Store.set(KEY, o);
+  }
+
+  /* Assign (or re-assign) a leader to a student.
+     Writes to the "added" list and removes any pending "deleted" entry
+     for that student. */
+  function assign(studentId, associationId, positionId, assignedBy) {
+    if (!studentId || !associationId || !positionId) return false;
+    var o = loadOverrides();
+    o.added = o.added || [];
+    o.deleted = (o.deleted || []).filter(function (id) {
+      return id !== studentId;
+    });
+    o.edits = o.edits || {};
+
+    var existingIdx = o.added.findIndex(function (l) {
+      return l.studentId === studentId;
+    });
+    var record = {
+      studentId: studentId,
+      associationId: associationId,
+      positionId: positionId,
+      active: true,
+      assignedAt: new Date().toISOString().slice(0, 10),
+      assignedBy: assignedBy || "Admin",
+    };
+
+    if (existingIdx >= 0) o.added[existingIdx] = record;
+    else o.added.push(record);
+
+    /* Drop any conflicting edit for the same student */
+    delete o.edits[studentId];
+
+    saveOverrides(o);
+    return true;
+  }
+
+  /* Remove a leader entirely (soft removal — added to "deleted" list). */
+  function remove(studentId) {
+    if (!studentId) return false;
+    var o = loadOverrides();
+    o.deleted = o.deleted || [];
+    if (o.deleted.indexOf(studentId) === -1) o.deleted.push(studentId);
+    if (Array.isArray(o.added)) {
+      o.added = o.added.filter(function (l) {
+        return l.studentId !== studentId;
+      });
+    }
+    if (o.edits && o.edits[studentId]) {
+      delete o.edits[studentId];
+    }
+    saveOverrides(o);
+    return true;
+  }
+
+  return { assign: assign, remove: remove };
+})();

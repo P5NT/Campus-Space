@@ -2,6 +2,11 @@
    CAMPUS SPACE — data/students.js
    Demo student, admin and super-admin records for the frontend.
    These simulate what a real backend would return.
+
+   verificationStatus:
+     "verified"  — student details confirmed by Admin (full access)
+     "pending"   — awaiting Admin verification (restricted access)
+     "rejected"  — Admin rejected verification (blocked at login)
    ========================================================================== */
 "use strict";
 
@@ -24,6 +29,7 @@ const DEMO_STUDENTS = [
     avatar: "",
     status: "active",
     role: "student",
+    verificationStatus: "verified",
     isLeader: true,
     isEmergencyContact: false,
     emergencyCategory: "",
@@ -47,6 +53,7 @@ const DEMO_STUDENTS = [
     avatar: "",
     status: "active",
     role: "student",
+    verificationStatus: "verified",
     isLeader: true,
     isEmergencyContact: false,
     emergencyCategory: "",
@@ -70,6 +77,7 @@ const DEMO_STUDENTS = [
     avatar: "",
     status: "active",
     role: "student",
+    verificationStatus: "verified",
     isLeader: false,
     isEmergencyContact: false,
     emergencyCategory: "",
@@ -94,6 +102,7 @@ const DEMO_STUDENTS = [
     avatar: "",
     status: "active",
     role: "student",
+    verificationStatus: "verified",
     isLeader: true,
     isEmergencyContact: true,
     emergencyCategory: "Security",
@@ -117,6 +126,7 @@ const DEMO_STUDENTS = [
     avatar: "",
     status: "active",
     role: "student",
+    verificationStatus: "verified",
     isLeader: true,
     isEmergencyContact: true,
     emergencyCategory: "Medical",
@@ -140,6 +150,7 @@ const DEMO_STUDENTS = [
     avatar: "",
     status: "active",
     role: "student",
+    verificationStatus: "verified",
     isLeader: false,
     isEmergencyContact: false,
     emergencyCategory: "",
@@ -164,6 +175,7 @@ const DEMO_STUDENTS = [
     avatar: "",
     status: "active",
     role: "student",
+    verificationStatus: "verified",
     isLeader: true,
     isEmergencyContact: false,
     emergencyCategory: "",
@@ -187,10 +199,89 @@ const DEMO_STUDENTS = [
     avatar: "",
     status: "deactivated",
     role: "student",
+    verificationStatus: "verified",
     isLeader: false,
     isEmergencyContact: false,
     emergencyCategory: "",
     joined: "2022-09-10",
+  },
+
+  /* ---- Demo pending students — so you can test the Admin
+     verification UI without registering a new account ---- */
+  {
+    id: "STU009",
+    firstName: "Daniel",
+    otherName: "Chinedu",
+    lastName: "Obi",
+    username: "daniel.obi",
+    email: "daniel.obi@oaustech.edu.ng",
+    phone: "+234 802 111 2233",
+    faculty: "Computing",
+    department: "Computer Science",
+    level: "100",
+    matric: "CSC/2025/101",
+    association: "",
+    associationFull: "",
+    position: "",
+    avatar: "",
+    status: "active",
+    role: "student",
+    verificationStatus: "pending",
+    isLeader: false,
+    isEmergencyContact: false,
+    emergencyCategory: "",
+    joined: "2026-01-15",
+    password: "Campus@2026",
+  },
+  {
+    id: "STU010",
+    firstName: "Rukayat",
+    otherName: "",
+    lastName: "Adesanya",
+    username: "rukayat",
+    email: "rukayat.adesanya@oaustech.edu.ng",
+    phone: "+234 813 444 5566",
+    faculty: "Sciences",
+    department: "Biochemistry",
+    level: "100",
+    matric: "BCH/2025/202",
+    association: "",
+    associationFull: "",
+    position: "",
+    avatar: "",
+    status: "active",
+    role: "student",
+    verificationStatus: "pending",
+    isLeader: false,
+    isEmergencyContact: false,
+    emergencyCategory: "",
+    joined: "2026-01-16",
+    password: "Campus@2026",
+  },
+  {
+    id: "STU011",
+    firstName: "Precious",
+    otherName: "Ebere",
+    lastName: "Nwachukwu",
+    username: "precious",
+    email: "precious.nwachukwu@oaustech.edu.ng",
+    phone: "+234 806 999 0011",
+    faculty: "Management Sciences",
+    department: "Accounting",
+    level: "100",
+    matric: "ACC/2025/303",
+    association: "",
+    associationFull: "",
+    position: "",
+    avatar: "",
+    status: "active",
+    role: "student",
+    verificationStatus: "pending",
+    isLeader: false,
+    isEmergencyContact: false,
+    emergencyCategory: "",
+    joined: "2026-01-17",
+    password: "Campus@2026",
   },
 ];
 
@@ -243,11 +334,6 @@ const DEMO_ADMINS = [
     password: "Super@2026!",
     mustChangePassword: false,
   },
-
-  /* ---- Demo student admins ----
-     These are students who also hold admin roles. They carry a
-     `studentId` linking to their record in DEMO_STUDENTS and an
-     `adminRoles` array so Permissions.getRole() can resolve them. */
   {
     id: "ADM003",
     firstName: "Oluwaseun",

@@ -402,6 +402,26 @@
 
           listEl.innerHTML = list.map(renderRow).join("");
 
+          /* Inject pending-contact-change badges where applicable */
+          var overrides = Store.get("student_overrides", {}) || {};
+          list.forEach(function (s) {
+            var edit = (overrides.edits && overrides.edits[s.id]) || {};
+            if (!edit.pendingContactChange) return;
+            var row = listEl.querySelector(
+              '[data-open-student="' + s.id + '"]',
+            );
+            if (!row) return;
+            var nameEl = row.querySelector(".rs-row-name");
+            if (!nameEl) return;
+            var badge = document.createElement("span");
+            badge.className = "badge badge-warning contact-change-badge";
+            badge.title =
+              "Pending " + edit.pendingContactChange.field + " change";
+            badge.innerHTML =
+              '<i class="fa-solid fa-hourglass-half"></i> Contact change pending';
+            nameEl.appendChild(badge);
+          });
+
           listEl
             .querySelectorAll("[data-open-student]")
             .forEach(function (row) {
